@@ -30,7 +30,9 @@ jobs:
           cache-dependency-path: frontend/package-lock.json
       - name: Validate Cloudflare room server module syntax
         working-directory: .
-        run: node --check cloudflare/worker.mjs
+        run: |
+          node --check cloudflare/worker.mjs
+          node --test cloudflare/worker.test.mjs
       - name: Verify cross-file release metadata before installing dependencies
         working-directory: .
         run: python3 scripts/verify_release_consistency.py

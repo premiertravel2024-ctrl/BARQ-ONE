@@ -17,23 +17,44 @@ export default {
   async fetch(request,env){
     const url=new URL(request.url),p=url.pathname;
     if(request.method==="GET"&&(p==="/"||p==="/health"))return reply({status:"ok",service:"BARQ ONE Rooms",type:"signaling",media:"peer-to-peer",turn_configured:false});
+    if(request.method==="GET"&&p==="/health/rooms"){
+      // Unlike /health, this actually exercises BOTH Durable Object bindings.
+      try {
+        if(!env.ROOMS||!env.RATE_LIMIT)return reply({status:"degraded",rooms_ready:false,code:"BINDING_MISSING"},503);
+        const [room,limiter]=await Promise.all([
+          env.ROOMS.get(env.ROOMS.idFromName("barq-room-healthcheck")).fetch("https://room.local/ping"),
+          env.RATE_LIMIT.get(env.RATE_LIMIT.idFromName("barq-ratelimit-healthcheck")).fetch("https://limit.local/ping"),
+        ]);
+        if(!room.ok||!limiter.ok)return reply({status:"degraded",rooms_ready:false,code:"DURABLE_OBJECT_UNAVAILABLE"},503);
+        return reply({status:"ok",rooms_ready:true,service:"BARQ ONE Rooms"});
+      }catch(err){
+        console.error("BARQ health Durable Object failure:",err);
+        return reply({status:"degraded",rooms_ready:false,code:"DURABLE_OBJECT_ERROR"},503);
+      }
+    }
     if(p==="/api/rooms"&&request.method==="POST"){
-      // A free public API is rate-limited per connecting IP; no shared secret is put inside the installer.
-      const ip=request.headers.get("CF-Connecting-IP")||"unknown";
-      const limiter=env.RATE_LIMIT.get(env.RATE_LIMIT.idFromName(ip));
-      const allowed=await limiter.fetch("https://limit.local/check",{method:"POST"});
-      if(allowed.status!==200)return reply({error:"Room limit reached; retry later"},429);
       let payload;
-      try{payload=await request.json();}catch{return reply({error:"Invalid JSON"},400);}
+      try{payload=await request.json();}catch{return reply({error:"Invalid JSON",code:"INVALID_JSON"},400);}
       const mode=payload?.mode;
-      if(mode!=="video"&&mode!=="music")return reply({error:"Unknown room mode"},400);
-      const room_id=randomToken(12),host_token=randomToken(),guest_token=randomToken();
-      const code=String(100000+crypto.getRandomValues(new Uint32Array(1))[0]%900000);
-      const init=await roomStub(env,room_id).fetch("https://room.local/create",{
-        method:"POST",body:JSON.stringify({id:room_id,mode,code,hostHash:await digest(host_token),guestHash:await digest(guest_token),created:Date.now()})
-      });
-      if(!init.ok)return reply({error:"Unable to create room"},503);
-      return reply({room_id,host_token,guest_token,code},201);
+      if(mode!=="video"&&mode!=="music")return reply({error:"Unknown room mode",code:"INVALID_MODE"},400);
+      try {
+        if(!env.ROOMS||!env.RATE_LIMIT)return reply({error:"Cloudflare room storage bindings unavailable",code:"BINDING_MISSING"},503);
+        const ip=request.headers.get("CF-Connecting-IP")||"unknown";
+        const limiter=env.RATE_LIMIT.get(env.RATE_LIMIT.idFromName(ip));
+        const allowed=await limiter.fetch("https://limit.local/check",{method:"POST"});
+        if(allowed.status===429)return reply({error:"Room creation limit reached. Try again later.",code:"ROOM_RATE_LIMIT"},429);
+        if(!allowed.ok)return reply({error:"Room limiter not ready",code:"RATE_LIMIT_UNAVAILABLE"},503);
+        const room_id=randomToken(12),host_token=randomToken(),guest_token=randomToken();
+        const code=String(100000+crypto.getRandomValues(new Uint32Array(1))[0]%900000);
+        const init=await roomStub(env,room_id).fetch("https://room.local/create",{
+          method:"POST",body:JSON.stringify({id:room_id,mode,code,hostHash:await digest(host_token),guestHash:await digest(guest_token),created:Date.now()})
+        });
+        if(!init.ok)return reply({error:"Room storage refused creation",code:"ROOM_STORAGE_UNAVAILABLE"},503);
+        return reply({room_id,host_token,guest_token,code},201);
+      }catch(err){
+        console.error("BARQ create room Durable Object failure:",err);
+        return reply({error:"Room service temporarily unavailable",code:"ROOM_SERVER_ERROR"},503);
+      }
     }
     if(p.startsWith("/api/rooms/")&&request.method==="DELETE"){
       const id=safeRoom(p);if(!id)return reply({error:"Invalid room"},404);
@@ -60,11 +81,12 @@ export default {
 export class RateLimit {
   constructor(ctx){this.ctx=ctx;}
   async fetch(req){
+    if(new URL(req.url).pathname==="/ping")return reply({ready:true});
     if(req.method!=="POST")return reply({error:"Method"},405);
     const bucket=Math.floor(Date.now()/3600000);
     const row=await this.ctx.storage.get("rate");
     const count=row?.bucket===bucket?row.count:0;
-    if(count>=8)return reply({error:"Too many new rooms this hour"},429);
+    if(count>=24)return reply({error:"Too many new rooms this hour"},429);
     await this.ctx.storage.put("rate",{bucket,count:count+1});
     await this.ctx.storage.setAlarm((bucket+2)*3600000);
     return reply({allowed:true});
@@ -75,6 +97,7 @@ export class RoomSession {
   constructor(ctx){this.ctx=ctx;}
   async fetch(request){
     const url=new URL(request.url),p=url.pathname;
+    if(p==="/ping")return reply({ready:true});
     if(p==="/create"&&request.method==="POST"){
       if(await this.ctx.storage.get("room"))return reply({error:"Already exists"},409);
       const room=await request.json();

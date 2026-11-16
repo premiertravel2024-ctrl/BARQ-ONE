@@ -14,7 +14,7 @@ import os
 import sys
 import tempfile
 from pathlib import Path
-from urllib.error import URLError
+from urllib.error import HTTPError, URLError
 from urllib.request import HTTPRedirectHandler, Request as HttpRequest, build_opener, urlopen
 import re
 import socket
@@ -207,8 +207,22 @@ def _publish_managed(room: Room,origin: str) -> dict:
                                   (guest_token,r"[A-Za-z0-9_-]{43}"),(code,r"[0-9]{6}")):
                 if not re.fullmatch(pattern,value):
                     raise ValueError("Invalid relay response")
-        except (OSError,KeyError,ValueError,TypeError) as exc:
-            raise RuntimeError("خادم الغرف الثابت لم يرد أو رفض إنشاء الغرفة.") from exc
+        except HTTPError as exc:
+            if exc.code == 429:
+                message = "تم تجاوز الحد المؤقت لإنشاء غرف Cloudflare من الشبكة دي. جرّب بعد شوية."
+            elif exc.code in (500, 502, 503, 504):
+                message = "خدمة إنشاء الغرف في Cloudflare غير جاهزة (HTTP %s). افحص /health/rooms وCloudflare Workers Logs." % exc.code
+            elif exc.code == 403:
+                message = "Cloudflare رفض طلب إنشاء الغرفة (403). راجع Access أو قواعد الحماية."
+            elif exc.code == 404:
+                message = "مسار إنشاء الغرف مش منشور على Cloudflare (404). راجع آخر Deployment."
+            else:
+                message = "السيرفر رفض إنشاء الغرفة برمز HTTP %s." % exc.code
+            raise RuntimeError(message) from exc
+        except (URLError, TimeoutError, OSError) as exc:
+            raise RuntimeError("تعذّر الاتصال بسيرفر غرف Cloudflare. اتأكد من اتصال الإنترنت وافتح /health/rooms.") from exc
+        except (KeyError, ValueError, TypeError) as exc:
+            raise RuntimeError("سيرفر غرف Cloudflare رد ببيانات غير متوقعة. راجع Deployment.") from exc
         key=secrets.token_urlsafe(24)
         guest_query=urlencode({"role":"guest","token":guest_token,"mode":room.mode})
         host_query=urlencode({"role":"host","token":host_token})
