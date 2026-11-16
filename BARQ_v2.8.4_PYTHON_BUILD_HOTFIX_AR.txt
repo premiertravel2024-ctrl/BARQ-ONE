@@ -1,0 +1,15 @@
+BARQ AI v2.8.4 - Windows Build / Python syntax repair
+
+حل رسالة SyntaxError: invalid decimal literal عند فحص Python 3.11.
+السبب: PowerShell كان يزيل علامات الاقتباس من كود Python المرسل عبر -c.
+الحل: السكربت الآن يستدعي scripts/verify_python_build.py بشكل مباشر.
+
+خطوات التشغيل:
+1. فك ضغط ZIP كاملًا إلى مجلد جديد.
+2. افتح مجلد BARQ الوحيد.
+3. اضغط BUILD_BARQ.bat مرتين.
+4. السكربت يفحص Python ثم يشغّل البناء والتثبيت.
+5. بعد نجاح البناء، المثبت في release/BARQ_Setup_2.8.4.exe.
+
+ملاحظة: تثبيت Python 3.11 64-bit، Node.js/npm وInno Setup 6 لازم مسبقًا.
+هذا ZIP سورس كامل؛ لا يحتوي EXE مبنيًا على Windows.

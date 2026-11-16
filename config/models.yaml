@@ -1,0 +1,44 @@
+# Optional model capability overrides. Set accurate fields after checking provider docs.
+# Free access and availability change. Unsupported capabilities default to false.
+models:
+  "groq/openai/gpt-oss-120b":
+    strengths: {coding: 0.90, debugging: 0.85, reasoning: 0.88, qa: 0.80, chat: 0.75}
+    arabic_quality: 0.72
+    supports_json: false
+  "groq/openai/gpt-oss-20b":
+    strengths: {chat: 0.86, writing: 0.76, translation: 0.75}
+    p50_latency: 0.9
+    arabic_quality: 0.65
+  "openrouter/openrouter/free":
+    strengths: {coding: 0.74, reasoning: 0.70, qa: 0.68}
+    privacy_note: "Free OpenRouter routing varies; review upstream providers' data policies."
+  # Conservative initial scoring; BARQ telemetry can adjust these later.
+  "nvidia/deepseek-ai/deepseek-v4.1-flash":
+    strengths: {coding: 0.91, debugging: 0.89, reasoning: 0.85, qa: 0.80, chat: 0.78, vision: 0.84, writing: 0.79, long_document: 0.83}
+    arabic_quality: 0.78
+    modalities: [text, image]
+    privacy_note: "External NVIDIA endpoint; user content goes to NVIDIA. Verify service data terms before sensitive use."
+    supports_json: false
+    supports_tools: false
+    p50_latency: 3.0
+  # These IDs are NOT enabled until user-initiated provider verification.
+  "groq/qwen/qwen3.8-27b":
+    strengths: {coding: 0.80, reasoning: 0.80, vision: 0.66, qa: 0.70}
+    arabic_quality: 0.68
+    supports_json: false
+    supports_tools: false
+  "openrouter/cohere/north-mini-code:free":
+    strengths: {coding: 0.84, debugging: 0.82}
+    arabic_quality: 0.58
+    supports_json: false
+    supports_tools: false
+  "nvidia/nvidia/nemotron-3-ultra-550b-a55b":
+    strengths: {coding: 0.86, reasoning: 0.90, long_document: 0.86}
+    arabic_quality: 0.62
+    supports_json: false
+    supports_tools: false
+  "zai/glm-4.7-flash":
+    strengths: {coding: 0.70, reasoning: 0.68}
+    arabic_quality: 0.55
+    supports_json: false
+    supports_tools: false

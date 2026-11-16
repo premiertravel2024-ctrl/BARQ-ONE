@@ -1,0 +1,50 @@
+{
+  "note": "Synthetic demo models only. No providers were contacted.",
+  "cases": [
+    {
+      "case": "سؤال عربي",
+      "classification": "qa",
+      "difficulty": "easy",
+      "strategy": "single",
+      "first_model": "groq/fast-demo",
+      "reason": "مسار سريع؛ الأولوية للقدرة على qa ثم السرعة والموثوقية؛ groq/fast-demo",
+      "routing_overhead_ms": 5.15
+    },
+    {
+      "case": "إصلاح Python",
+      "classification": "debugging",
+      "difficulty": "medium",
+      "strategy": "single",
+      "first_model": "cloud/coder-demo",
+      "reason": "مسار سريع؛ الأولوية للقدرة على debugging ثم السرعة والموثوقية؛ cloud/coder-demo",
+      "routing_overhead_ms": 0.13
+    },
+    {
+      "case": "تلخيص PDF طويل",
+      "classification": "long_document",
+      "difficulty": "medium",
+      "strategy": "map_reduce",
+      "first_model": "vision/vision-demo",
+      "reason": "مسار ذكي؛ الأولوية للقدرة على long_document ثم السرعة والموثوقية؛ vision/vision-demo",
+      "routing_overhead_ms": 0.26
+    },
+    {
+      "case": "سؤال عن صورة",
+      "classification": "vision",
+      "difficulty": "medium",
+      "strategy": "single",
+      "first_model": "vision/vision-demo",
+      "reason": "مسار سريع؛ الأولوية للقدرة على vision ثم السرعة والموثوقية؛ vision/vision-demo",
+      "routing_overhead_ms": 0.06
+    },
+    {
+      "case": "مشروع متعدد الخطوات",
+      "classification": "tool",
+      "difficulty": "medium",
+      "strategy": "plan_execute",
+      "first_model": "cloud/coder-demo",
+      "reason": "مسار ذكي؛ الأولوية للقدرة على tool ثم السرعة والموثوقية؛ cloud/coder-demo",
+      "routing_overhead_ms": 0.06
+    }
+  ]
+}

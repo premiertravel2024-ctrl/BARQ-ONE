@@ -1,0 +1,182 @@
+[
+  {
+    "path": ".github/workflows/windows-build.yml",
+    "status": "modified"
+  },
+  {
+    "path": "BUILD_BARQ.bat",
+    "status": "modified"
+  },
+  {
+    "path": "BUILD_WINDOWS_EXE.bat",
+    "status": "modified"
+  },
+  {
+    "path": "README.md",
+    "status": "modified"
+  },
+  {
+    "path": "SOURCE_MANIFEST_SHA256.json",
+    "status": "modified"
+  },
+  {
+    "path": "START_HERE_AR.txt",
+    "status": "modified"
+  },
+  {
+    "path": "WINDOWS_BUILD_GUIDE_AR.md",
+    "status": "modified"
+  },
+  {
+    "path": "api.py",
+    "status": "modified"
+  },
+  {
+    "path": "brain/coordinator.py",
+    "status": "modified"
+  },
+  {
+    "path": "coding/diagnostics.py",
+    "status": "modified"
+  },
+  {
+    "path": "coding/quality.py",
+    "status": "modified"
+  },
+  {
+    "path": "core/version.py",
+    "status": "modified"
+  },
+  {
+    "path": "docs/v2.21/BUILD_REPORT_AR.md",
+    "status": "added"
+  },
+  {
+    "path": "docs/v2.21/CHANGED_FILES.json",
+    "status": "added"
+  },
+  {
+    "path": "docs/v2.21/CHANGED_FILES.md",
+    "status": "added"
+  },
+  {
+    "path": "frontend/package-lock.json",
+    "status": "modified"
+  },
+  {
+    "path": "frontend/package.json",
+    "status": "modified"
+  },
+  {
+    "path": "frontend/src/App.tsx",
+    "status": "modified"
+  },
+  {
+    "path": "frontend/src/components/layout/SettingsModal.tsx",
+    "status": "modified"
+  },
+  {
+    "path": "frontend/src/components/workspace/WorkspaceStudio.tsx",
+    "status": "modified"
+  },
+  {
+    "path": "frontend/src/lib/agentOutcome.ts",
+    "status": "modified"
+  },
+  {
+    "path": "frontend/src/lib/taskActions.ts",
+    "status": "modified"
+  },
+  {
+    "path": "frontend/src/lib/workspaceSync.ts",
+    "status": "added"
+  },
+  {
+    "path": "frontend/tests/workspace-sync.ts",
+    "status": "added"
+  },
+  {
+    "path": "scripts/build_windows.ps1",
+    "status": "modified"
+  },
+  {
+    "path": "scripts/installer.iss",
+    "status": "modified"
+  },
+  {
+    "path": "scripts/ui_approval_smoke.py",
+    "status": "modified"
+  },
+  {
+    "path": "scripts/ui_workspace_smoke.py",
+    "status": "added"
+  },
+  {
+    "path": "scripts/verify_source_integrity.py",
+    "status": "modified"
+  },
+  {
+    "path": "tests/test_ui_upgrade_v22.py",
+    "status": "modified"
+  },
+  {
+    "path": "tests/test_v221_workspace_integrity.py",
+    "status": "added"
+  },
+  {
+    "path": "verification/v2.21/approvals.json",
+    "status": "added"
+  },
+  {
+    "path": "verification/v2.21/approvals.log",
+    "status": "added"
+  },
+  {
+    "path": "verification/v2.21/browser.json",
+    "status": "added"
+  },
+  {
+    "path": "verification/v2.21/browser.log",
+    "status": "added"
+  },
+  {
+    "path": "verification/v2.21/frontend.log",
+    "status": "added"
+  },
+  {
+    "path": "verification/v2.21/self-test.json",
+    "status": "added"
+  },
+  {
+    "path": "verification/v2.21/tests.log",
+    "status": "added"
+  },
+  {
+    "path": "verification/v2.21/tests.xml",
+    "status": "added"
+  },
+  {
+    "path": "web/react/assets/index-BfLhEWa2.js",
+    "status": "added"
+  },
+  {
+    "path": "web/react/assets/index-D-6OzpxL.js",
+    "status": "removed"
+  },
+  {
+    "path": "web/react/assets/index-DDnENA4_.css",
+    "status": "added"
+  },
+  {
+    "path": "web/react/assets/index-aIN40n1e.css",
+    "status": "removed"
+  },
+  {
+    "path": "web/react/index.html",
+    "status": "modified"
+  },
+  {
+    "path": "workspace/manager.py",
+    "status": "modified"
+  }
+]

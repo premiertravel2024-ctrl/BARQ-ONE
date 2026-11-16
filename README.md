@@ -1,6 +1,3 @@
-Warning: truncated output (original token count: 5725)
-Total output lines: 232
-
 # تحديث 2.29.0 — مكالمة صوتية متواصلة
 
 التقرير: docs/v2.29/LIVE_VOICE_AR.md. اضغط أيقونة موجات الصوت في الشات بعد ضبط Gemini. حزمة سورس؛ تشغيل Windows والمكالمة الحقيقية غير مختبرين هنا.
@@ -112,7 +109,25 @@ REA is integrated as a configurable **MCP client**, not a hardcoded guessed CLI.
 
 ## Voice
 
-Gemini transcription, Egyptian-Arabic prompt style, Charon and other male voices, and experimental Gemini Live flow are included. They require a compatible **Google API key, online access, microphone/audio devices and available free quota**. Egyptian accent fidelity, interrupts and latency must be tested on the real Windows machine. **Offline Ollama text chat continues without Internet, but Gemini speech recognitio…725 tokens truncated…rolled project memory note is stored in `coding/project_state.py` (local SQLite). Sharing the note with the selected model is opt-in for each coding plan. The metadata-only agent activity log does not save prompts, source contents, command arguments or secrets.
+Gemini transcription, Egyptian-Arabic prompt style, Charon and other male voices, and experimental Gemini Live flow are included. They require a compatible **Google API key, online access, microphone/audio devices and available free quota**. Egyptian accent fidelity, interrupts and latency must be tested on the real Windows machine. **Offline Ollama text chat continues without Internet, but Gemini speech recognition and TTS do not.**
+
+## Quality gates and outstanding integration checks
+
+Run `python -m pytest -q` and `node --check` on the script extracted from `web/index.html`. Test with offline Ollama already installed, a live free-tier cloud account, REA MCP tool discovery, actual GitHub CLI authorization, the Windows package, clean-install/upgrade/uninstall cycles, microphone permissions and end-to-end EXE builds. Successful unit tests are not proof that these external integrations work on every machine.
+
+**User release agreement:** do not hand off a partial ZIP/installer or claim final delivery before the complete Windows acceptance test on the target PC.
+
+## React interface expansion (October 2026)
+
+The `frontend/` subproject contains the complete React 18 / Vite / TypeScript / Tailwind / Framer Motion UI. It keeps the original Python agent tools and routing intact; the main React chat flow now uses the real FastAPI router through `frontend/src/lib/backend.ts` and `/v1/router/chat/stream`. The isolated `frontend/src/lib/mockAI.ts` remains only as an optional showcase/test fixture; it is not called by the production chat flow. See [`frontend/README.md`](frontend/README.md) for architecture, full file tree, dev commands and behavioral limitations. Once `npm run build` succeeds, FastAPI serves React at `/` and `/playground`; until then the legacy UI remains intact. The Windows build script now builds React before packing files into the executable. Node.js/npm package installation and `npm run build` still need a successful run, followed by Windows/Edge WebView, real providers, and accessibility testing before any final installer release.
+
+## React-to-backend integration progress (current working tree)
+
+- `frontend/src/lib/backend.ts`: abortable SSE events (`routing`, `context`, `model`, `token`, `metrics`, `done`, `error`) carrying actual upstream model/provider tokens as they arrive. A route may fall back before its first visible token; a mid-answer failure is explicitly marked incomplete rather than mixing another model into the answer.
+- The React store fetches real provider/model status, dynamically disables unavailable selections, and syncs completed conversations to the local SQLite history. Browser-local history remains available if the local API fails. The default UI locale is Arabic RTL.
+- `frontend/src/components/workspace/WorkspaceStudio.tsx`: inspect projects, read files, run static diagnostics, search, propose agent steps, approve tools, preview/save/undo edits, inspect build profiles and approved Windows jobs, discover MCP servers including REA, and preview/approve GitHub actions.
+- `frontend/src/components/workspace/ModelControls.tsx`: configure free-tier provider priorities, enable/disable providers, save API keys via the operating system secret store on Windows, and test connection. Secrets are not persisted in localStorage.
+- A user-controlled project memory note is stored in `coding/project_state.py` (local SQLite). Sharing the note with the selected model is opt-in for each coding plan. The metadata-only agent activity log does not save prompts, source contents, command arguments or secrets.
 - Document attachments supported by the backend are uploaded for text extraction only when sent; original file blobs remain in memory and are not saved to the chat database. Image analysis is not supported by this route and produces an explicit error rather than a fabricated result.
 - React voice recording is transcribed through the local Gemini voice endpoint; AI messages try the configured Gemini male TTS voice, with system speech as a best-effort fallback. Gemini needs Internet.
 

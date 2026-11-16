@@ -1,0 +1,8 @@
+tools:
+  - {id: project_tests, label: Python project tests (pytest, approved run), type: test, action: pytest, enabled: true, timeout_seconds: 120}
+  - {id: github_status, label: Git status (read-only), type: git, action: status, enabled: true}
+  - {id: github_log, label: Recent Git commits (read-only), type: git, action: log, enabled: true}
+  - {id: github_diff, label: Git diff (read-only), type: git, action: diff, enabled: true}
+  - {id: gh_status, label: GitHub authentication status (read-only), type: gh, action: auth, enabled: true}
+  - {id: gh_pr_list, label: GitHub pull requests (read-only), type: gh, action: prs, enabled: true}
+  - {id: rea, label: Legacy REA CLI help (prefer MCP), type: external, enabled: false, executable_env: REA_COMMAND, arguments: ['--help'], timeout_seconds: 20}

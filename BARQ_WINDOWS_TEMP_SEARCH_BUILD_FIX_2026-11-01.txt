@@ -1,0 +1,32 @@
+BARQ v2.30 - Windows Temp search/index build gate repair
+2026-11-01
+
+Problem:
+On Windows, pytest tmp_path is usually under %LOCALAPPDATA%\Temp.
+The file search policy permitted a specifically allowlisted test temp folder,
+but device_index._safe_path excluded every AppData path. This made content
+and device search tests fail on Windows despite passing on Linux.
+
+Fix:
+* Only for a user-approved root under the REAL Windows user's Temp directory,
+  allow traversing its AppData ancestor.
+* Retain exclusions for credentials, keys, .ssh, node_modules, symlinks,
+  sensitive or system folders.
+* A drive-wide index is never granted this Temp exception.
+* Apply this scoped exception consistently in metadata indexing, searching,
+  document content searching and the local media catalog.
+* Add cross-platform regression tests emulating Windows temp directories.
+
+Install options:
+A) For the full source: extract BARQ/ into a NEW folder and run
+   FIX_AND_BUILD_BARQ.bat or BUILD_BARQ.bat from inside BARQ/.
+B) For the small patch: extract contents into your EXISTING BARQ source folder
+   (beside BUILD_BARQ.bat), run APPLY_BARQ_SEARCH_FIX.bat and then BUILD_BARQ.bat.
+   The patch checks original file hashes and backs up originals first.
+   It will refuse to overwrite unexpected versions. If it refuses, use the
+   full-source zip or supply your current files for a merge.
+
+Validation:
+50 related Python tests passed locally, including 3 new regression tests;
+Windows executable and complete Windows pytest suite not run here.
+Never run installer.iss directly before BARQ.exe is built.

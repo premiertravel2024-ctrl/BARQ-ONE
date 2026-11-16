@@ -1,0 +1,19 @@
+# Shipping-time immutable safety policy: not loaded from writable user state.
+# Entries mean only that BARQ may attempt these no-purchase paths; they do NOT
+# certify the upstream tier, quota, or continued availability.
+allow:
+  gemini: [gemini-3.8-flash, gemini-3.5-flash-lite, gemini-3.5-flash]
+  groq: [openai/gpt-oss-120b, openai/gpt-oss-20b, qwen/qwen3.8-27b]
+  nvidia: [deepseek-ai/deepseek-v4.1-flash, google/gemma-4-31b-it, openai/gpt-oss-20b, nvidia/nemotron-3-ultra-550b-a55b]
+  openrouter: [openrouter/free, google/gemma-4-31b-it:free, cohere/north-mini-code:free, nvidia/nemotron-3-ultra-550b-a55b:free]
+  cloudflare: ['@cf/openai/gpt-oss-120b', '@cf/google/gemma-4-26b-a4b-it', '@cf/zai-org/glm-4.7-flash']
+  zai: [glm-4.7-flash, glm-4.6v-flash]
+  # Unverified/blocked providers deliberately have NO allowed models.
+block:
+  - '@cf/moonshotai/kimi-k2.6'
+  - '@cf/moonshotai/kimi-k2.7-code'
+  - '@cf/zai-org/glm-5.2'
+  - '@cf/zai-org/glm-5.3'
+  - '@cf/zai-org/glm-5.3-flash'
+  - '@cf/deepseek-ai/deepseek-v4-flash-0731'
+  - '@cf/deepseek-ai/deepseek-v4-pro-0813'

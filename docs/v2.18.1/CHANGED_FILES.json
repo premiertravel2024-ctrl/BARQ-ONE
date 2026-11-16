@@ -1,0 +1,147 @@
+[
+  {
+    "path": ".github/workflows/windows-build.yml",
+    "status": "modified",
+    "reason_ar": "تحديث إصدار التشغيل أو بيانات البناء والواجهة إلى 2.18.1 دون تغيير الاعتماديات."
+  },
+  {
+    "path": "BUILD_BARQ.bat",
+    "status": "modified",
+    "reason_ar": "تحديث إصدار التشغيل أو بيانات البناء والواجهة إلى 2.18.1 دون تغيير الاعتماديات."
+  },
+  {
+    "path": "BUILD_WINDOWS_EXE.bat",
+    "status": "modified",
+    "reason_ar": "تحديث إصدار التشغيل أو بيانات البناء والواجهة إلى 2.18.1 دون تغيير الاعتماديات."
+  },
+  {
+    "path": "README.md",
+    "status": "modified",
+    "reason_ar": "تقرير السبب والإصلاح والنتائج وتعليمات البناء وقائمة الملفات."
+  },
+  {
+    "path": "core/version.py",
+    "status": "modified",
+    "reason_ar": "تحديث إصدار التشغيل أو بيانات البناء والواجهة إلى 2.18.1 دون تغيير الاعتماديات."
+  },
+  {
+    "path": "docs/v2.18.1/BUILD_REPORT_AR.md",
+    "status": "added",
+    "reason_ar": "تقرير السبب والإصلاح والنتائج وتعليمات البناء وقائمة الملفات."
+  },
+  {
+    "path": "docs/v2.18.1/CHANGED_FILES.json",
+    "status": "added",
+    "reason_ar": "تقرير السبب والإصلاح والنتائج وتعليمات البناء وقائمة الملفات."
+  },
+  {
+    "path": "docs/v2.18.1/CHANGED_FILES.md",
+    "status": "added",
+    "reason_ar": "تقرير السبب والإصلاح والنتائج وتعليمات البناء وقائمة الملفات."
+  },
+  {
+    "path": "frontend/package-lock.json",
+    "status": "modified",
+    "reason_ar": "تحديث إصدار التشغيل أو بيانات البناء والواجهة إلى 2.18.1 دون تغيير الاعتماديات."
+  },
+  {
+    "path": "frontend/package.json",
+    "status": "modified",
+    "reason_ar": "تحديث إصدار التشغيل أو بيانات البناء والواجهة إلى 2.18.1 دون تغيير الاعتماديات."
+  },
+  {
+    "path": "frontend/src/components/layout/SettingsModal.tsx",
+    "status": "modified",
+    "reason_ar": "تحديث إصدار التشغيل أو بيانات البناء والواجهة إلى 2.18.1 دون تغيير الاعتماديات."
+  },
+  {
+    "path": "frontend/src/components/workspace/WorkspaceStudio.tsx",
+    "status": "modified",
+    "reason_ar": "تحديث إصدار التشغيل أو بيانات البناء والواجهة إلى 2.18.1 دون تغيير الاعتماديات."
+  },
+  {
+    "path": "scripts/build_windows.ps1",
+    "status": "modified",
+    "reason_ar": "تحديث إصدار التشغيل أو بيانات البناء والواجهة إلى 2.18.1 دون تغيير الاعتماديات."
+  },
+  {
+    "path": "scripts/check_resource_profile.py",
+    "status": "added",
+    "reason_ar": "تشغيل المجموعة كاملة مع محاكاة مدخلات RAM وCPU المنخفضة والمرتفعة."
+  },
+  {
+    "path": "scripts/installer.iss",
+    "status": "modified",
+    "reason_ar": "تحديث إصدار التشغيل أو بيانات البناء والواجهة إلى 2.18.1 دون تغيير الاعتماديات."
+  },
+  {
+    "path": "tests/test_context_and_ollama_speed.py",
+    "status": "modified",
+    "reason_ar": "عزل الموارد والبيئة؛ 8 حالات دقيقة للطلب الأصلي وحد السياق بدل الاعتماد على الجهاز المضيف."
+  },
+  {
+    "path": "verification/v2.18.1/frontend-validation.log",
+    "status": "added",
+    "reason_ar": "سجلات إعادة الإنتاج والتحقق الفعلي لهذه النسخة."
+  },
+  {
+    "path": "verification/v2.18.1/high-memory.log",
+    "status": "added",
+    "reason_ar": "سجلات إعادة الإنتاج والتحقق الفعلي لهذه النسخة."
+  },
+  {
+    "path": "verification/v2.18.1/high-memory.xml",
+    "status": "added",
+    "reason_ar": "سجلات إعادة الإنتاج والتحقق الفعلي لهذه النسخة."
+  },
+  {
+    "path": "verification/v2.18.1/low-memory.log",
+    "status": "added",
+    "reason_ar": "سجلات إعادة الإنتاج والتحقق الفعلي لهذه النسخة."
+  },
+  {
+    "path": "verification/v2.18.1/low-memory.xml",
+    "status": "added",
+    "reason_ar": "سجلات إعادة الإنتاج والتحقق الفعلي لهذه النسخة."
+  },
+  {
+    "path": "verification/v2.18.1/normal.log",
+    "status": "added",
+    "reason_ar": "سجلات إعادة الإنتاج والتحقق الفعلي لهذه النسخة."
+  },
+  {
+    "path": "verification/v2.18.1/normal.xml",
+    "status": "added",
+    "reason_ar": "سجلات إعادة الإنتاج والتحقق الفعلي لهذه النسخة."
+  },
+  {
+    "path": "verification/v2.18.1/reproduced-low-memory.log",
+    "status": "added",
+    "reason_ar": "سجلات إعادة الإنتاج والتحقق الفعلي لهذه النسخة."
+  },
+  {
+    "path": "verification/v2.18.1/source-self-test.json",
+    "status": "added",
+    "reason_ar": "سجلات إعادة الإنتاج والتحقق الفعلي لهذه النسخة."
+  },
+  {
+    "path": "verification/v2.18.1/test-runs.json",
+    "status": "added",
+    "reason_ar": "سجلات إعادة الإنتاج والتحقق الفعلي لهذه النسخة."
+  },
+  {
+    "path": "web/react/assets/index-DmkoxnzZ.js",
+    "status": "removed",
+    "reason_ar": "أصول React المعاد بناؤها من سورس 2.18.1."
+  },
+  {
+    "path": "web/react/assets/index-Lf2OkClE.js",
+    "status": "added",
+    "reason_ar": "أصول React المعاد بناؤها من سورس 2.18.1."
+  },
+  {
+    "path": "web/react/index.html",
+    "status": "modified",
+    "reason_ar": "أصول React المعاد بناؤها من سورس 2.18.1."
+  }
+]

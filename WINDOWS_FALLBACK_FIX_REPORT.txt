@@ -1,0 +1,9 @@
+BARQ v2.21 — Windows cloud fallback regression fix
+
+Changed file: tests/test_cloud_diversity_and_dropdown.py
+Cause: stream_run imports router.free_policy.blocked at call time; fixture patched only router.select.blocked. Real Windows saved billing blocks therefore removed Gemini during offline synthetic tests.
+Change: isolate router.free_policy.blocked in the autouse fake fixture as well. Added regression simulating a real saved Gemini billing block. Production policy, router and Free Guard unchanged.
+
+Validation: 22 targeted tests passed; 842 passed, 6 failed in complete local suite. All six failures need esbuild installed in this Linux test environment; user reported Windows frontend npm build succeeded. Source integrity PASS, release consistency PASS. Windows EXE not built or tested here.
+
+IMPORTANT: Test fixture isolation does not override billing blocks in production. If Gemini is billing-blocked in actual runtime, it stays blocked.

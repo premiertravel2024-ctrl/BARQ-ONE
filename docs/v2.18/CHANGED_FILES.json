@@ -1,0 +1,779 @@
+[
+  {
+    "path": ".env.example",
+    "status": "modified",
+    "reason_ar": "توثيق المهلات والمحاولات وميزانية المهمة وسياق Ollama التكيفي.",
+    "before_sha256": "d1db9bc50781091f800f88f70d809007793e0e783c5281dbcf90d0adef9e4b39",
+    "after_sha256": "99df307e080a7ace54e23225dc2af7dda43246b47e503771e16f4e3fe809d9c8"
+  },
+  {
+    "path": ".github/workflows/windows-build.yml",
+    "status": "modified",
+    "reason_ar": "إصدار 2.18 ورفع سجلات الفشل وفحص المثبت وبصمات Setup وPortable.",
+    "before_sha256": "e3a8a09f7c68ec7eab5e2710d294e4b2c011da4d340a430390a17e94dcdc31b7",
+    "after_sha256": "081fcfbcd15d04d8ad8b5afd41e629838e0243cd3a52f5eb7c91911d7af3dfec"
+  },
+  {
+    "path": "BUILD_BARQ.bat",
+    "status": "modified",
+    "reason_ar": "تحديث بيانات الإصدار 2.18.0 واتساق الواجهة ومدخلات البناء دون تغيير الاعتماديات المقفلة.",
+    "before_sha256": "bff60c181d2e55c1f75b2aea73735d41da5cd279660d24a10c8b5d540fdc3b29",
+    "after_sha256": "08849140c050bc06cbea15ddb49b3cb33acb753ed7272021739ad4f43b975c1b"
+  },
+  {
+    "path": "BUILD_WINDOWS_EXE.bat",
+    "status": "modified",
+    "reason_ar": "تحديث بيانات الإصدار 2.18.0 واتساق الواجهة ومدخلات البناء دون تغيير الاعتماديات المقفلة.",
+    "before_sha256": "95c98c4751c2cf2f161e8425d33552f8bdb2f332258de7a70eefe2b6c906d469",
+    "after_sha256": "5ec967536b7598fee14402834959570fd5bcd1618b0d1fe29b2be58bf5fc4b99"
+  },
+  {
+    "path": "README.md",
+    "status": "modified",
+    "reason_ar": "إبراز تقرير v2.18 وحدود اعتماد Windows قبل الملاحظات التاريخية.",
+    "before_sha256": "050550661c5ab2c00f579c2ccda6882ae641675bea9baffcffa2068805949443",
+    "after_sha256": "49da00bc83b16863ada86c76e776f080c7f038ae965df14fb51b5b880afac149"
+  },
+  {
+    "path": "agent/orchestrator.py",
+    "status": "modified",
+    "reason_ar": "Schema صارم، استكمال فحص متوقف، أدوات البناء واختبارات مجلد فرعي وميزانية جولات محدودة.",
+    "before_sha256": "1b7821419e3c99699b8e3135a9b3846ca854d88d24bb0151af65fc737bf30333",
+    "after_sha256": "891f8771d5a70a6f60665f10529a2c8f236f11f5eeeafc2d5013dc2cbad98f21"
+  },
+  {
+    "path": "agent/task_intent.py",
+    "status": "modified",
+    "reason_ar": "فهم متابعة المشروع والخطأ والتمييز بين بناء مشروع قائم وإنشاء مشروع جديد.",
+    "before_sha256": "e0c5893a7d866915b9e6c3452c36a95b8b073640eeda6ae1aff6402a146712d3",
+    "after_sha256": "953130cacec0d1d844b3da08ceb3b567eefcf2f464838d73d6f8ce479948c6de"
+  },
+  {
+    "path": "api.py",
+    "status": "modified",
+    "reason_ar": "تقييد العميل والأصل وIPv6 وWebSocket وحدود التخطيط، وإعادة استخدام جرد النماذج.",
+    "before_sha256": "31ced48196bd9a3138fd65867a83a543fa4462f674d3b26fad014a308a8e45c5",
+    "after_sha256": "e369910a0c5dfcf39fcb9dd2cc3e145939c0cd3ba43ce2837982d37b0a2ec0dd"
+  },
+  {
+    "path": "api_routes/models.py",
+    "status": "added",
+    "reason_ar": "مصدر مركزي لحالة النماذج وأسباب عدم الجاهزية.",
+    "before_sha256": null,
+    "after_sha256": "6289fc0d5846f8d1854c363a681221130b25f19fe329254cc208c640c0d19b46"
+  },
+  {
+    "path": "brain/coordinator.py",
+    "status": "modified",
+    "reason_ar": "استعادة checkpoints وملكية المحادثة وحالة الإنجاز واستكمال الحفظ دون إعادة العملية.",
+    "before_sha256": "bcf269807ea9b018f958fe61952f120ea6aa5234af0f07000cf2661c00bcd009",
+    "after_sha256": "247c837e7af4ab6f18202058cfa8f6e902e57f710d7fe24f6c1323fdc3a3d392"
+  },
+  {
+    "path": "brain/state.py",
+    "status": "modified",
+    "reason_ar": "تحديث ذري للأحداث والأدلة، وحفظ سجل الفحوص المنفذة بعد الحفظ.",
+    "before_sha256": "567fa7447a548e97b2607e907ad1934a937308747f73d7935ef287649d8149c4",
+    "after_sha256": "065c40c33cd8f8c6ea60bf7a93d124c767c03efcee473169fe525fdd4ca9e616"
+  },
+  {
+    "path": "brain/understanding.py",
+    "status": "modified",
+    "reason_ar": "محلل JSON المركزي وفهم المتابعات من المهمة النشطة.",
+    "before_sha256": "638189ce90cdfcebff352ced2ac0d2e1a888013fbf502db0b2492ee385f0d874",
+    "after_sha256": "0f90f8be5d60134e7c69cf9deae3582e67df2620b9d5d49872bd5fd016bfb365"
+  },
+  {
+    "path": "build/jobs.py",
+    "status": "modified",
+    "reason_ar": "ربط البناء بالشات، رفض مخرجات قديمة، وقراءة سجل العملية بذاكرة محدودة.",
+    "before_sha256": "2e551ddc3b9fe583af877231d2d5182fcd75f215111206a59a39068ad027d709",
+    "after_sha256": "6a90a5ce75c2c511f368dd65156c53ac27f93c66990cd3a1be210a1c774bac2c"
+  },
+  {
+    "path": "core/adaptive_resources.py",
+    "status": "modified",
+    "reason_ar": "تحديد سياق Ollama من موارد الجهاز ونمط الأداء وحد النموذج.",
+    "before_sha256": "dcccb7ae59c5751e11a43f9f40647d9ef05dbe8b1ec3b8ad958efc3b1070ed1e",
+    "after_sha256": "b959141508487250d2857a89c6bdc18f64649a93d88d4dba1981098a825eee61"
+  },
+  {
+    "path": "core/json_contracts.py",
+    "status": "added",
+    "reason_ar": "استخراج JSON واحد مع رفض الحقول المكررة والوثائق المتعددة.",
+    "before_sha256": null,
+    "after_sha256": "856656adb2aa052d96f894b313e4124965cf36922025c89cfc3fea39a5512353"
+  },
+  {
+    "path": "core/version.py",
+    "status": "added",
+    "reason_ar": "مصدر إصدار التشغيل الموحد 2.18.0.",
+    "before_sha256": null,
+    "after_sha256": "f10436c22bbeb58aa1b05e708253717bd25a68290ea4da30855d84cc211544af"
+  },
+  {
+    "path": "desktop.py",
+    "status": "modified",
+    "reason_ar": "--version واختبار HTTP والتخطيط والإغلاق وحماية بيانات المستخدم أثناء self-test.",
+    "before_sha256": "8da6cb63f23c08db34f383cd6f455f5a89448d2aa334bf142f7c7bb51bc2ec72",
+    "after_sha256": "633d17be2fa5d3dc4de78fae373579ce54d26c5593f3fcbd9509633472c1a301"
+  },
+  {
+    "path": "docs/v2.18/BUILD_REPORT_AR.md",
+    "status": "added",
+    "reason_ar": "توثيق الإصلاحات والقبول والملفات المعدلة وتعليمات البناء وحدود التحقق.",
+    "before_sha256": null,
+    "after_sha256": "308a50ced1047f8709d72842beca9baf81a935e3c50e853da2912b7a1eb9f32a"
+  },
+  {
+    "path": "docs/v2.18/CHANGED_FILES.json",
+    "status": "added",
+    "reason_ar": "توثيق الإصلاحات والقبول والملفات المعدلة وتعليمات البناء وحدود التحقق.",
+    "before_sha256": null,
+    "after_sha256": null
+  },
+  {
+    "path": "docs/v2.18/CHANGED_FILES.md",
+    "status": "added",
+    "reason_ar": "توثيق الإصلاحات والقبول والملفات المعدلة وتعليمات البناء وحدود التحقق.",
+    "before_sha256": null,
+    "after_sha256": null
+  },
+  {
+    "path": "docs/v2.18/INSTALL_AR.md",
+    "status": "added",
+    "reason_ar": "توثيق الإصلاحات والقبول والملفات المعدلة وتعليمات البناء وحدود التحقق.",
+    "before_sha256": null,
+    "after_sha256": "4d32249b75e7c7f6eef2f2f25d1eb584924fad9ea73e0fa2060a84637c64998b"
+  },
+  {
+    "path": "frontend/package-lock.json",
+    "status": "modified",
+    "reason_ar": "تحديث بيانات الإصدار 2.18.0 واتساق الواجهة ومدخلات البناء دون تغيير الاعتماديات المقفلة.",
+    "before_sha256": "9130321bf5a4723881d192239d2ec5b087a6c8433954f9108085465d9819fbb2",
+    "after_sha256": "1bf19915a230677fabd69cf462358ab9147442aedd7d8a31c3c13ae30f66946a"
+  },
+  {
+    "path": "frontend/package.json",
+    "status": "modified",
+    "reason_ar": "تحديث بيانات الإصدار 2.18.0 واتساق الواجهة ومدخلات البناء دون تغيير الاعتماديات المقفلة.",
+    "before_sha256": "f989ebc5141302716e5613e99eb4dfc5e66359b5b3080a5ee5fa88c148ff4058",
+    "after_sha256": "3bc55d114c3bfe05b228238e9960c6b48c3a96384532f23afd744cfb0e507201"
+  },
+  {
+    "path": "frontend/src/components/chat/Message.tsx",
+    "status": "modified",
+    "reason_ar": "توحيد حالة التنفيذ وإعادة التخطيط وحفظ إيصال الملف عند انقطاع الاستكمال.",
+    "before_sha256": "ccbae06146065bb5f5465f50a3e11c9878dcf68d9f42bfd6053e694957d36c5d",
+    "after_sha256": "099c7d24e9f4b328c6b9b090d77044b242b745d87f20b4510b2ee8e52e18e557"
+  },
+  {
+    "path": "frontend/src/components/chat/ModelSelector.tsx",
+    "status": "modified",
+    "reason_ar": "عرض سبب عدم جاهزية النموذج الذي يعيده الخادم.",
+    "before_sha256": "83dfc8c01c612ad1da0d84c6bb019375c2e3e4eff454477aef00d5d37453a687",
+    "after_sha256": "d3133c813788f4fde2aab98b26a95bc345c28d4405d8c9a03f40659b01919fcc"
+  },
+  {
+    "path": "frontend/src/components/layout/SettingsModal.tsx",
+    "status": "modified",
+    "reason_ar": "تحديث بيانات الإصدار 2.18.0 واتساق الواجهة ومدخلات البناء دون تغيير الاعتماديات المقفلة.",
+    "before_sha256": "2be8800b486197125eefa4ad3397ed1918ce3517620b8a4827b7f7096c55d379",
+    "after_sha256": "7cf5640a4121d45f3ca81b1ecc5a82f9d8f2bf253aa43d2ccb942a8e033edd67"
+  },
+  {
+    "path": "frontend/src/components/workspace/WorkspaceStudio.tsx",
+    "status": "modified",
+    "reason_ar": "تحديث بيانات الإصدار 2.18.0 واتساق الواجهة ومدخلات البناء دون تغيير الاعتماديات المقفلة.",
+    "before_sha256": "8ea6992482488a3ac75911939fa38ebd4ea74daa149c9c945591c935b7eef927",
+    "after_sha256": "e0c683c30ceee6e761041218db2de5aba1edb8603575d1e0fc9dd2f379d41e37"
+  },
+  {
+    "path": "frontend/src/lib/agentOutcome.ts",
+    "status": "added",
+    "reason_ar": "تحويل موحد ومستقل عن DOM لحالات المهمة.",
+    "before_sha256": null,
+    "after_sha256": "09653f90d494e92c4e242abf07c5eada3c3b6b8f3de2863c7249637c761961e0"
+  },
+  {
+    "path": "frontend/src/lib/backend.ts",
+    "status": "modified",
+    "reason_ar": "نقل سبب عدم جاهزية النموذج إلى الواجهة.",
+    "before_sha256": "31b07fae75bfc8dfae5debe43670d4cf70ed7952a5fbfdfd0a04aeb79ee8c77c",
+    "after_sha256": "53a2002c1f1f682fb4175de45f4cefd21167a6bb5875749ea2546b62e6aa789a"
+  },
+  {
+    "path": "frontend/src/lib/chat.ts",
+    "status": "modified",
+    "reason_ar": "استكمال paused وإيصالات الحفظ وفصل التنقل عن نجاح العمليات.",
+    "before_sha256": "7067168db3e4a50b43bd0899452ba3404638c2ccccfaeba658bd21402f7c6980",
+    "after_sha256": "f7e2ff8b216f7d8d577f9408e0d0567e5e2420d4b7ca866f3475cf2ffce022ff"
+  },
+  {
+    "path": "frontend/src/lib/uiEvents.ts",
+    "status": "added",
+    "reason_ar": "إشعارات واجهة آمنة في Node وفي حال تعطل مستمع التنقل.",
+    "before_sha256": null,
+    "after_sha256": "337501901c3090f55cd634c4eab09633c2201c025b024c5d6f274332f45a6cf9"
+  },
+  {
+    "path": "frontend/src/store/index.ts",
+    "status": "modified",
+    "reason_ar": "حالة إيصال الحفظ وتعطل التخطيط ومصدر الهوية الافتراضي في الخادم.",
+    "before_sha256": "c35d9f301508706cb82de5598da662d9ba7e712f42c7cee0de2bb32200b535a6",
+    "after_sha256": "9c3a6e087781bd40501e392b7b4bde8e95f3c422ca2052939113e1db32e642f1"
+  },
+  {
+    "path": "frontend/tests/chat-coordination.ts",
+    "status": "modified",
+    "reason_ar": "تغطية سلوكية للأعطال والاستكمال وعدم إعادة الحفظ والتشغيل.",
+    "before_sha256": "37d1651f610fb2ce4d452bad462c943c31d11ad573a3d5b0b70d5d6f39d2dd99",
+    "after_sha256": "1f4318702bb72330728a055cfda54e7e18cfb03918ae829c611b3bc184709361"
+  },
+  {
+    "path": "main.py",
+    "status": "modified",
+    "reason_ar": "الإصدار المركزي وتمرير ردود CLI عبر Brain وشخصية برق.",
+    "before_sha256": "f4fd25e615a8a0146d6e9b83a6bf9b46b97b59508fbf5a054b045397c253de03",
+    "after_sha256": "b2d0ce8d6f8041f1040252642802b0a4b407cf4cab90dea39e917e730ab9daee"
+  },
+  {
+    "path": "providers/client.py",
+    "status": "modified",
+    "reason_ar": "المهلات الموحدة وطلبات Ollama الأصلية بسياق فعلي.",
+    "before_sha256": "23d5f3889a468b2ab60384b7a76d10404cadc254757ab69c73211628cb6ba0e3",
+    "after_sha256": "acd3ea7aaa01a6ce2b3f0fac39a1b2496fd5bf8b8534199726d5c6e2c606e0fe"
+  },
+  {
+    "path": "providers/reliability.py",
+    "status": "added",
+    "reason_ar": "إعدادات محدودة للمهلات وexponential backoff مع jitter.",
+    "before_sha256": null,
+    "after_sha256": "5ac8cd2314cf3ab5c4b3f15266cb905788c2a868b977337143a34bbd6cbb4c2c"
+  },
+  {
+    "path": "providers/streaming.py",
+    "status": "modified",
+    "reason_ar": "نفس مهلات وسياق Ollama للطلب المتدفق.",
+    "before_sha256": "16f63f7e5bde093334e923f60472066215f902ef1620ad40055194a5c6ef9c25",
+    "after_sha256": "ad8e833e10874164ba57ec8b3b4fd0c2ccb8775bbdaa88ec363e1dff5b61d005"
+  },
+  {
+    "path": "pytest.ini",
+    "status": "added",
+    "reason_ar": "تثبيت نطاق asyncio للاختبارات ومنع اختلاف الافتراضات بين الإصدارات.",
+    "before_sha256": null,
+    "after_sha256": "bda7a909340b6a797bc194a64092d27dfda893f358597e668567d0e903e23f6e"
+  },
+  {
+    "path": "requirements-test.txt",
+    "status": "added",
+    "reason_ar": "اعتماديات الاختبار دون فرض أدوات التغليف المكتبي.",
+    "before_sha256": null,
+    "after_sha256": "8b3b01747db99fff8e9b088fc9235a5a5004e903951259624daa7b3a5b3f49c0"
+  },
+  {
+    "path": "router/config.py",
+    "status": "modified",
+    "reason_ar": "رفض أولوية مزود خارج 0–100 أثناء التحميل.",
+    "before_sha256": "35e82bf70b0d7051f91e4708a691f435695eaa6f4c8d316ebb6b977463833703",
+    "after_sha256": "dbaac251467d667eb732a372232d7084c39e37c6b15207dc7ec28f534a1c56e2"
+  },
+  {
+    "path": "router/context.py",
+    "status": "modified",
+    "reason_ar": "مواءمة حجم السياق المختار مع حد Ollama والنموذج.",
+    "before_sha256": "3ec7434b1d3372a52ec96c2afbdde1c58b2e11739a3a8d4e4a840a6af93ea7e0",
+    "after_sha256": "58575c1c2e145a22826081f4b0f10464ea4fb006d5a60e2b71bf75237b291a9b"
+  },
+  {
+    "path": "router/engine.py",
+    "status": "modified",
+    "reason_ar": "محاولات مؤقتة محدودة، فحص الحصص في كل محاولة، وحد سجل القياسات.",
+    "before_sha256": "52798a35a0c2af9d84cbdaa310d52dff750786353e913a6898f3b8d855609526",
+    "after_sha256": "6add29bf761e12ef596be0719d06356481258b74fa50718c655bc48d26744da9"
+  },
+  {
+    "path": "scripts/build_short_path.py",
+    "status": "modified",
+    "reason_ar": "نسخ سجلات الفشل، وعدم إعادة إنشاء ZIP جرى التحقق منه، وفصل مخرجات recovery.",
+    "before_sha256": "c8854d59a94118d86df5e875d10bcc61ed1d473b9f6acdc7933986a2cfd3815c",
+    "after_sha256": "904ecd3cf12af85974b11b975836040c4853341263ad6ccc4a066020dd20fb99"
+  },
+  {
+    "path": "scripts/build_windows.ps1",
+    "status": "modified",
+    "reason_ar": "بوابات بناء مرتبة، سجلات XML، فحص المثبت، Portable وبصمات المخرجات.",
+    "before_sha256": "1fd2161b9e5aa89aebfcb1f155f0136c1120e0531e65e50981cb0f02ad71108a",
+    "after_sha256": "82fe534305f88c171b7f2048bba1991f4fd79785ceb5e9c43f2a8a7740562155"
+  },
+  {
+    "path": "scripts/chat_coordination_smoke.mjs",
+    "status": "modified",
+    "reason_ar": "اختبار fixture بديل لإثبات تمرير فشل عملية Node الفرعية.",
+    "before_sha256": "a827161b69131ec127af3389922f0e050b1b9d3799faea8c8e7d4ea11275f3e6",
+    "after_sha256": "3d56de37b6502fbf9e4ba189825f5d2ca0021ec1afbc07898fc5876271d4616e"
+  },
+  {
+    "path": "scripts/installer.iss",
+    "status": "modified",
+    "reason_ar": "إصدار جديد ومعرف smoke منفصل مع الحفاظ على معرف التثبيت العادي وعدم تغيير اختصاراته في الاختبار.",
+    "before_sha256": "2fe5c53828f96c0d0f253822cce55de10e559ae96790e09fcf29772e1801d8ba",
+    "after_sha256": "8b09d08912b42de4987005be7641ff3f48a18c4747969bde9005ecb2a022ecf2"
+  },
+  {
+    "path": "scripts/release_evidence.py",
+    "status": "added",
+    "reason_ar": "مطابقة مخرجات Windows واختبارات الملف المجمد والمثبت وSHA256.",
+    "before_sha256": null,
+    "after_sha256": "ac516f57c50850ca8ff3df08ccfd873c7a351859af075a83e822469d1c66c2ac"
+  },
+  {
+    "path": "scripts/smoke_install.ps1",
+    "status": "modified",
+    "reason_ar": "اختبار تثبيت الملف الناتج وتشغيله وإزالته في مسار مؤقت معزول.",
+    "before_sha256": "f42567dfc8e30f388b6e19e1f8b52180f2057a9f3709befb302ba0c6cdf7dfa6",
+    "after_sha256": "0bf854e4d447cb12606fb9815569226fc17ed111ecb732c042f59440c986524d"
+  },
+  {
+    "path": "scripts/ui_brain_smoke.py",
+    "status": "modified",
+    "reason_ar": "تحديث محددات مساحة العمل ومسار الشات الحقيقي والعودة من الهاتف دون شات ثانٍ.",
+    "before_sha256": "0ef832a99f77c2aaf44ec7d79ab2e03ff34460f3097e256cd707214f82696aae",
+    "after_sha256": "91c1d46f12013816c80e132f8e51b44aa6bfb2ef7d4604847bcc96a130867009"
+  },
+  {
+    "path": "scripts/verify_release_consistency.py",
+    "status": "modified",
+    "reason_ar": "إضافة فحص تطابق إصدار التشغيل المركزي مع بقية مدخلات البناء.",
+    "before_sha256": "16af803315c699fa8bc2f6e3bdc7890ab4e38e9b2149ef0e6ce492ba833a382a",
+    "after_sha256": "e035eafaeccd44a493f0ea3b9066388b87bd9f455f48b9da8ba38e75d3ed7adf"
+  },
+  {
+    "path": "scripts/verify_source_integrity.py",
+    "status": "modified",
+    "reason_ar": "إضافة ملفات العقود والاستعادة والتغليف الجديدة إلى فحص الاكتمال.",
+    "before_sha256": "f340305ec51989d526c8925f3c3f751d126110caf135b4a793a99dcf9129bd10",
+    "after_sha256": "7b8479508341da53f84146853938139757b5b2f5bdeef535ec85f485779e4227"
+  },
+  {
+    "path": "tests/test_adaptive_ui_v216.py",
+    "status": "modified",
+    "reason_ar": "تتبع الإصدار المركزي الحالي مع الحفاظ على فحوص السلوك وهوية التثبيت؛ لا يُثبت رقم الإصدار القديم.",
+    "before_sha256": "7689b715ff91aff473e013be1b66dfae26141b49f1b01d5801b72f1e9a438d8a",
+    "after_sha256": "bd2f5a5382d5649a96e83ec9d9d9dcc55bf9f809bf48453f1ad8e05151d81fd4"
+  },
+  {
+    "path": "tests/test_barq_brand.py",
+    "status": "modified",
+    "reason_ar": "تتبع الإصدار المركزي الحالي مع الحفاظ على فحوص السلوك وهوية التثبيت؛ لا يُثبت رقم الإصدار القديم.",
+    "before_sha256": "2516e62be88db5002a8f4656cb8eb1661a3244007493d1ebca65b0d76030e73d",
+    "after_sha256": "6c4f9bd6d7f5759234d60059942d2edd22cb739e4e882d99cfa6d0bfd1bcf66d"
+  },
+  {
+    "path": "tests/test_chat_smoke_launcher_regression.py",
+    "status": "modified",
+    "reason_ar": "استبدال فحص العبارات بتشغيل سلوكي حقيقي واختبار فشل الطفل.",
+    "before_sha256": "5caa292b7a672b32d777e9bd783ebdb631818b323732d4d61948fbeab3f605c4",
+    "after_sha256": "6e53c160fe8f5130b0466b4809cf4974be0e07b81166ef5e8751fe6e368cbc8f"
+  },
+  {
+    "path": "tests/test_frontend_build_gate_v2142.py",
+    "status": "modified",
+    "reason_ar": "تتبع الإصدار المركزي الحالي مع الحفاظ على فحوص السلوك وهوية التثبيت؛ لا يُثبت رقم الإصدار القديم.",
+    "before_sha256": "24c36da4b5b50ebe62d27622393a848d4b7d3e97d3becf001587dff65f125dbc",
+    "after_sha256": "f47cb3d7dee97f85e56f85ecc9298e96ac95a49a1f11175da3a44d30d63d57bd"
+  },
+  {
+    "path": "tests/test_guardian_v214.py",
+    "status": "modified",
+    "reason_ar": "تتبع الإصدار المركزي الحالي مع الحفاظ على فحوص السلوك وهوية التثبيت؛ لا يُثبت رقم الإصدار القديم.",
+    "before_sha256": "def23675bac0cc2fa0b326db310126d56c36aeff28e744730e8e76bb0adc3414",
+    "after_sha256": "b258b386b941bb3011e6d9821b9aab9aa8f07d5820119e2599fd1f54125ac2c3"
+  },
+  {
+    "path": "tests/test_provider_recovery_v217.py",
+    "status": "modified",
+    "reason_ar": "إثبات حالات frontend المشتركة بالتنفيذ بدل مطابقة نص implementation.",
+    "before_sha256": "e900eb51594b3a7a4aa64db7e46ca9f31da751d1bf32aeafd9687857617faa83",
+    "after_sha256": "9ea855dddc3e232ed17c4658e3f47d88908ad9d3c2f9fb6ee7d2a835b04744c9"
+  },
+  {
+    "path": "tests/test_unified_main_chat_execution.py",
+    "status": "modified",
+    "reason_ar": "إثبات إشعارات التنقل وتنسيق الشات بالتنفيذ مع إبقاء عقد الواجهة.",
+    "before_sha256": "6906e4d6f012c8c0fd1055b36cf7fd30282b707bb6b5d44dea1053eee87fad27",
+    "after_sha256": "089047f54306187c19b00bc313683a267bf3e6efeb2d30f385271ab07019988a"
+  },
+  {
+    "path": "tests/test_v217_stability.py",
+    "status": "modified",
+    "reason_ar": "تتبع الإصدار المركزي الحالي مع الحفاظ على فحوص السلوك وهوية التثبيت؛ لا يُثبت رقم الإصدار القديم.",
+    "before_sha256": "aa4ec1ac06c58210c753efff1712e6cf5cd359c098d117d27fc65678a01d2e36",
+    "after_sha256": "bc4c911951e60d29d709dbf307221086a3aa2f7f08b1b684de5efc6e0b945ac9"
+  },
+  {
+    "path": "tests/test_v218_execution.py",
+    "status": "added",
+    "reason_ar": "إنشاء ملفات وتعديلها وحفظها وتشغيل pytest فعليًا واختبار حجب البناء دون Windows.",
+    "before_sha256": null,
+    "after_sha256": "a684fa98a6ff707e3f07ba5397c917e5982ecb4e4e1987b768c8b010c77bc050"
+  },
+  {
+    "path": "tests/test_v218_recovery.py",
+    "status": "added",
+    "reason_ar": "إعادة إنتاج وإثبات إصلاح توقف النماذج والاستعادة والملكية والعقود والتزامن.",
+    "before_sha256": null,
+    "after_sha256": "db840b116f5cda350c4831f815606126d909a3efece03afbfff42393bd7ccb65"
+  },
+  {
+    "path": "tests/test_v218_resources_and_security.py",
+    "status": "added",
+    "reason_ar": "موارد ضعيفة ومهلات وbackoff وحصص وOllama وأصل HTTP/WebSocket.",
+    "before_sha256": null,
+    "after_sha256": "56c103e96690dae5b235ea8a7432a147f7927446456e1851fbfb4464e4b8b894"
+  },
+  {
+    "path": "tests/test_v282_installer_repair.py",
+    "status": "modified",
+    "reason_ar": "تتبع الإصدار المركزي الحالي مع الحفاظ على فحوص السلوك وهوية التثبيت؛ لا يُثبت رقم الإصدار القديم.",
+    "before_sha256": "32ab8851eb4e7b31223ad995a50cbe01b93fb2f55d19db2e49d611e44e328713",
+    "after_sha256": "10f820ae50e44a6489adfd3d28bf1d19f8e716f996da727f24f30455d8b1525a"
+  },
+  {
+    "path": "tests/test_v283_flat_launcher.py",
+    "status": "modified",
+    "reason_ar": "تتبع الإصدار المركزي الحالي مع الحفاظ على فحوص السلوك وهوية التثبيت؛ لا يُثبت رقم الإصدار القديم.",
+    "before_sha256": "d9070ce34cdf9fd01b7aee2846e71a28d9f3942594744dbbd485ac89dd382617",
+    "after_sha256": "e35f181778d8c6fbd495298c034414b0ab46a6b0743e146fac3335fa55c17f80"
+  },
+  {
+    "path": "tests/test_v285_ts_build_fix.py",
+    "status": "modified",
+    "reason_ar": "تتبع الإصدار المركزي الحالي مع الحفاظ على فحوص السلوك وهوية التثبيت؛ لا يُثبت رقم الإصدار القديم.",
+    "before_sha256": "75b5ae8a8e806be11b3425eb301acee8733961ae6df70905dec127a102930d46",
+    "after_sha256": "16f577ef283ecc128ea763b38c043e3c455de307d8a4428ec0e05e8f4645d4f3"
+  },
+  {
+    "path": "tests/test_windows_package.py",
+    "status": "modified",
+    "reason_ar": "تتبع الإصدار المركزي الحالي مع الحفاظ على فحوص السلوك وهوية التثبيت؛ لا يُثبت رقم الإصدار القديم.",
+    "before_sha256": "78cff693212f9e25b2cc5703bd250c432699a922e84ae3a945cbc39b6448b2c0",
+    "after_sha256": "1a904a289cd9bd5df071476832378f4fda154d1ff6c98abfe3d572b108fd8c9d"
+  },
+  {
+    "path": "tools/registry.py",
+    "status": "modified",
+    "reason_ar": "التعرف على مشروع يحتوي test_*.py في جذره لتشغيل الاختبار الموافق عليه.",
+    "before_sha256": "5d0609d2a47e904354f471799bbaadb2226225aa8819c82672ee75cd59e22807",
+    "after_sha256": "2095d87681b9f117b72206de6a9f2b0c688c2051146f725f67137299d2168225"
+  },
+  {
+    "path": "verification/v2.18/final-chat.log",
+    "status": "added",
+    "reason_ar": "دليل تنفيذ أو سجل محاولة محفوظ للمراجعة؛ ليس سجل بناء Windows.",
+    "before_sha256": null,
+    "after_sha256": "af20b8033e838a43b4ebae1ddac9d1f4dc05c92e1d201fa187630d83f4e548e9"
+  },
+  {
+    "path": "verification/v2.18/final-frontend.log",
+    "status": "added",
+    "reason_ar": "دليل تنفيذ أو سجل محاولة محفوظ للمراجعة؛ ليس سجل بناء Windows.",
+    "before_sha256": null,
+    "after_sha256": "3c55d26f450680bc364bfc75ea9c63e400ca30623c11e6b950f3f70c13fa0100"
+  },
+  {
+    "path": "verification/v2.18/final-imports.log",
+    "status": "added",
+    "reason_ar": "دليل تنفيذ أو سجل محاولة محفوظ للمراجعة؛ ليس سجل بناء Windows.",
+    "before_sha256": null,
+    "after_sha256": "39c4ecac209c8c8c263c0e2a5bf8ce39fffe78f5147a03c4c54a6aee785b910f"
+  },
+  {
+    "path": "verification/v2.18/final-python311.log",
+    "status": "added",
+    "reason_ar": "دليل تنفيذ أو سجل محاولة محفوظ للمراجعة؛ ليس سجل بناء Windows.",
+    "before_sha256": null,
+    "after_sha256": "172b76c57a8536e874ef9e03025522f921e96901983af59f8e1e15d27d1c002a"
+  },
+  {
+    "path": "verification/v2.18/final-python311.xml",
+    "status": "added",
+    "reason_ar": "دليل تنفيذ أو سجل محاولة محفوظ للمراجعة؛ ليس سجل بناء Windows.",
+    "before_sha256": null,
+    "after_sha256": "c51298120864aef5a3c5837800a737233480033b0b143b6f297c93448298efd2"
+  },
+  {
+    "path": "verification/v2.18/final-react-build.log",
+    "status": "added",
+    "reason_ar": "دليل تنفيذ أو سجل محاولة محفوظ للمراجعة؛ ليس سجل بناء Windows.",
+    "before_sha256": null,
+    "after_sha256": "8163f1c95d69c169f3cf3d589d75b275c07baf6c5856ea072821def89c4143f2"
+  },
+  {
+    "path": "verification/v2.18/final-typescript.log",
+    "status": "added",
+    "reason_ar": "دليل تنفيذ أو سجل محاولة محفوظ للمراجعة؛ ليس سجل بناء Windows.",
+    "before_sha256": null,
+    "after_sha256": "00c99d4392bf3ff7177ad7700289fe53c194a62a6dd142e2858891a2d9e749c0"
+  },
+  {
+    "path": "verification/v2.18/frontend-packages.txt",
+    "status": "added",
+    "reason_ar": "دليل تنفيذ أو سجل محاولة محفوظ للمراجعة؛ ليس سجل بناء Windows.",
+    "before_sha256": null,
+    "after_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "path": "verification/v2.18/history/baseline-build.log",
+    "status": "added",
+    "reason_ar": "دليل تنفيذ أو سجل محاولة محفوظ للمراجعة؛ ليس سجل بناء Windows.",
+    "before_sha256": null,
+    "after_sha256": "70d7e222e09f13292bd8bfef21374328a209d241c3c62c9eb84841057314bdd1"
+  },
+  {
+    "path": "verification/v2.18/history/baseline-chat.log",
+    "status": "added",
+    "reason_ar": "دليل تنفيذ أو سجل محاولة محفوظ للمراجعة؛ ليس سجل بناء Windows.",
+    "before_sha256": null,
+    "after_sha256": "487f02cc851fca5348f505da86a037c6c0e91d4115ea10e3171411b5eccd7efb"
+  },
+  {
+    "path": "verification/v2.18/history/baseline-frontend.log",
+    "status": "added",
+    "reason_ar": "دليل تنفيذ أو سجل محاولة محفوظ للمراجعة؛ ليس سجل بناء Windows.",
+    "before_sha256": null,
+    "after_sha256": "838c646b2c93a52d32b0e1cfe272c6ece84a08daade71e67d652531868db1880"
+  },
+  {
+    "path": "verification/v2.18/history/baseline-icons.log",
+    "status": "added",
+    "reason_ar": "دليل تنفيذ أو سجل محاولة محفوظ للمراجعة؛ ليس سجل بناء Windows.",
+    "before_sha256": null,
+    "after_sha256": "f9e970bb46b83e9b607358f6fd94e7f0dacae9108d8489aeb80b47d3befba5c3"
+  },
+  {
+    "path": "verification/v2.18/history/baseline-npm-ci.log",
+    "status": "added",
+    "reason_ar": "دليل تنفيذ أو سجل محاولة محفوظ للمراجعة؛ ليس سجل بناء Windows.",
+    "before_sha256": null,
+    "after_sha256": "cc46c29029da113e6bc3fc2022323fbb70cd17d060edcec716b47b99690fbc90"
+  },
+  {
+    "path": "verification/v2.18/history/baseline-python.log",
+    "status": "added",
+    "reason_ar": "دليل تنفيذ أو سجل محاولة محفوظ للمراجعة؛ ليس سجل بناء Windows.",
+    "before_sha256": null,
+    "after_sha256": "ae0ccb14ea26178541aacd6116bb82fe4e6aa2cb92ec2b38ca28dae5d4c13527"
+  },
+  {
+    "path": "verification/v2.18/history/baseline-typecheck.log",
+    "status": "added",
+    "reason_ar": "دليل تنفيذ أو سجل محاولة محفوظ للمراجعة؛ ليس سجل بناء Windows.",
+    "before_sha256": null,
+    "after_sha256": "4fcf03c9d950daa9cd8b445c34edc819bfdd06e6d435c5011d83603d41a7deaa"
+  },
+  {
+    "path": "verification/v2.18/history/browser-install.log",
+    "status": "added",
+    "reason_ar": "دليل تنفيذ أو سجل محاولة محفوظ للمراجعة؛ ليس سجل بناء Windows.",
+    "before_sha256": null,
+    "after_sha256": "9c7fe6be1ed9311b4b085e705f0d6083e5b64991a0597141553225c556406a03"
+  },
+  {
+    "path": "verification/v2.18/history/browser-runtime.log",
+    "status": "added",
+    "reason_ar": "دليل تنفيذ أو سجل محاولة محفوظ للمراجعة؛ ليس سجل بناء Windows.",
+    "before_sha256": null,
+    "after_sha256": "33bfa3a0ee39a8858b1853187330bb4e2a07823699577c3f2f3af5991081b167"
+  },
+  {
+    "path": "verification/v2.18/history/interim-build.log",
+    "status": "added",
+    "reason_ar": "دليل تنفيذ أو سجل محاولة محفوظ للمراجعة؛ ليس سجل بناء Windows.",
+    "before_sha256": null,
+    "after_sha256": "4ac72d22cd7b98df80e93789bf4ec6f5815a2ada3b5ac5a9f742445b16a06ec9"
+  },
+  {
+    "path": "verification/v2.18/history/interim-python.log",
+    "status": "added",
+    "reason_ar": "دليل تنفيذ أو سجل محاولة محفوظ للمراجعة؛ ليس سجل بناء Windows.",
+    "before_sha256": null,
+    "after_sha256": "344ef20a4c1e456c9bf79adb8858ca41669b835665f2d5a1cee16f10a2fc646f"
+  },
+  {
+    "path": "verification/v2.18/history/interim311-python.log",
+    "status": "added",
+    "reason_ar": "دليل تنفيذ أو سجل محاولة محفوظ للمراجعة؛ ليس سجل بناء Windows.",
+    "before_sha256": null,
+    "after_sha256": "968cb39daab5837241a22a8cea5f6a5a3970fdad7f152c40041febac5d643c70"
+  },
+  {
+    "path": "verification/v2.18/history/pip-install.log",
+    "status": "added",
+    "reason_ar": "دليل تنفيذ أو سجل محاولة محفوظ للمراجعة؛ ليس سجل بناء Windows.",
+    "before_sha256": null,
+    "after_sha256": "22618cc12773e400fc6eda161788ff3ba455deb5d5d74f15cc7b323ef7b035b8"
+  },
+  {
+    "path": "verification/v2.18/history/pip-test-install.log",
+    "status": "added",
+    "reason_ar": "دليل تنفيذ أو سجل محاولة محفوظ للمراجعة؛ ليس سجل بناء Windows.",
+    "before_sha256": null,
+    "after_sha256": "c06795cd70eb1afb3feef963c2066541197f9fcdd1e2a49b78f9e761f245635a"
+  },
+  {
+    "path": "verification/v2.18/history/pip311-install.log",
+    "status": "added",
+    "reason_ar": "دليل تنفيذ أو سجل محاولة محفوظ للمراجعة؛ ليس سجل بناء Windows.",
+    "before_sha256": null,
+    "after_sha256": "73cbeedbebb2680a3ba2856648517dfad4adeadbfdc719f152c1b91a70d55988"
+  },
+  {
+    "path": "verification/v2.18/history/postfix311-python.log",
+    "status": "added",
+    "reason_ar": "دليل تنفيذ أو سجل محاولة محفوظ للمراجعة؛ ليس سجل بناء Windows.",
+    "before_sha256": null,
+    "after_sha256": "642457f3bad3e379ca3133fcfe365cee6fbf3735b9a872017624c7400e589e77"
+  },
+  {
+    "path": "verification/v2.18/history/python311-install.log",
+    "status": "added",
+    "reason_ar": "دليل تنفيذ أو سجل محاولة محفوظ للمراجعة؛ ليس سجل بناء Windows.",
+    "before_sha256": null,
+    "after_sha256": "826996d1c17cd5da55da526bccdc26132a98234d712fcc0526a1e40bfd4d13c7"
+  },
+  {
+    "path": "verification/v2.18/history/react-build-result.json",
+    "status": "added",
+    "reason_ar": "دليل تنفيذ أو سجل محاولة محفوظ للمراجعة؛ ليس سجل بناء Windows.",
+    "before_sha256": null,
+    "after_sha256": "3c9dd8bc68d10558d042d560ce0140228ae9f9602ea01df802377bad23f8a35b"
+  },
+  {
+    "path": "verification/v2.18/history/recovery-after.log",
+    "status": "added",
+    "reason_ar": "دليل تنفيذ أو سجل محاولة محفوظ للمراجعة؛ ليس سجل بناء Windows.",
+    "before_sha256": null,
+    "after_sha256": "f6cafcaffd807d7a6216bc1e5707a68b697cc5c168d630582986519ea7859b2d"
+  },
+  {
+    "path": "verification/v2.18/history/smoke-deps.log",
+    "status": "added",
+    "reason_ar": "دليل تنفيذ أو سجل محاولة محفوظ للمراجعة؛ ليس سجل بناء Windows.",
+    "before_sha256": null,
+    "after_sha256": "a102ba5f6d5e86aa97630b09b24a465d7554b6bf6b0955ae835ad28dea837503"
+  },
+  {
+    "path": "verification/v2.18/history/source-self-test.log",
+    "status": "added",
+    "reason_ar": "دليل تنفيذ أو سجل محاولة محفوظ للمراجعة؛ ليس سجل بناء Windows.",
+    "before_sha256": null,
+    "after_sha256": "32403a777f1853065c3c5d2a489aec39458da701d6c9bf87e72d7ec50832d56b"
+  },
+  {
+    "path": "verification/v2.18/history/targeted-last.log",
+    "status": "added",
+    "reason_ar": "دليل تنفيذ أو سجل محاولة محفوظ للمراجعة؛ ليس سجل بناء Windows.",
+    "before_sha256": null,
+    "after_sha256": "ae1bc08cb4e09cad4e286e2cfe034bfce5c734eac246063de9dead78b1d599cd"
+  },
+  {
+    "path": "verification/v2.18/history/ui-browser-latest-error.log",
+    "status": "added",
+    "reason_ar": "دليل تنفيذ أو سجل محاولة محفوظ للمراجعة؛ ليس سجل بناء Windows.",
+    "before_sha256": null,
+    "after_sha256": "7afbf79905cdbea2739e2e87329db7613e310bd1b955d8cf8f489a6144d8e0a4"
+  },
+  {
+    "path": "verification/v2.18/history/ui-browser-smoke.log",
+    "status": "added",
+    "reason_ar": "دليل تنفيذ أو سجل محاولة محفوظ للمراجعة؛ ليس سجل بناء Windows.",
+    "before_sha256": null,
+    "after_sha256": "5e80ad6cabd04ed10446283fc1e094e1cb653757d673746913d6d951a350422f"
+  },
+  {
+    "path": "verification/v2.18/history/v218-critical.log",
+    "status": "added",
+    "reason_ar": "دليل تنفيذ أو سجل محاولة محفوظ للمراجعة؛ ليس سجل بناء Windows.",
+    "before_sha256": null,
+    "after_sha256": "447aee85c8fb66eb02217dd595cbd6cb75b8b3b9a1f9b2067f063a1c2fe006da"
+  },
+  {
+    "path": "verification/v2.18/pristine311-python.log",
+    "status": "added",
+    "reason_ar": "دليل تنفيذ أو سجل محاولة محفوظ للمراجعة؛ ليس سجل بناء Windows.",
+    "before_sha256": null,
+    "after_sha256": "358a9d026617344cdba5812dc94bbe639eb8ae31dbf3c014ff5103ee88c033ed"
+  },
+  {
+    "path": "verification/v2.18/python311-packages.txt",
+    "status": "added",
+    "reason_ar": "دليل تنفيذ أو سجل محاولة محفوظ للمراجعة؛ ليس سجل بناء Windows.",
+    "before_sha256": null,
+    "after_sha256": "98d4fad6bcd74cac76a32958511ca79b5b288483b5933a77081b231de5b2aa35"
+  },
+  {
+    "path": "verification/v2.18/reproduced-v218.log",
+    "status": "added",
+    "reason_ar": "دليل تنفيذ أو سجل محاولة محفوظ للمراجعة؛ ليس سجل بناء Windows.",
+    "before_sha256": null,
+    "after_sha256": "f1bae7b84e7f0412c76eaaca2c9f00f8e0eea1833014944fcda90feade6c38b9"
+  },
+  {
+    "path": "verification/v2.18/source-self-test.json",
+    "status": "added",
+    "reason_ar": "دليل تنفيذ أو سجل محاولة محفوظ للمراجعة؛ ليس سجل بناء Windows.",
+    "before_sha256": null,
+    "after_sha256": "a63d2e362996d9c77df68ecae5b3fa87f21248b1348739a84aab591079e4346b"
+  },
+  {
+    "path": "verification/v2.18/ui-browser-result.json",
+    "status": "added",
+    "reason_ar": "دليل تنفيذ أو سجل محاولة محفوظ للمراجعة؛ ليس سجل بناء Windows.",
+    "before_sha256": null,
+    "after_sha256": "34bd169140aad8cbb055577840b5ac5b89f1ae00e1b6d84072c1ce59ee5cf621"
+  },
+  {
+    "path": "verification/v2.18/verification-result.json",
+    "status": "added",
+    "reason_ar": "دليل تنفيذ أو سجل محاولة محفوظ للمراجعة؛ ليس سجل بناء Windows.",
+    "before_sha256": null,
+    "after_sha256": "27b559271490828fc81d7f66f276c043d7e1ec38af3150ea9330bbc0491355c8"
+  },
+  {
+    "path": "web/react/assets/index-BhyceSyC.css",
+    "status": "removed",
+    "reason_ar": "إعادة بناء React من السورس الحالي واستبدال أسماء الأصول المشتقة من محتواها.",
+    "before_sha256": "11968ab8de60310b6f40741223d82a8b0e6a67fa19e6ab87c62a68ecce9348b7",
+    "after_sha256": null
+  },
+  {
+    "path": "web/react/assets/index-CYTIIBig.css",
+    "status": "added",
+    "reason_ar": "إعادة بناء React من السورس الحالي واستبدال أسماء الأصول المشتقة من محتواها.",
+    "before_sha256": null,
+    "after_sha256": "c9c180f1927df2495ddbd3dc593b35f9f4b0cd0f74b6c79f0c4b7c0e0623ed41"
+  },
+  {
+    "path": "web/react/assets/index-DRF2O9K4.js",
+    "status": "removed",
+    "reason_ar": "إعادة بناء React من السورس الحالي واستبدال أسماء الأصول المشتقة من محتواها.",
+    "before_sha256": "fc68f26daab76bc7f3ce53872aeff1b2d0256c98dab85583975fcbe6199cc968",
+    "after_sha256": null
+  },
+  {
+    "path": "web/react/assets/index-DmkoxnzZ.js",
+    "status": "added",
+    "reason_ar": "إعادة بناء React من السورس الحالي واستبدال أسماء الأصول المشتقة من محتواها.",
+    "before_sha256": null,
+    "after_sha256": "6f51b3fdf77bbefcd88a14063b1180d5cb8dfe3b75e320ea9fb0d2cc95e3d8d2"
+  },
+  {
+    "path": "web/react/index.html",
+    "status": "modified",
+    "reason_ar": "إعادة بناء React من السورس الحالي واستبدال أسماء الأصول المشتقة من محتواها.",
+    "before_sha256": "c078f22cad7a3d1fc947052b2e2fb73a3e1adb5462148d1575f9d43a15faa7ed",
+    "after_sha256": "7e6f8c48e514c9a69d2cf3f85935fdaf778e12e9b4913614ef4a7b8b00bb6651"
+  }
+]

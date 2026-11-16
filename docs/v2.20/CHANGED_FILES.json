@@ -1,0 +1,257 @@
+[
+  {
+    "path": ".github/workflows/windows-build.yml",
+    "status": "modified",
+    "reason_ar": "الإصدار أو دليل البناء أو بوابات التحقق والبصمات."
+  },
+  {
+    "path": "BUILD_BARQ.bat",
+    "status": "modified",
+    "reason_ar": "الإصدار أو دليل البناء أو بوابات التحقق والبصمات."
+  },
+  {
+    "path": "BUILD_WINDOWS_EXE.bat",
+    "status": "modified",
+    "reason_ar": "الإصدار أو دليل البناء أو بوابات التحقق والبصمات."
+  },
+  {
+    "path": "README.md",
+    "status": "modified",
+    "reason_ar": "الإصدار أو دليل البناء أو بوابات التحقق والبصمات."
+  },
+  {
+    "path": "SOURCE_MANIFEST_SHA256.json",
+    "status": "modified",
+    "reason_ar": "الإصدار أو دليل البناء أو بوابات التحقق والبصمات."
+  },
+  {
+    "path": "START_HERE_AR.txt",
+    "status": "modified",
+    "reason_ar": "الإصدار أو دليل البناء أو بوابات التحقق والبصمات."
+  },
+  {
+    "path": "WINDOWS_BUILD_GUIDE_AR.md",
+    "status": "modified",
+    "reason_ar": "الإصدار أو دليل البناء أو بوابات التحقق والبصمات."
+  },
+  {
+    "path": "agent/orchestrator.py",
+    "status": "modified",
+    "reason_ar": "نتيجة سريعة للأداة والحفظ، استكمال منفصل، قراءة السياق الأولي وخريطة مركزة."
+  },
+  {
+    "path": "api.py",
+    "status": "modified",
+    "reason_ar": "خيار defer_replan المتوافق مع العملاء الأقدم."
+  },
+  {
+    "path": "brain/coordinator.py",
+    "status": "modified",
+    "reason_ar": "حفظ التخطيط التالي واستعادته وإلغاؤه مع الاحتفاظ بالنتائج المنفذة."
+  },
+  {
+    "path": "core/version.py",
+    "status": "modified",
+    "reason_ar": "الإصدار أو دليل البناء أو بوابات التحقق والبصمات."
+  },
+  {
+    "path": "docs/v2.20/BUILD_REPORT_AR.md",
+    "status": "added",
+    "reason_ar": "تقرير الإصدار أو سجل التحقق."
+  },
+  {
+    "path": "docs/v2.20/CHANGED_FILES.json",
+    "status": "added",
+    "reason_ar": "تقرير الإصدار أو سجل التحقق."
+  },
+  {
+    "path": "docs/v2.20/CHANGED_FILES.md",
+    "status": "added",
+    "reason_ar": "تقرير الإصدار أو سجل التحقق."
+  },
+  {
+    "path": "frontend/package-lock.json",
+    "status": "modified",
+    "reason_ar": "الإصدار أو دليل البناء أو بوابات التحقق والبصمات."
+  },
+  {
+    "path": "frontend/package.json",
+    "status": "modified",
+    "reason_ar": "الإصدار أو دليل البناء أو بوابات التحقق والبصمات."
+  },
+  {
+    "path": "frontend/src/App.tsx",
+    "status": "modified",
+    "reason_ar": "تركيب نافذة الموافقة خارج سجل الرسائل ومساحة العمل."
+  },
+  {
+    "path": "frontend/src/components/chat/ApprovalDialog.tsx",
+    "status": "added",
+    "reason_ar": "نافذة مراجعة عامة تلقائية للخطوة والحفظ، ترتبط بمعرف الموافقة المعروض."
+  },
+  {
+    "path": "frontend/src/components/chat/BrainStatus.tsx",
+    "status": "modified",
+    "reason_ar": "مراحل دقيقة ووقت انتظار فعلي وإزالة الحالة القديمة بعد تجهيز الموافقة."
+  },
+  {
+    "path": "frontend/src/components/chat/Message.tsx",
+    "status": "modified",
+    "reason_ar": "بطاقات مختصرة وزر مراجعة للنافذة ومسار إجراءات موحد."
+  },
+  {
+    "path": "frontend/src/components/layout/SettingsModal.tsx",
+    "status": "modified",
+    "reason_ar": "الإصدار أو دليل البناء أو بوابات التحقق والبصمات."
+  },
+  {
+    "path": "frontend/src/components/workspace/WorkspaceStudio.tsx",
+    "status": "modified",
+    "reason_ar": "الإصدار أو دليل البناء أو بوابات التحقق والبصمات."
+  },
+  {
+    "path": "frontend/src/lib/agentOutcome.ts",
+    "status": "modified",
+    "reason_ar": "تمييز نتيجة أداة مكتملة مع خطة تالية مؤجلة."
+  },
+  {
+    "path": "frontend/src/lib/approvals.ts",
+    "status": "added",
+    "reason_ar": "اختيار أحدث موافقة وأسماء العمليات المفهومة."
+  },
+  {
+    "path": "frontend/src/lib/chat.ts",
+    "status": "modified",
+    "reason_ar": "الأوامر النصية للموافقة تستخدم نفس مسار التنفيذ المحمي."
+  },
+  {
+    "path": "frontend/src/lib/taskActions.ts",
+    "status": "added",
+    "reason_ar": "تنفيذ موحد للموافقة والحفظ والاستكمال، حماية الضغط المكرر، وإظهار النتيجة قبل النموذج."
+  },
+  {
+    "path": "frontend/src/store/index.ts",
+    "status": "modified",
+    "reason_ar": "حالة انشغال المهمة ومراحل مؤقتة لا تعيد دورانًا لا نهائيًا عند التحميل."
+  },
+  {
+    "path": "frontend/tests/approval-flow.ts",
+    "status": "added",
+    "reason_ar": "سلوك الموافقة والاستهلاك الفوري للمعرف والاستكمال ومنع تكرار الكتابة."
+  },
+  {
+    "path": "router/engine.py",
+    "status": "modified",
+    "reason_ar": "مهلة للنموذج وميزانية إجمالية للتخطيط السحابي مع بديل مسموح."
+  },
+  {
+    "path": "scripts/build_windows.ps1",
+    "status": "modified",
+    "reason_ar": "الإصدار أو دليل البناء أو بوابات التحقق والبصمات."
+  },
+  {
+    "path": "scripts/installer.iss",
+    "status": "modified",
+    "reason_ar": "الإصدار أو دليل البناء أو بوابات التحقق والبصمات."
+  },
+  {
+    "path": "scripts/ui_approval_smoke.py",
+    "status": "added",
+    "reason_ar": "فحص متصفح فعلي مع أداة وحفظ حقيقيين في مشروع مؤقت ونموذج موقوف عمدًا."
+  },
+  {
+    "path": "scripts/ui_command_smoke.py",
+    "status": "modified",
+    "reason_ar": "مراعاة النافذة الجديدة في فحص الأوامر السابق."
+  },
+  {
+    "path": "scripts/verify_source_integrity.py",
+    "status": "modified",
+    "reason_ar": "اشتراط ملفات الموافقة واختبارها ضمن السورس."
+  },
+  {
+    "path": "tests/test_barq_coordinated_agent.py",
+    "status": "modified",
+    "reason_ar": "تحديث فحص توزيع المكونات إلى خدمة الإجراءات ونافذة الموافقة."
+  },
+  {
+    "path": "tests/test_v220_fast_approvals.py",
+    "status": "added",
+    "reason_ar": "5 اختبارات للاستجابة قبل النموذج، الاستعادة، الواجهة، والمهل."
+  },
+  {
+    "path": "verification/v2.20/browser-approvals.json",
+    "status": "added",
+    "reason_ar": "تقرير الإصدار أو سجل التحقق."
+  },
+  {
+    "path": "verification/v2.20/browser-approvals.log",
+    "status": "added",
+    "reason_ar": "تقرير الإصدار أو سجل التحقق."
+  },
+  {
+    "path": "verification/v2.20/browser-commands.json",
+    "status": "added",
+    "reason_ar": "تقرير الإصدار أو سجل التحقق."
+  },
+  {
+    "path": "verification/v2.20/browser-commands.log",
+    "status": "added",
+    "reason_ar": "تقرير الإصدار أو سجل التحقق."
+  },
+  {
+    "path": "verification/v2.20/frontend-validation.log",
+    "status": "added",
+    "reason_ar": "تقرير الإصدار أو سجل التحقق."
+  },
+  {
+    "path": "verification/v2.20/python-tests.log",
+    "status": "added",
+    "reason_ar": "تقرير الإصدار أو سجل التحقق."
+  },
+  {
+    "path": "verification/v2.20/python-tests.xml",
+    "status": "added",
+    "reason_ar": "تقرير الإصدار أو سجل التحقق."
+  },
+  {
+    "path": "verification/v2.20/source-preflight.log",
+    "status": "added",
+    "reason_ar": "تقرير الإصدار أو سجل التحقق."
+  },
+  {
+    "path": "verification/v2.20/source-self-test.json",
+    "status": "added",
+    "reason_ar": "تقرير الإصدار أو سجل التحقق."
+  },
+  {
+    "path": "verification/v2.20/targeted-tests.log",
+    "status": "added",
+    "reason_ar": "تقرير الإصدار أو سجل التحقق."
+  },
+  {
+    "path": "web/react/assets/index-D-6OzpxL.js",
+    "status": "added",
+    "reason_ar": "أصول React المعاد بناؤها."
+  },
+  {
+    "path": "web/react/assets/index-DErvsRMr.css",
+    "status": "removed",
+    "reason_ar": "أصول React المعاد بناؤها."
+  },
+  {
+    "path": "web/react/assets/index-EUfUlAFm.js",
+    "status": "removed",
+    "reason_ar": "أصول React المعاد بناؤها."
+  },
+  {
+    "path": "web/react/assets/index-aIN40n1e.css",
+    "status": "added",
+    "reason_ar": "أصول React المعاد بناؤها."
+  },
+  {
+    "path": "web/react/index.html",
+    "status": "modified",
+    "reason_ar": "أصول React المعاد بناؤها."
+  }
+]

@@ -1,0 +1,16 @@
+enabled: false  # Explicitly opt in under Settings > Computer Control.
+mode: smart
+direct_commands: true  # Commands run directly after the master control permission is enabled.
+# ~/AgentWorkspace is the only default unattended write area. Add Desktop/Documents
+# explicitly if desired. System and credential paths remain prohibited.
+allowed_folders:
+  - ~/AgentWorkspace
+local_only_vision: true
+max_steps: 40
+max_seconds: 600
+max_failures: 3
+max_files: 20
+actions_per_second: 4.0
+approval_seconds: 60
+screenshot_retention: false
+sandbox: false

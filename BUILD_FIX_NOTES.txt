@@ -1,0 +1,15 @@
+AI Router Agent – TypeScript Build Fix v2.1.1
+
+This is a source-code PATCH for the Windows build kit v2.1, not a finished EXE.
+
+QUICK STEPS
+1) Extract this ZIP next to your existing AI_Router_Agent folder, like this:
+   Downloads\AI_Router_Agent_Windows_Build_Kit_v2.1\AI_Router_Agent\
+   Downloads\AI_Router_Agent_Windows_Build_Kit_v2.1\AI_Router_Agent_TypeScript_Fix_v2.1.1\
+2) Double-click APPLY_FIX.bat in the extracted patch folder.
+3) The patch saves backups in AI_Router_Agent\.build_fixes\v2.1.1\.
+4) Run AI_Router_Agent\BUILD_WINDOWS_EXE.bat again.
+5) If the next run fails, send the complete compiler error, including its first lines.
+
+Alternative: drag the existing AI_Router_Agent folder onto APPLY_FIX.bat.
+Only 7 frontend source files are changed. Python/backend code is untouched.

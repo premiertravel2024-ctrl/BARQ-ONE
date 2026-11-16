@@ -1,0 +1,134 @@
+[
+  {
+    "path": ".github/workflows/windows-build.yml",
+    "status": "modified"
+  },
+  {
+    "path": "BUILD_BARQ.bat",
+    "status": "modified"
+  },
+  {
+    "path": "BUILD_WINDOWS_EXE.bat",
+    "status": "modified"
+  },
+  {
+    "path": "README.md",
+    "status": "modified"
+  },
+  {
+    "path": "api_routes/voice.py",
+    "status": "modified"
+  },
+  {
+    "path": "core/version.py",
+    "status": "modified"
+  },
+  {
+    "path": "docs/v2.29/LIVE_VOICE_AR.md",
+    "status": "added"
+  },
+  {
+    "path": "frontend/package-lock.json",
+    "status": "modified"
+  },
+  {
+    "path": "frontend/package.json",
+    "status": "modified"
+  },
+  {
+    "path": "frontend/public/audio/live-capture.js",
+    "status": "added"
+  },
+  {
+    "path": "frontend/src/components/chat/Composer.tsx",
+    "status": "modified"
+  },
+  {
+    "path": "frontend/src/components/chat/LiveVoiceDialog.tsx",
+    "status": "added"
+  },
+  {
+    "path": "frontend/src/components/layout/SettingsModal.tsx",
+    "status": "modified"
+  },
+  {
+    "path": "frontend/src/components/workspace/WorkspaceStudio.tsx",
+    "status": "modified"
+  },
+  {
+    "path": "frontend/src/lib/liveVoice.ts",
+    "status": "added"
+  },
+  {
+    "path": "scripts/build_windows.ps1",
+    "status": "modified"
+  },
+  {
+    "path": "scripts/installer.iss",
+    "status": "modified"
+  },
+  {
+    "path": "scripts/ui_live_voice_smoke.py",
+    "status": "added"
+  },
+  {
+    "path": "tests/test_v229_live_conversation.py",
+    "status": "added"
+  },
+  {
+    "path": "verification/v2.29/SUMMARY.json",
+    "status": "added"
+  },
+  {
+    "path": "verification/v2.29/browser-live-voice.json",
+    "status": "added"
+  },
+  {
+    "path": "verification/v2.29/frontend-build.log",
+    "status": "added"
+  },
+  {
+    "path": "verification/v2.29/self-test.json",
+    "status": "added"
+  },
+  {
+    "path": "verification/v2.29/tests.log",
+    "status": "added"
+  },
+  {
+    "path": "verification/v2.29/tests.xml",
+    "status": "added"
+  },
+  {
+    "path": "voice/live.py",
+    "status": "modified"
+  },
+  {
+    "path": "web/react/assets/index-ByAzA_-8.css",
+    "status": "added"
+  },
+  {
+    "path": "web/react/assets/index-CO5iwxt3.js",
+    "status": "added"
+  },
+  {
+    "path": "web/react/assets/index-DPOXEy3M.js",
+    "status": "added"
+  },
+  {
+    "path": "web/react/assets/index-DqI5yt6V.js",
+    "status": "removed"
+  },
+  {
+    "path": "web/react/assets/index-x2LF2tC8.css",
+    "status": "removed"
+  },
+  {
+    "path": "web/react/audio/live-capture.js",
+    "status": "added"
+  },
+  {
+    "path": "web/react/index.html",
+    "status": "modified"
+  }
+]

@@ -1,0 +1,211 @@
+/* BARQ UI refresh — visual hierarchy without changing command semantics. */
+:root,[data-theme='dark']{
+ --barq-rail-bg:#111419;
+ --barq-panel-bg:#15191f;
+ --barq-panel-tint:rgba(255,255,255,.025);
+ --barq-inset-line:rgba(255,255,255,.055);
+ --barq-hover:rgba(255,255,255,.055);
+ --barq-ring:rgba(229,34,53,.16);
+ --barq-dialog-glow:0 25px 75px rgba(0,0,0,.46);
+}
+[data-theme='light']{
+ --barq-rail-bg:#f4f6f9;
+ --barq-panel-bg:#fff;
+ --barq-panel-tint:rgba(12,23,42,.018);
+ --barq-inset-line:rgba(17,24,39,.055);
+ --barq-hover:rgba(15,23,42,.055);
+ --barq-ring:rgba(187,23,40,.11);
+ --barq-dialog-glow:0 25px 75px rgba(15,23,42,.16);
+}
+.barq-app-shell{isolation:isolate;min-width:0}
+.barq-main-stage{position:relative;min-height:0;background:var(--bg-base)}
+.barq-main-stage::before{position:absolute;content:'';inset:0 0 auto;pointer-events:none;height:120px;background:linear-gradient(180deg,var(--barq-panel-tint),transparent)}
+.barq-sidebar{z-index:12;background:var(--bg-surface);border-color:var(--barq-inset-line);box-shadow:inset -1px 0 0 var(--barq-inset-line)}
+html[dir='rtl'] .barq-sidebar{box-shadow:inset 1px 0 0 var(--barq-inset-line)}
+.barq-sidebar .sidebar-brand-header{min-height:79px;margin-block-end:8px;padding-block:15px;border-color:var(--barq-inset-line)}
+.barq-sidebar .sidebar-brand-lockup{padding-inline-start:3px}
+.barq-sidebar .sidebar-new-chat-row{padding-bottom:17px}
+.barq-sidebar .sidebar-new-chat-row button{min-height:45px;border-radius:12px;font-weight:750;letter-spacing:0;box-shadow:0 4px 14px var(--barq-ring)}
+.barq-sidebar .sidebar-workspaces{position:relative;margin:0 11px 13px;padding:6px;border-radius:13px;background:var(--barq-panel-tint);border:1px solid var(--barq-inset-line)}
+.barq-sidebar .sidebar-workspaces button{min-height:41px;border-radius:9px;font-weight:600}
+.barq-sidebar .sidebar-workspaces button[aria-current='page']{background:rgb(var(--accent-rgb) / .115);color:var(--text-primary);box-shadow:inset 3px 0 0 var(--accent-1)}
+html[dir='rtl'] .barq-sidebar .sidebar-workspaces button[aria-current='page']{box-shadow:inset -3px 0 0 var(--accent-1)}
+.barq-sidebar .sidebar-item{min-height:39px;margin-block:1px;border:1px solid transparent;border-radius:10px;padding-inline:3px}
+.barq-sidebar .sidebar-item:has(>button[aria-current]){border-color:rgb(var(--accent-rgb) / .12)}
+.barq-sidebar .sidebar-item:hover,.barq-sidebar .sidebar-item:focus-within{background:var(--barq-hover);border-color:var(--barq-inset-line)}
+.barq-sidebar .sidebar-item button{min-height:38px;line-height:1.35}
+.barq-sidebar nav[aria-label='سجل المحادثات'] h3,.barq-sidebar nav[aria-label='Chat history'] h3{font-size:10px;letter-spacing:.07em;padding-block:5px 2px}
+.barq-sidebar .ui-input{height:39px;border-radius:10px;background:var(--bg-input)}
+.barq-sidebar .ui-input:focus-visible{box-shadow:0 0 0 3px var(--barq-ring);border-color:var(--accent-1)}
+.barq-sidebar>div:last-child{flex-shrink:0}
+.barq-sidebar .barq-profile-mark{background:var(--barq-rail-bg);border-radius:11px}
+.barq-sidebar .sidebar-actions{transition:opacity .14s}
+/* Keep dropdown actions discoverable for keyboard users. */
+.barq-sidebar .sidebar-item:focus-within .sidebar-actions{opacity:1;pointer-events:auto}
+.barq-topbar{position:relative;background:var(--bg-base);border-color:var(--barq-inset-line);min-height:66px;gap:9px;z-index:10}
+.barq-topbar .barq-current-chat{min-width:0;display:flex;flex-direction:column;align-items:flex-start;justify-content:center;gap:0}
+.barq-topbar .barq-current-chat>button{min-height:31px;margin-inline-start:-8px}
+.barq-topbar .barq-current-chat>button:hover{background:var(--barq-hover)}
+.barq-topbar .barq-current-chat>button span{max-width:min(36vw,330px)}
+.barq-chat-meta{color:var(--text-muted);font-size:10px;margin-block-start:-3px;white-space:nowrap}
+.barq-open-workspace{display:inline-flex;align-items:center;justify-content:center;gap:8px;flex:none;padding:9px 12px;min-height:38px;border:1px solid rgb(var(--accent-rgb) / .2);background:rgb(var(--accent-rgb) / .07);color:var(--text-primary);border-radius:10px;font-size:12px;font-weight:700;white-space:nowrap;transition:background .15s,border-color .15s}
+.barq-open-workspace:hover{background:rgb(var(--accent-rgb) / .14);border-color:rgb(var(--accent-rgb) / .4)}
+.barq-open-workspace svg{color:var(--accent-2)}
+/* Chat rhythm: compact, legible, still room for task cards and code. */
+.message-row{padding-block:9px!important;gap:12px}
+.message-row>.min-w-0{min-width:0}
+.message-row .chat-markdown{font-size:16px;line-height:1.65;letter-spacing:0;overflow-wrap:anywhere}
+.message-row .chat-markdown>*+*{margin-block-start:10px}
+.message-row .chat-markdown p+p{margin-block-start:9px}
+.message-row .chat-markdown :is(ul,ol){padding-inline-start:22px}
+.message-row .chat-markdown li+li{margin-block-start:3px}
+.message-row .chat-markdown :is(h1,h2,h3){line-height:1.45;margin-block:13px 6px}
+.message-row .chat-markdown :is(pre,table){border-radius:10px}
+.message-row .barq-user-bubble{border-radius:14px;border-start-end-radius:5px;padding:11px 15px;box-shadow:none;background:var(--bubble);border-color:rgb(var(--accent-rgb) / .18)}
+.message-row .barq-assistant-content{padding-block:0}
+.message-row .message-actions{margin-block-start:4px;opacity:.46;transition:opacity .14s}
+.message-row:hover .message-actions,.message-row:focus-within .message-actions{opacity:1}
+/* Composer: primary action separated from microphones and models. */
+.barq-composer{z-index:13;max-width:920px;padding-block-start:5px;padding-block-end:7px}
+.barq-composer::before{position:absolute;content:'';pointer-events:none;inset:-27px 0 0;z-index:-1;background:linear-gradient(to top,var(--bg-base) 52%,transparent)}
+.barq-composer-surface{border-radius:26px;border-color:var(--border-strong);background:var(--bg-surface);box-shadow:0 6px 28px rgba(0,0,0,.13);transition:box-shadow .16s,border-color .16s}
+.barq-composer-surface:focus-within{border-color:rgb(var(--accent-rgb) / .6);box-shadow:0 0 0 3px var(--barq-ring),0 10px 28px rgba(0,0,0,.16)}
+/* RTL starts on the physical right: file/model controls, input, then voice/send. */
+.barq-composer-surface{min-width:0}
+.barq-composer-context-tools{align-self:center;white-space:nowrap}
+.barq-composer-context-tools button{flex-shrink:0}
+.barq-composer-surface textarea{font-size:16px;line-height:1.5;min-height:44px!important;padding:11px 15px;max-height:200px}
+.barq-composer-toolbar{padding:0 9px 0;gap:4px}
+.barq-composer-toolbar .barq-composer-actions{padding-inline-start:6px;border-inline-start:0;gap:1px;flex-shrink:0}
+.barq-composer-toolbar .barq-composer-actions>span:not(:first-child){border-radius:9px}
+.barq-composer-toolbar .barq-send-button{min-width:38px;min-height:38px;border-radius:50%;box-shadow:none;transition:transform .14s,background .14s}
+.barq-composer-toolbar .barq-send-button:hover:not(:disabled){transform:translateY(-1px)}
+.barq-composer-toolbar button{flex-shrink:0}
+/* Settings: true search, clear navigation and stable scroll panel. */
+.barq-settings-dialog{height:min(88dvh,860px);border:1px solid var(--border-strong)!important;box-shadow:var(--barq-dialog-glow)!important}
+.barq-settings-dialog>header{min-height:65px;border-color:var(--barq-inset-line);background:var(--bg-surface)}
+.barq-settings-nav{background:var(--barq-rail-bg);padding:15px 10px 19px}
+.barq-settings-search{display:block;position:sticky;top:-15px;z-index:2;margin:0 0 17px;padding:7px 1px;background:var(--barq-rail-bg)}
+.barq-settings-search input{height:38px;padding:8px 10px;background:var(--bg-input);font-size:12px;border-radius:10px}
+.barq-settings-nav-group+.barq-settings-nav-group{padding-block-start:13px;margin-block-start:12px;border-block-start:1px solid var(--barq-inset-line)}
+.barq-settings-tab{min-height:40px;border-radius:9px;padding-inline:11px;gap:10px}
+.barq-settings-tab.is-active{box-shadow:inset 3px 0 0 var(--accent-1);background:rgb(var(--accent-rgb) / .09)}
+html[dir='rtl'] .barq-settings-tab.is-active{box-shadow:inset -3px 0 0 var(--accent-1)}
+.barq-settings-heading{background:linear-gradient(100deg,rgb(var(--accent-rgb) / .045),transparent 65%);padding:21px 27px}
+.barq-settings-heading-icon{width:43px;height:43px}
+.barq-settings-content{max-width:1050px;margin-inline:auto;padding:22px 26px 34px}
+.barq-settings-card{border-radius:13px;padding:18px;background:var(--bg-surface);border-color:var(--barq-inset-line)}
+.barq-settings-card+.barq-settings-card{margin-block-start:10px}
+.barq-settings-note{line-height:1.7}
+.barq-settings-content :where(button,input,select,textarea):focus-visible{outline-offset:2px}
+/* Settings side-panel content and task feed. */
+.barq-settings-main{overscroll-behavior:contain}
+.barq-main-stage [role='log']{scrollbar-gutter:stable}
+/* Studio: grouped rail and consistent panels; defaults preserve all editor modes. */
+.barq-studio{--studio-accent:var(--accent-1);--studio-hover:rgb(var(--accent-rgb) / .10);background:var(--bg-base);min-width:0}
+.barq-studio .studio-topbar{min-height:65px;padding-block:10px;background:var(--bg-surface);border-color:var(--border-color);gap:8px}
+.barq-studio .studio-topbar>.studio-icon{border-radius:9px;min-width:35px;min-height:35px}
+.barq-studio .studio-back-chat{width:40px;height:40px!important;border-radius:11px;border-color:rgb(var(--accent-rgb) / .25);background:rgb(var(--accent-rgb) / .07)}
+.barq-studio .studio-back-chat:hover{background:rgb(var(--accent-rgb) / .15)}
+.studio-project-switcher{gap:2px;min-width:0}
+.studio-project-switcher>div{font-weight:750}
+.studio-project-switcher select{width:min(370px,100%);height:20px;text-overflow:ellipsis}
+.barq-studio .studio-rail{width:55px;background:var(--barq-rail-bg);overflow-y:auto;overscroll-behavior:contain;padding:11px 5px;display:flex;flex-direction:column;align-items:center;gap:0;scrollbar-width:none}
+.barq-studio .studio-rail::-webkit-scrollbar{display:none}
+.studio-rail-group{width:100%;display:flex;align-items:center;flex-direction:column;gap:3px;padding-block:8px}
+.studio-rail-group+.studio-rail-group{border-top:1px solid var(--border-color)}
+.barq-studio .studio-rail-button{display:grid;place-items:center;width:42px;height:41px;border-radius:10px;position:relative;color:var(--text-secondary)}
+.barq-studio .studio-rail-button:hover{background:var(--barq-hover);color:var(--text-primary)}
+.barq-studio .studio-rail-button.active{color:var(--accent-2);background:rgb(var(--accent-rgb) / .12);box-shadow:inset 3px 0 0 var(--accent-1)}
+.barq-studio .studio-side{background:var(--barq-panel-bg);border-color:var(--border-color)}
+.barq-studio .studio-side>.sticky{min-height:43px;background:var(--bg-surface);border-color:var(--barq-inset-line)}
+.studio-tree-row{min-height:36px;margin-block:1px;border-radius:8px;transition:background .13s}
+.studio-tree-row:hover{background:var(--barq-hover)}
+.studio-tree-row.active{background:rgb(var(--accent-rgb) / .12);color:var(--text-primary)}
+.barq-studio .studio-editor,.barq-studio .studio-code-editor{background:var(--bg-base)}
+.barq-studio .studio-editor-modes{height:45px;background:var(--bg-surface);border-color:var(--border-color)}
+.barq-studio .studio-editor-modes button{min-height:33px;margin-block:auto;border-radius:8px;font-weight:500}
+.barq-studio .studio-editor-modes button.active{color:var(--text-primary);background:rgb(var(--accent-rgb) / .12);border:1px solid rgb(var(--accent-rgb) / .22);box-shadow:none}
+.barq-studio .studio-tabs,.barq-studio .studio-bottom-tabs{background:var(--bg-surface)}
+.barq-studio .studio-tab{border-radius:9px 9px 0 0}
+.barq-studio .studio-bottom{background:var(--bg-surface)}
+.barq-studio .studio-bottom-body{background:var(--bg-base)}
+.barq-studio .studio-status{background:var(--bg-surface);border-color:var(--border-color);min-height:32px}
+.barq-studio .studio-code-editor{line-height:1.65}
+/* Light-theme workspace must not be forced to black by older studio rules. */
+[data-theme='light'] .barq-studio :is(.studio-side,.studio-ai,.studio-preview,.studio-split-preview,.studio-live-code,.studio-code-wrap,.studio-live-canvas,.studio-diff-full,.studio-bottom-body){background:var(--bg-base);color:var(--text-primary)}
+[data-theme='light'] .barq-studio :is(.studio-topbar,.studio-editor-modes,.studio-tabs,.studio-bottom-tabs,.studio-code-header,.studio-live-header,.studio-live-actions,.studio-ai-header){background:var(--bg-surface);color:var(--text-primary);border-color:var(--border-color)}
+[data-theme='light'] .barq-studio :is(.studio-code-editor,.studio-live-canvas pre,.studio-log){background:var(--bg-base);color:var(--text-primary)}
+[data-theme='light'] .studio-project-switcher select{color:var(--text-secondary)}
+[data-theme='light'] .studio-project-switcher option{color:var(--text-primary);background:var(--bg-surface)}
+[data-theme='light'] .barq-studio .studio-editor-modes button{color:var(--text-secondary)}
+[data-theme='light'] .barq-studio .studio-editor-modes button.active{color:var(--text-primary)}
+/* Narrow layouts: keep tools visible without crowding text, support RTL. */
+@media(max-width:1250px){
+ .barq-topbar{gap:5px;padding-inline:10px}
+ .barq-open-workspace{padding-inline:10px}
+ .barq-topbar .barq-current-chat>button span{max-width:180px}
+}
+@media(max-width:750px){
+ .barq-topbar{min-height:58px;height:58px;gap:3px}
+ .barq-open-workspace{padding-inline:9px;min-width:37px}
+ .barq-open-workspace span{display:none}
+ .barq-chat-meta{display:none}
+ .barq-sidebar .sidebar-workspaces{margin-inline:9px}
+ .message-row{padding-inline:12px!important;padding-block:8px!important;gap:9px}
+ .message-row .chat-markdown{font-size:16px}
+ .message-row .barq-user-bubble{padding:10px 12px}
+ .barq-composer{padding-inline:9px;padding-bottom:6px}
+ .barq-composer-surface{border-radius:23px}
+ .barq-composer-toolbar{gap:3px;padding-inline:7px}
+ .barq-composer-toolbar .barq-composer-actions{padding-inline-start:4px}
+ .barq-settings-dialog{max-width:calc(100vw - 12px)!important}
+ .barq-settings-heading{padding:13px 17px}
+ .barq-settings-content{padding:14px 13px 25px}
+ .barq-studio .studio-topbar{flex-wrap:wrap;min-height:58px;padding:7px}
+ .studio-project-switcher{flex-basis:30%;min-width:130px}
+}
+@media(max-width:410px){
+ .barq-composer-toolbar .barq-composer-actions{gap:0}
+ .barq-composer-toolbar .barq-composer-actions .inline-flex{margin:0}
+ .barq-topbar .barq-current-chat>button span{max-width:105px}
+ .message-row>span[aria-hidden]{width:25px;height:25px}
+ .barq-studio .studio-rail{width:44px;padding-inline:1px}
+ .barq-studio .studio-rail-button{width:37px;height:38px}
+}
+@media(prefers-reduced-motion:reduce){
+ .barq-open-workspace,.studio-tree-row,.barq-composer-toolbar .barq-send-button{transition:none}
+ .barq-composer-toolbar .barq-send-button:hover{transform:none}
+}
+
+/* Welcome state: approachable task entry, not another settings page. */
+.barq-empty-state{padding-block:30px 20px;isolation:isolate}
+.barq-empty-state .barq-suggestion-card{min-height:88px;border-radius:13px;background:var(--bg-surface);padding:15px;border-color:var(--barq-inset-line);box-shadow:none;align-items:flex-start}
+.barq-empty-state .barq-suggestion-card:hover{background:var(--bg-elevated);border-color:rgb(var(--accent-rgb) / .32);box-shadow:0 8px 22px rgba(0,0,0,.08)}
+.barq-empty-state .barq-suggestion-card>span:first-child{border-radius:10px;min-height:39px}
+.barq-empty-state .barq-suggestion-card>span:last-child{min-width:0;line-height:1.5}
+@media(max-width:590px){
+ .barq-composer-toolbar{flex-wrap:nowrap;row-gap:0}
+ .barq-composer-toolbar .barq-composer-actions{border-inline-start:0;padding-inline-start:0}
+ .barq-empty-state{padding-inline:13px}
+ .barq-empty-state .barq-suggestion-card{min-height:73px;padding:12px}
+}
+
+/* Readable ChatGPT-style answer hierarchy without clutter or giant request text. */
+.message-row .barq-assistant-content .chat-markdown{max-width:76ch;font-size:16px;line-height:1.7;word-break:normal;}
+.message-row .chat-markdown :is(h1,h2,h3){font-weight:700;letter-spacing:0;overflow-wrap:break-word;}
+.message-row .chat-markdown h1{font-size:21px;margin-block:18px 8px;}
+.message-row .chat-markdown h2{font-size:19px;margin-block:16px 7px;}
+.message-row .chat-markdown h3{font-size:17px;margin-block:13px 6px;}
+.message-row .chat-markdown :is(ul,ol){margin-block:8px 12px;padding-inline-start:24px;}
+.message-row .chat-markdown li{line-height:1.75;}
+.message-row .chat-markdown table{font-size:14px;margin-block:12px;border-radius:8px;}
+.message-row .chat-markdown :is(pre,table){max-width:100%;overflow-x:auto;}
+.message-row .chat-markdown a{overflow-wrap:anywhere;text-underline-offset:3px;}
+@media(max-width:680px){.message-row .barq-assistant-content .chat-markdown{font-size:16px;line-height:1.65;}}
+
+/* Topbar actions sit beside the sidebar; workspace remains available in sidebar navigation. */
+.barq-topbar .barq-header-actions{order:0;gap:2px;border-inline-end:1px solid var(--barq-inset-line);padding-inline-end:8px;min-width:0}
+.barq-topbar .barq-current-chat{order:1}
+.barq-topbar .barq-topbar-model{order:2}
+.barq-topbar .barq-topbar-connection{order:3}

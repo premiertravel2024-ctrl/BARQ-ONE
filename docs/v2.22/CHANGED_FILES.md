@@ -1,0 +1,67 @@
+# تغييرات v2.22.0 مقارنة بالسورس المرفق
+
+المصدر: BARQ_v2.21_MISSION_CONTINUITY_STUDIO_REPAIR_FULL_SOURCE(1).zip
+
+| الملف | الحالة |
+|---|---|
+| `.github/workflows/windows-build.yml` | modified |
+| `BUILD_BARQ.bat` | modified |
+| `BUILD_WINDOWS_EXE.bat` | modified |
+| `README.md` | modified |
+| `SOURCE_MANIFEST_SHA256.json` | modified |
+| `START_HERE_AR.txt` | modified |
+| `agent/orchestrator.py` | modified |
+| `api.py` | modified |
+| `brain/live_code.py` | added |
+| `coding/source_contract.py` | added |
+| `core/adaptive_resources.py` | modified |
+| `core/generation.py` | added |
+| `core/processes.py` | added |
+| `core/version.py` | modified |
+| `docs/v2.22/BUILD_REPORT_AR.md` | added |
+| `docs/v2.22/CHANGED_FILES.json` | added |
+| `docs/v2.22/CHANGED_FILES.md` | added |
+| `frontend/package-lock.json` | modified |
+| `frontend/package.json` | modified |
+| `frontend/src/components/chat/BrainStatus.tsx` | modified |
+| `frontend/src/components/layout/SettingsModal.tsx` | modified |
+| `frontend/src/components/workspace/AgentCodePanel.tsx` | added |
+| `frontend/src/components/workspace/WorkspaceStudio.tsx` | modified |
+| `frontend/src/lib/agentOutcome.ts` | modified |
+| `frontend/src/lib/chat.ts` | modified |
+| `frontend/src/lib/taskActions.ts` | modified |
+| `frontend/src/lib/workspaceSync.ts` | modified |
+| `frontend/tests/approval-flow.ts` | modified |
+| `frontend/tests/workspace-sync.ts` | modified |
+| `github/actions.py` | modified |
+| `mission/engine.py` | modified |
+| `mission/tracking.py` | modified |
+| `mission/validation.py` | added |
+| `providers/client.py` | modified |
+| `providers/streaming.py` | modified |
+| `router/engine.py` | modified |
+| `scripts/build_windows.ps1` | modified |
+| `scripts/installer.iss` | modified |
+| `scripts/ui_approval_smoke.py` | modified |
+| `scripts/ui_live_code_smoke.py` | added |
+| `scripts/ui_mission_code_smoke.py` | added |
+| `scripts/verify_source_integrity.py` | modified |
+| `tests/test_plain_code_fallback.py` | modified |
+| `tests/test_v221_live_editor_hidden_console.py` | modified |
+| `tests/test_v221_mission_multifile_regression.py` | modified |
+| `tests/test_v222_live_workspace.py` | added |
+| `tests/test_v222_source_mission.py` | added |
+| `verification/v2.22/SUMMARY.json` | added |
+| `verification/v2.22/browser-approvals.json` | added |
+| `verification/v2.22/browser-ollama-mission.json` | added |
+| `verification/v2.22/browser-sse-code.json` | added |
+| `verification/v2.22/browser-workspace.json` | added |
+| `verification/v2.22/frontend-build.log` | added |
+| `verification/v2.22/self-test.json` | added |
+| `verification/v2.22/tests.log` | added |
+| `verification/v2.22/tests.xml` | added |
+| `web/react/assets/index-BfLhEWa2.js` | removed |
+| `web/react/assets/index-D3gT8xgU.js` | added |
+| `web/react/assets/index-DDnENA4_.css` | removed |
+| `web/react/assets/index-Dvhk8yY_.css` | added |
+| `web/react/index.html` | modified |

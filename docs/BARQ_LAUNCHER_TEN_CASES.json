@@ -1,0 +1,55 @@
+{
+  "note": "Deterministic fixtures using fake local apps/files; not evidence of programs installed on Windows.",
+  "examples": [
+    {
+      "command": "يا برق افتحلي كروم",
+      "decision": "ask_approval",
+      "candidate": "Chrome"
+    },
+    {
+      "command": "شغل اكسل",
+      "decision": "ask_approval",
+      "candidate": "Excel"
+    },
+    {
+      "command": "افتح ملف التقرير",
+      "decision": "auto",
+      "candidate": "التقرير.pdf"
+    },
+    {
+      "command": "افتح فولدر مشروع",
+      "decision": "auto",
+      "candidate": "مشروع"
+    },
+    {
+      "command": "افتح يوتيوب",
+      "decision": "auto",
+      "candidate": "يوتيوب"
+    },
+    {
+      "command": "وريني وورد",
+      "decision": "ask_approval",
+      "candidate": "Word"
+    },
+    {
+      "command": "هاتلي واتساب",
+      "decision": "ask_approval",
+      "candidate": "WhatsApp"
+    },
+    {
+      "command": "افتح جيميل",
+      "decision": "auto",
+      "candidate": "جيميل"
+    },
+    {
+      "command": "افتح فايرفوكس",
+      "decision": "ask_approval",
+      "candidate": "Firefox"
+    },
+    {
+      "command": "ينفع تفتح برامج؟",
+      "decision": "not_command",
+      "candidate": null
+    }
+  ]
+}

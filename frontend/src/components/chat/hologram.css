@@ -1,0 +1,99 @@
+.barq-hologram {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  align-items: center;
+  justify-content: safe center;
+  overflow: auto;
+  padding: 16px clamp(10px, 3vw, 28px);
+  color: #e7f7ff;
+}
+.barq-hologram-console {
+  display: grid;
+  align-content: center;
+  justify-items: center;
+  width: min(100%, 920px);
+  gap: 12px;
+  padding: clamp(8px, 2vw, 20px);
+  border: 1px solid #20435a;
+  border-radius: 24px;
+  background: #060f1b;
+  box-shadow: var(--shadow-soft);
+}
+.barq-hologram-stage {
+  position: relative;
+  display: grid;
+  justify-items: center;
+  width: 100%;
+  overflow: hidden;
+  isolation: isolate;
+  border: 1px solid #1a3548;
+  border-radius: 15px;
+  background: radial-gradient(ellipse at 50% 52%, #13344e, #0a1a2a 57%, #070f1a 94%);
+}
+.barq-hologram-stage::before {
+  content: '';
+  position: absolute;
+  z-index: -1;
+  inset: 0;
+  opacity: .56;
+  pointer-events: none;
+  background: linear-gradient(90deg, #58caf015 1px, transparent 1px),
+    linear-gradient(#58caf015 1px, transparent 1px);
+  background-size: 28px 28px;
+  mask-image: radial-gradient(ellipse, #000 29%, transparent 85%);
+}
+.barq-hologram-header {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  width: 100%;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  padding: 12px 16px 0;
+}
+.barq-hologram-header h2 { font-size: clamp(21px, 3vw, 30px); line-height: 1.15; font-weight: 750; }
+.barq-hologram-header [role='status'] {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  color: #a8e9ff;
+  font-size: .82rem;
+}
+.barq-hologram-header [role='status']::before {
+  content: '';
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+  box-shadow: 0 0 11px currentColor;
+}
+.barq-hologram[data-phase='approval'] .barq-hologram-header [role='status'] { color: #ffc07d; }
+.barq-hologram[data-phase='hearing'] .barq-hologram-stage,
+.barq-hologram[data-phase='speaking'] .barq-hologram-stage { border-color: #36819f; }
+.barq-hologram-art {
+  display: block;
+  width: min(100%, 590px, 74dvh);
+  aspect-ratio: 500 / 342;
+}
+.barq-hologram-controls { display: grid; justify-items: center; gap: 8px; text-align: center; }
+.barq-hologram-controls button {
+  color: #dcf8ff;
+  border-color: #2c637e;
+  background: #13344b;
+}
+.barq-hologram-controls button:hover { background: #1b4a64; }
+.barq-hologram-caption {
+  max-width: 60ch;
+  max-height: min(13dvh, 94px);
+  overflow: auto;
+  overflow-wrap: anywhere;
+  color: #c5e5f4;
+  font-size: .92rem;
+}
+.barq-hologram-timings { color: #acd5ec; font-size: .8rem; }
+.barq-hologram-timings summary { cursor: pointer; }
+
+.barq-hologram-progress { width: min(220px, 65vw); height: 5px; accent-color: #58caf0; }

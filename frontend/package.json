@@ -1,0 +1,48 @@
+{
+  "name": "ai-router-agent-ui",
+  "private": true,
+  "version": "2.37.2",
+  "type": "module",
+  "scripts": {
+    "dev": "vite --host 127.0.0.1",
+    "build": "npm run verify:icons && tsc --noEmit && vite build",
+    "preview": "vite preview --host 127.0.0.1",
+    "typecheck": "tsc --noEmit --pretty false",
+    "test:chat": "node ../scripts/chat_coordination_smoke.mjs",
+    "verify:icons": "node scripts/check-lucide-imports.mjs",
+    "test:imports": "node --test scripts/check-lucide-imports.test.mjs",
+    "test:frontend": "node --test scripts/frontend-flow.test.cjs",
+    "test:approvals": "node ../scripts/chat_coordination_smoke.mjs tests/approval-flow.ts && node ../scripts/chat_coordination_smoke.mjs tests/replan-cooldown.ts",
+    "test:workspace": "node ../scripts/chat_coordination_smoke.mjs tests/workspace-sync.ts",
+    "test:ui": "node --test tests/chat_typography.test.cjs tests/ui_polish.test.cjs tests/work_center.test.cjs tests/workspace_typecheck_regression.test.cjs tests/voice_settings_handler.test.cjs tests/composer_context_alignment.test.cjs",
+    "test:voice": "node --test ../tests-js/voice_capture_resample.cjs ../tests-js/live_voice_roundtrip.cjs ../tests-js/live_voice_crash_regression.cjs ../tests-js/voice_task_handoff.cjs",
+    "test:folders": "node ../scripts/chat_coordination_smoke.mjs tests/folder-open.ts",
+    "test:screen": "node ../scripts/chat_coordination_smoke.mjs tests/screen-read.ts",
+    "test:companion": "node ../scripts/chat_coordination_smoke.mjs tests/companion.ts",
+    "test:personal": "node ../scripts/chat_coordination_smoke.mjs tests/personal.ts"
+  },
+  "dependencies": {
+    "framer-motion": "^11.18.2",
+    "lucide-react": "^0.468.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "react-markdown": "^9.0.3",
+    "react-syntax-highlighter": "^15.6.1",
+    "react-virtuoso": "^4.12.3",
+    "remark-gfm": "^4.0.0",
+    "zustand": "^5.0.3"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.5",
+    "@types/react": "^18.3.18",
+    "@types/react-dom": "^18.3.5",
+    "@types/react-syntax-highlighter": "^15.5.13",
+    "@vitejs/plugin-react": "^4.3.4",
+    "autoprefixer": "^10.4.20",
+    "postcss": "^8.4.49",
+    "tailwindcss": "^3.4.17",
+    "typescript": "^5.7.3",
+    "vite": "^6.0.6",
+    "esbuild": "^0.25.0"
+  }
+}

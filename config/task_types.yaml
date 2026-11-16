@@ -1,0 +1,2 @@
+types: [coding, debugging, reasoning, writing, translation, summarization, extraction, qa, chat, vision, long_document, tool]
+smart_path: [tool, long_document]

@@ -1,0 +1,282 @@
+[
+  {
+    "path": ".github/workflows/windows-build.yml",
+    "status": "modified",
+    "reason_ar": "تحديث الإصدار أو دليل البناء أو بصمات الحزمة."
+  },
+  {
+    "path": "BUILD_BARQ.bat",
+    "status": "modified",
+    "reason_ar": "تحديث الإصدار أو دليل البناء أو بصمات الحزمة."
+  },
+  {
+    "path": "BUILD_WINDOWS_EXE.bat",
+    "status": "modified",
+    "reason_ar": "تحديث الإصدار أو دليل البناء أو بصمات الحزمة."
+  },
+  {
+    "path": "README.md",
+    "status": "modified",
+    "reason_ar": "تحديث الإصدار أو دليل البناء أو بصمات الحزمة."
+  },
+  {
+    "path": "SOURCE_MANIFEST_SHA256.json",
+    "status": "modified",
+    "reason_ar": "تحديث الإصدار أو دليل البناء أو بصمات الحزمة."
+  },
+  {
+    "path": "START_HERE_AR.txt",
+    "status": "modified",
+    "reason_ar": "تحديث الإصدار أو دليل البناء أو بصمات الحزمة."
+  },
+  {
+    "path": "WINDOWS_BUILD_GUIDE_AR.md",
+    "status": "modified",
+    "reason_ar": "تحديث الإصدار أو دليل البناء أو بصمات الحزمة."
+  },
+  {
+    "path": "agent/task_intent.py",
+    "status": "modified",
+    "reason_ar": "فصل الطلب الأساسي عن الشروط، وفهم الإنشاء والأسئلة والنفي دون إسقاط المواصفات."
+  },
+  {
+    "path": "api.py",
+    "status": "modified",
+    "reason_ar": "مدخل موحد واستكمال للطلبات، وربط التخطيط بمعرف الأمر وحماية المعدل والمحادثة."
+  },
+  {
+    "path": "brain/commands.py",
+    "status": "added",
+    "reason_ar": "حفظ استقبال الأوامر وسياقها وخصوصيتها في SQLite، والاستعادة والإلغاء."
+  },
+  {
+    "path": "brain/coordinator.py",
+    "status": "modified",
+    "reason_ar": "تنسيق الاستقبال والفهم والحفظ والتخطيط، وعدم حجب الأوامر الواضحة بتعطل نموذج."
+  },
+  {
+    "path": "brain/failures.py",
+    "status": "added",
+    "reason_ar": "تشخيص آمن ومحدد دون كشف جسم رد المزود أو المفاتيح."
+  },
+  {
+    "path": "brain/understanding.py",
+    "status": "modified",
+    "reason_ar": "إرجاع سبب التعطل وتطبيع الحقول المساعدة مع التحقق من العقد."
+  },
+  {
+    "path": "command_network/contracts.py",
+    "status": "modified",
+    "reason_ar": "تمييز تنسيق JSON النصي من اشتراط API أصلي."
+  },
+  {
+    "path": "command_network/control.py",
+    "status": "modified",
+    "reason_ar": "فحص إتاحة للقراءة فقط وتحرير محاولة التعافي عند إلغاء الاتصال."
+  },
+  {
+    "path": "command_network/routing.py",
+    "status": "modified",
+    "reason_ar": "عدم حجز التعافي في المعاينة وتطبيق شرط JSON الأصلي عند طلبه فقط."
+  },
+  {
+    "path": "command_network/service.py",
+    "status": "modified",
+    "reason_ar": "توجيه عقود الفهم والتخطيط حسب غرضها النصي، لا الكلمات داخل البيانات."
+  },
+  {
+    "path": "core/version.py",
+    "status": "modified",
+    "reason_ar": "تحديث الإصدار أو دليل البناء أو بصمات الحزمة."
+  },
+  {
+    "path": "docs/v2.19/BUILD_REPORT_AR.md",
+    "status": "added",
+    "reason_ar": "تقرير أو سجل تحقق الإصدار."
+  },
+  {
+    "path": "docs/v2.19/CHANGED_FILES.json",
+    "status": "added",
+    "reason_ar": "تقرير أو سجل تحقق الإصدار."
+  },
+  {
+    "path": "docs/v2.19/CHANGED_FILES.md",
+    "status": "added",
+    "reason_ar": "تقرير أو سجل تحقق الإصدار."
+  },
+  {
+    "path": "docs/v2.19/COMMANDS_USER_GUIDE_AR.md",
+    "status": "added",
+    "reason_ar": "تقرير أو سجل تحقق الإصدار."
+  },
+  {
+    "path": "frontend/package-lock.json",
+    "status": "modified",
+    "reason_ar": "تحديث الإصدار أو دليل البناء أو بصمات الحزمة."
+  },
+  {
+    "path": "frontend/package.json",
+    "status": "modified",
+    "reason_ar": "تحديث الإصدار أو دليل البناء أو بصمات الحزمة."
+  },
+  {
+    "path": "frontend/src/App.tsx",
+    "status": "modified",
+    "reason_ar": "فتح إدارة النماذج من بطاقة الطلب."
+  },
+  {
+    "path": "frontend/src/components/chat/Message.tsx",
+    "status": "modified",
+    "reason_ar": "بطاقة سبب التوقف واستكمال نفس الطلب وإدارة النماذج."
+  },
+  {
+    "path": "frontend/src/components/layout/SettingsModal.tsx",
+    "status": "modified",
+    "reason_ar": "تحديث الإصدار أو دليل البناء أو بصمات الحزمة."
+  },
+  {
+    "path": "frontend/src/components/workspace/WorkspaceStudio.tsx",
+    "status": "modified",
+    "reason_ar": "تحديث الإصدار أو دليل البناء أو بصمات الحزمة."
+  },
+  {
+    "path": "frontend/src/lib/chat.ts",
+    "status": "modified",
+    "reason_ar": "مدخل الأوامر الموحد والاستكمال المرتبط بالطلب، مع دعم الخادم الأقدم."
+  },
+  {
+    "path": "frontend/src/store/index.ts",
+    "status": "modified",
+    "reason_ar": "حفظ بطاقة الطلب ومعرف الأمر ضمن المحادثة."
+  },
+  {
+    "path": "frontend/tests/chat-coordination.ts",
+    "status": "modified",
+    "reason_ar": "اختبار حفظ الطلب والاستكمال دون تنفيذ ضمني أو استبداله بدردشة."
+  },
+  {
+    "path": "monitor/health.py",
+    "status": "modified",
+    "reason_ar": "تصفير الانتظار القديم عند نجاح النموذج."
+  },
+  {
+    "path": "router/engine.py",
+    "status": "modified",
+    "reason_ar": "التحقق بالعقد المناسب، وتشخيص الاستبعاد، وتعافي الاتصال والوضع المحلي."
+  },
+  {
+    "path": "scripts/build_windows.ps1",
+    "status": "modified",
+    "reason_ar": "تحديث الإصدار وإدراج وحدات brain صراحة في التغليف."
+  },
+  {
+    "path": "scripts/installer.iss",
+    "status": "modified",
+    "reason_ar": "تحديث الإصدار أو دليل البناء أو بصمات الحزمة."
+  },
+  {
+    "path": "scripts/ui_command_smoke.py",
+    "status": "added",
+    "reason_ar": "فحص React وFastAPI وEngine وHTTP في متصفح مع سيناريو عطل وإعادة تشغيل واستكمال."
+  },
+  {
+    "path": "scripts/verify_source_integrity.py",
+    "status": "modified",
+    "reason_ar": "اشتراط وجود وحدات الأوامر والتشخيص والفهم الجديدة."
+  },
+  {
+    "path": "tests/test_v219_command_intake.py",
+    "status": "added",
+    "reason_ar": "33 حالة لسلوك الاستقبال والتوجيه ومحولات HTTP والتعافي والملكية والنفي."
+  },
+  {
+    "path": "verification/v2.19/browser-command-smoke.json",
+    "status": "added",
+    "reason_ar": "تقرير أو سجل تحقق الإصدار."
+  },
+  {
+    "path": "verification/v2.19/browser-command-smoke.log",
+    "status": "added",
+    "reason_ar": "تقرير أو سجل تحقق الإصدار."
+  },
+  {
+    "path": "verification/v2.19/chat-tests.log",
+    "status": "added",
+    "reason_ar": "تقرير أو سجل تحقق الإصدار."
+  },
+  {
+    "path": "verification/v2.19/command-intake.log",
+    "status": "added",
+    "reason_ar": "تقرير أو سجل تحقق الإصدار."
+  },
+  {
+    "path": "verification/v2.19/frontend-validation.log",
+    "status": "added",
+    "reason_ar": "تقرير أو سجل تحقق الإصدار."
+  },
+  {
+    "path": "verification/v2.19/intake-routing-tests.log",
+    "status": "added",
+    "reason_ar": "تقرير أو سجل تحقق الإصدار."
+  },
+  {
+    "path": "verification/v2.19/python-tests.log",
+    "status": "added",
+    "reason_ar": "تقرير أو سجل تحقق الإصدار."
+  },
+  {
+    "path": "verification/v2.19/python-tests.xml",
+    "status": "added",
+    "reason_ar": "تقرير أو سجل تحقق الإصدار."
+  },
+  {
+    "path": "verification/v2.19/recovery-checks.log",
+    "status": "added",
+    "reason_ar": "تقرير أو سجل تحقق الإصدار."
+  },
+  {
+    "path": "verification/v2.19/reproduced-intake.log",
+    "status": "added",
+    "reason_ar": "تقرير أو سجل تحقق الإصدار."
+  },
+  {
+    "path": "verification/v2.19/source-preflight.log",
+    "status": "added",
+    "reason_ar": "تقرير أو سجل تحقق الإصدار."
+  },
+  {
+    "path": "verification/v2.19/source-self-test.json",
+    "status": "added",
+    "reason_ar": "تقرير أو سجل تحقق الإصدار."
+  },
+  {
+    "path": "verification/v2.19/targeted-core.log",
+    "status": "added",
+    "reason_ar": "تقرير أو سجل تحقق الإصدار."
+  },
+  {
+    "path": "web/react/assets/index-BXc5iWww.js",
+    "status": "removed",
+    "reason_ar": "أصول React المبنية من السورس الجديد."
+  },
+  {
+    "path": "web/react/assets/index-CYTIIBig.css",
+    "status": "removed",
+    "reason_ar": "أصول React المبنية من السورس الجديد."
+  },
+  {
+    "path": "web/react/assets/index-DErvsRMr.css",
+    "status": "added",
+    "reason_ar": "أصول React المبنية من السورس الجديد."
+  },
+  {
+    "path": "web/react/assets/index-EUfUlAFm.js",
+    "status": "added",
+    "reason_ar": "أصول React المبنية من السورس الجديد."
+  },
+  {
+    "path": "web/react/index.html",
+    "status": "modified",
+    "reason_ar": "أصول React المبنية من السورس الجديد."
+  }
+]

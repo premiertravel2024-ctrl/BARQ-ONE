@@ -1,0 +1,360 @@
+{"text": "اكتبلي كود بايثون", "task_type": "coding"}
+{"text": "اكتبلي كود بايثون من فضلك", "task_type": "coding"}
+{"text": "اكتبلي كود بايثون بسرعة", "task_type": "coding"}
+{"text": "ظبطلي الكود ده", "task_type": "coding"}
+{"text": "ظبطلي الكود ده من فضلك", "task_type": "coding"}
+{"text": "ظبطلي الكود ده بسرعة", "task_type": "coding"}
+{"text": "اعمل مشروع برمجة", "task_type": "coding"}
+{"text": "اعمل مشروع برمجة من فضلك", "task_type": "coding"}
+{"text": "اعمل مشروع برمجة بسرعة", "task_type": "coding"}
+{"text": "write a Python function", "task_type": "coding"}
+{"text": "write a Python function من فضلك", "task_type": "coding"}
+{"text": "write a Python function بسرعة", "task_type": "coding"}
+{"text": "build a React app", "task_type": "coding"}
+{"text": "build a React app من فضلك", "task_type": "coding"}
+{"text": "build a React app بسرعة", "task_type": "coding"}
+{"text": "a3mel code python", "task_type": "coding"}
+{"text": "a3mel code python من فضلك", "task_type": "coding"}
+{"text": "a3mel code python بسرعة", "task_type": "coding"}
+{"text": "اكتب كود جافاسكريبت", "task_type": "coding"}
+{"text": "اكتب كود جافاسكريبت من فضلك", "task_type": "coding"}
+{"text": "اكتب كود جافاسكريبت بسرعة", "task_type": "coding"}
+{"text": "generate TypeScript code", "task_type": "coding"}
+{"text": "generate TypeScript code من فضلك", "task_type": "coding"}
+{"text": "generate TypeScript code بسرعة", "task_type": "coding"}
+{"text": "محتاج دالة Python", "task_type": "coding"}
+{"text": "محتاج دالة Python من فضلك", "task_type": "coding"}
+{"text": "محتاج دالة Python بسرعة", "task_type": "coding"}
+{"text": "implement new feature in code", "task_type": "coding"}
+{"text": "implement new feature in code من فضلك", "task_type": "coding"}
+{"text": "implement new feature in code بسرعة", "task_type": "coding"}
+{"text": "صلح الكود ده", "task_type": "debugging"}
+{"text": "صلح الكود ده من فضلك", "task_type": "debugging"}
+{"text": "صلح الكود ده بسرعة", "task_type": "debugging"}
+{"text": "الايرور ده مش راضي يتحل", "task_type": "debugging"}
+{"text": "الايرور ده مش راضي يتحل من فضلك", "task_type": "debugging"}
+{"text": "الايرور ده مش راضي يتحل بسرعة", "task_type": "debugging"}
+{"text": "عندي خطأ في البرنامج", "task_type": "debugging"}
+{"text": "عندي خطأ في البرنامج من فضلك", "task_type": "debugging"}
+{"text": "عندي خطأ في البرنامج بسرعة", "task_type": "debugging"}
+{"text": "debug this error", "task_type": "debugging"}
+{"text": "debug this error من فضلك", "task_type": "debugging"}
+{"text": "debug this error بسرعة", "task_type": "debugging"}
+{"text": "fix the TypeScript bug", "task_type": "debugging"}
+{"text": "fix the TypeScript bug من فضلك", "task_type": "debugging"}
+{"text": "fix the TypeScript bug بسرعة", "task_type": "debugging"}
+{"text": "error in Python stack trace", "task_type": "debugging"}
+{"text": "error in Python stack trace من فضلك", "task_type": "debugging"}
+{"text": "error in Python stack trace بسرعة", "task_type": "debugging"}
+{"text": "ازاي اصلح exception", "task_type": "debugging"}
+{"text": "ازاي اصلح exception من فضلك", "task_type": "debugging"}
+{"text": "ازاي اصلح exception بسرعة", "task_type": "debugging"}
+{"text": "عالج bug في الكود", "task_type": "debugging"}
+{"text": "عالج bug في الكود من فضلك", "task_type": "debugging"}
+{"text": "عالج bug في الكود بسرعة", "task_type": "debugging"}
+{"text": "حل مشكلة traceback", "task_type": "debugging"}
+{"text": "حل مشكلة traceback من فضلك", "task_type": "debugging"}
+{"text": "حل مشكلة traceback بسرعة", "task_type": "debugging"}
+{"text": "fix this exception", "task_type": "debugging"}
+{"text": "fix this exception من فضلك", "task_type": "debugging"}
+{"text": "fix this exception بسرعة", "task_type": "debugging"}
+{"text": "احسب الناتج", "task_type": "reasoning"}
+{"text": "احسب الناتج من فضلك", "task_type": "reasoning"}
+{"text": "احسب الناتج بسرعة", "task_type": "reasoning"}
+{"text": "برهن النظرية دي", "task_type": "reasoning"}
+{"text": "برهن النظرية دي من فضلك", "task_type": "reasoning"}
+{"text": "برهن النظرية دي بسرعة", "task_type": "reasoning"}
+{"text": "حل المعادلة", "task_type": "reasoning"}
+{"text": "حل المعادلة من فضلك", "task_type": "reasoning"}
+{"text": "حل المعادلة بسرعة", "task_type": "reasoning"}
+{"text": "calculate this formula", "task_type": "reasoning"}
+{"text": "calculate this formula من فضلك", "task_type": "reasoning"}
+{"text": "calculate this formula بسرعة", "task_type": "reasoning"}
+{"text": "solve this integral", "task_type": "reasoning"}
+{"text": "solve this integral من فضلك", "task_type": "reasoning"}
+{"text": "solve this integral بسرعة", "task_type": "reasoning"}
+{"text": "اوجد ناتج معادلة", "task_type": "reasoning"}
+{"text": "اوجد ناتج معادلة من فضلك", "task_type": "reasoning"}
+{"text": "اوجد ناتج معادلة بسرعة", "task_type": "reasoning"}
+{"text": "احسب المساحة", "task_type": "reasoning"}
+{"text": "احسب المساحة من فضلك", "task_type": "reasoning"}
+{"text": "احسب المساحة بسرعة", "task_type": "reasoning"}
+{"text": "prove this equation", "task_type": "reasoning"}
+{"text": "prove this equation من فضلك", "task_type": "reasoning"}
+{"text": "prove this equation بسرعة", "task_type": "reasoning"}
+{"text": "مسألة رياضيات", "task_type": "reasoning"}
+{"text": "مسألة رياضيات من فضلك", "task_type": "reasoning"}
+{"text": "مسألة رياضيات بسرعة", "task_type": "reasoning"}
+{"text": "calculate the probability", "task_type": "reasoning"}
+{"text": "calculate the probability من فضلك", "task_type": "reasoning"}
+{"text": "calculate the probability بسرعة", "task_type": "reasoning"}
+{"text": "اكتب رسالة رسمية", "task_type": "writing"}
+{"text": "اكتب رسالة رسمية من فضلك", "task_type": "writing"}
+{"text": "اكتب رسالة رسمية بسرعة", "task_type": "writing"}
+{"text": "اكتب إيميل للعمل", "task_type": "writing"}
+{"text": "اكتب إيميل للعمل من فضلك", "task_type": "writing"}
+{"text": "اكتب إيميل للعمل بسرعة", "task_type": "writing"}
+{"text": "اكتب مقال قصير", "task_type": "writing"}
+{"text": "اكتب مقال قصير من فضلك", "task_type": "writing"}
+{"text": "اكتب مقال قصير بسرعة", "task_type": "writing"}
+{"text": "draft an email", "task_type": "writing"}
+{"text": "draft an email من فضلك", "task_type": "writing"}
+{"text": "draft an email بسرعة", "task_type": "writing"}
+{"text": "write a social post", "task_type": "writing"}
+{"text": "write a social post من فضلك", "task_type": "writing"}
+{"text": "write a social post بسرعة", "task_type": "writing"}
+{"text": "اكتب رسالة واتساب", "task_type": "writing"}
+{"text": "اكتب رسالة واتساب من فضلك", "task_type": "writing"}
+{"text": "اكتب رسالة واتساب بسرعة", "task_type": "writing"}
+{"text": "صياغة بوست جديد", "task_type": "writing"}
+{"text": "صياغة بوست جديد من فضلك", "task_type": "writing"}
+{"text": "صياغة بوست جديد بسرعة", "task_type": "writing"}
+{"text": "write an article", "task_type": "writing"}
+{"text": "write an article من فضلك", "task_type": "writing"}
+{"text": "write an article بسرعة", "task_type": "writing"}
+{"text": "اكتب بريد للعميل", "task_type": "writing"}
+{"text": "اكتب بريد للعميل من فضلك", "task_type": "writing"}
+{"text": "اكتب بريد للعميل بسرعة", "task_type": "writing"}
+{"text": "draft a letter", "task_type": "writing"}
+{"text": "draft a letter من فضلك", "task_type": "writing"}
+{"text": "draft a letter بسرعة", "task_type": "writing"}
+{"text": "ترجم الجملة", "task_type": "translation"}
+{"text": "ترجم الجملة من فضلك", "task_type": "translation"}
+{"text": "ترجم الجملة بسرعة", "task_type": "translation"}
+{"text": "ترجمة النص للإنجليزي", "task_type": "translation"}
+{"text": "ترجمة النص للإنجليزي من فضلك", "task_type": "translation"}
+{"text": "ترجمة النص للإنجليزي بسرعة", "task_type": "translation"}
+{"text": "حول الكلام لعربي translate", "task_type": "translation"}
+{"text": "حول الكلام لعربي translate من فضلك", "task_type": "translation"}
+{"text": "حول الكلام لعربي translate بسرعة", "task_type": "translation"}
+{"text": "translate this paragraph", "task_type": "translation"}
+{"text": "translate this paragraph من فضلك", "task_type": "translation"}
+{"text": "translate this paragraph بسرعة", "task_type": "translation"}
+{"text": "translation from Arabic to English", "task_type": "translation"}
+{"text": "translation from Arabic to English من فضلك", "task_type": "translation"}
+{"text": "translation from Arabic to English بسرعة", "task_type": "translation"}
+{"text": "ترجم إلى المصري", "task_type": "translation"}
+{"text": "ترجم إلى المصري من فضلك", "task_type": "translation"}
+{"text": "ترجم إلى المصري بسرعة", "task_type": "translation"}
+{"text": "translate to French", "task_type": "translation"}
+{"text": "translate to French من فضلك", "task_type": "translation"}
+{"text": "translate to French بسرعة", "task_type": "translation"}
+{"text": "محتاج ترجمة رسالة", "task_type": "translation"}
+{"text": "محتاج ترجمة رسالة من فضلك", "task_type": "translation"}
+{"text": "محتاج ترجمة رسالة بسرعة", "task_type": "translation"}
+{"text": "ترجم المقال", "task_type": "translation"}
+{"text": "ترجم المقال من فضلك", "task_type": "translation"}
+{"text": "ترجم المقال بسرعة", "task_type": "translation"}
+{"text": "translate accurately", "task_type": "translation"}
+{"text": "translate accurately من فضلك", "task_type": "translation"}
+{"text": "translate accurately بسرعة", "task_type": "translation"}
+{"text": "لخصلي المقال", "task_type": "summarization"}
+{"text": "لخصلي المقال من فضلك", "task_type": "summarization"}
+{"text": "لخصلي المقال بسرعة", "task_type": "summarization"}
+{"text": "اختصر التقرير", "task_type": "summarization"}
+{"text": "اختصر التقرير من فضلك", "task_type": "summarization"}
+{"text": "اختصر التقرير بسرعة", "task_type": "summarization"}
+{"text": "اعمل تلخيص للنص", "task_type": "summarization"}
+{"text": "اعمل تلخيص للنص من فضلك", "task_type": "summarization"}
+{"text": "اعمل تلخيص للنص بسرعة", "task_type": "summarization"}
+{"text": "summarize this paragraph", "task_type": "summarization"}
+{"text": "summarize this paragraph من فضلك", "task_type": "summarization"}
+{"text": "summarize this paragraph بسرعة", "task_type": "summarization"}
+{"text": "give a short summary", "task_type": "summarization"}
+{"text": "give a short summary من فضلك", "task_type": "summarization"}
+{"text": "give a short summary بسرعة", "task_type": "summarization"}
+{"text": "لخص المحتوى", "task_type": "summarization"}
+{"text": "لخص المحتوى من فضلك", "task_type": "summarization"}
+{"text": "لخص المحتوى بسرعة", "task_type": "summarization"}
+{"text": "تلخيص ملف", "task_type": "summarization"}
+{"text": "تلخيص ملف من فضلك", "task_type": "summarization"}
+{"text": "تلخيص ملف بسرعة", "task_type": "summarization"}
+{"text": "summarize key findings", "task_type": "summarization"}
+{"text": "summarize key findings من فضلك", "task_type": "summarization"}
+{"text": "summarize key findings بسرعة", "task_type": "summarization"}
+{"text": "اختصر الكلام", "task_type": "summarization"}
+{"text": "اختصر الكلام من فضلك", "task_type": "summarization"}
+{"text": "اختصر الكلام بسرعة", "task_type": "summarization"}
+{"text": "brief this article", "task_type": "summarization"}
+{"text": "brief this article من فضلك", "task_type": "summarization"}
+{"text": "brief this article بسرعة", "task_type": "summarization"}
+{"text": "استخرج أرقام الفواتير", "task_type": "extraction"}
+{"text": "استخرج أرقام الفواتير من فضلك", "task_type": "extraction"}
+{"text": "استخرج أرقام الفواتير بسرعة", "task_type": "extraction"}
+{"text": "اطلع البيانات من المستند", "task_type": "extraction"}
+{"text": "اطلع البيانات من المستند من فضلك", "task_type": "extraction"}
+{"text": "اطلع البيانات من المستند بسرعة", "task_type": "extraction"}
+{"text": "استخلص المعلومات", "task_type": "extraction"}
+{"text": "استخلص المعلومات من فضلك", "task_type": "extraction"}
+{"text": "استخلص المعلومات بسرعة", "task_type": "extraction"}
+{"text": "extract data from table", "task_type": "extraction"}
+{"text": "extract data from table من فضلك", "task_type": "extraction"}
+{"text": "extract data from table بسرعة", "task_type": "extraction"}
+{"text": "parse the following JSON", "task_type": "extraction"}
+{"text": "parse the following JSON من فضلك", "task_type": "extraction"}
+{"text": "parse the following JSON بسرعة", "task_type": "extraction"}
+{"text": "استخرج الأسماء", "task_type": "extraction"}
+{"text": "استخرج الأسماء من فضلك", "task_type": "extraction"}
+{"text": "استخرج الأسماء بسرعة", "task_type": "extraction"}
+{"text": "استخراج رقم التذكرة", "task_type": "extraction"}
+{"text": "استخراج رقم التذكرة من فضلك", "task_type": "extraction"}
+{"text": "استخراج رقم التذكرة بسرعة", "task_type": "extraction"}
+{"text": "extract invoice numbers", "task_type": "extraction"}
+{"text": "extract invoice numbers من فضلك", "task_type": "extraction"}
+{"text": "extract invoice numbers بسرعة", "task_type": "extraction"}
+{"text": "استخرج المواعيد", "task_type": "extraction"}
+{"text": "استخرج المواعيد من فضلك", "task_type": "extraction"}
+{"text": "استخرج المواعيد بسرعة", "task_type": "extraction"}
+{"text": "parse the text", "task_type": "extraction"}
+{"text": "parse the text من فضلك", "task_type": "extraction"}
+{"text": "parse the text بسرعة", "task_type": "extraction"}
+{"text": "ايه معنى المصطلح", "task_type": "qa"}
+{"text": "ايه معنى المصطلح من فضلك", "task_type": "qa"}
+{"text": "ايه معنى المصطلح بسرعة", "task_type": "qa"}
+{"text": "إزاي استخدم البرنامج", "task_type": "qa"}
+{"text": "إزاي استخدم البرنامج من فضلك", "task_type": "qa"}
+{"text": "إزاي استخدم البرنامج بسرعة", "task_type": "qa"}
+{"text": "ليه حصل كده", "task_type": "qa"}
+{"text": "ليه حصل كده من فضلك", "task_type": "qa"}
+{"text": "ليه حصل كده بسرعة", "task_type": "qa"}
+{"text": "what is the difference", "task_type": "qa"}
+{"text": "what is the difference من فضلك", "task_type": "qa"}
+{"text": "what is the difference بسرعة", "task_type": "qa"}
+{"text": "why does it work", "task_type": "qa"}
+{"text": "why does it work من فضلك", "task_type": "qa"}
+{"text": "why does it work بسرعة", "task_type": "qa"}
+{"text": "how does this function work", "task_type": "qa"}
+{"text": "how does this function work من فضلك", "task_type": "qa"}
+{"text": "how does this function work بسرعة", "task_type": "qa"}
+{"text": "ماذا يعني هذا", "task_type": "qa"}
+{"text": "ماذا يعني هذا من فضلك", "task_type": "qa"}
+{"text": "ماذا يعني هذا بسرعة", "task_type": "qa"}
+{"text": "where can I find info", "task_type": "qa"}
+{"text": "where can I find info من فضلك", "task_type": "qa"}
+{"text": "where can I find info بسرعة", "task_type": "qa"}
+{"text": "who is responsible", "task_type": "qa"}
+{"text": "who is responsible من فضلك", "task_type": "qa"}
+{"text": "who is responsible بسرعة", "task_type": "qa"}
+{"text": "ممكن تشرح ليه", "task_type": "qa"}
+{"text": "ممكن تشرح ليه من فضلك", "task_type": "qa"}
+{"text": "ممكن تشرح ليه بسرعة", "task_type": "qa"}
+{"text": "صباح الخير يا برق", "task_type": "chat"}
+{"text": "صباح الخير يا برق من فضلك", "task_type": "chat"}
+{"text": "صباح الخير يا برق بسرعة", "task_type": "chat"}
+{"text": "عامل ايه النهارده", "task_type": "chat"}
+{"text": "عامل ايه النهارده من فضلك", "task_type": "chat"}
+{"text": "عامل ايه النهارده بسرعة", "task_type": "chat"}
+{"text": "خفيف زي السهم", "task_type": "chat"}
+{"text": "خفيف زي السهم من فضلك", "task_type": "chat"}
+{"text": "خفيف زي السهم بسرعة", "task_type": "chat"}
+{"text": "hello friend", "task_type": "chat"}
+{"text": "hello friend من فضلك", "task_type": "chat"}
+{"text": "hello friend بسرعة", "task_type": "chat"}
+{"text": "good morning", "task_type": "chat"}
+{"text": "good morning من فضلك", "task_type": "chat"}
+{"text": "good morning بسرعة", "task_type": "chat"}
+{"text": "عايز اتكلم معاك", "task_type": "chat"}
+{"text": "عايز اتكلم معاك من فضلك", "task_type": "chat"}
+{"text": "عايز اتكلم معاك بسرعة", "task_type": "chat"}
+{"text": "يا برق يا صاحبي", "task_type": "chat"}
+{"text": "يا برق يا صاحبي من فضلك", "task_type": "chat"}
+{"text": "يا برق يا صاحبي بسرعة", "task_type": "chat"}
+{"text": "إزيك يا معلم", "task_type": "chat"}
+{"text": "إزيك يا معلم من فضلك", "task_type": "chat"}
+{"text": "إزيك يا معلم بسرعة", "task_type": "chat"}
+{"text": "عاوز نسولف شوية", "task_type": "chat"}
+{"text": "عاوز نسولف شوية من فضلك", "task_type": "chat"}
+{"text": "عاوز نسولف شوية بسرعة", "task_type": "chat"}
+{"text": "hi there", "task_type": "chat"}
+{"text": "hi there من فضلك", "task_type": "chat"}
+{"text": "hi there بسرعة", "task_type": "chat"}
+{"text": "حلل الصورة دي", "task_type": "vision"}
+{"text": "حلل الصورة دي من فضلك", "task_type": "vision"}
+{"text": "حلل الصورة دي بسرعة", "task_type": "vision"}
+{"text": "إيه اللي في الصورة", "task_type": "vision"}
+{"text": "إيه اللي في الصورة من فضلك", "task_type": "vision"}
+{"text": "إيه اللي في الصورة بسرعة", "task_type": "vision"}
+{"text": "اشرح الصورة", "task_type": "vision"}
+{"text": "اشرح الصورة من فضلك", "task_type": "vision"}
+{"text": "اشرح الصورة بسرعة", "task_type": "vision"}
+{"text": "describe this image", "task_type": "vision"}
+{"text": "describe this image من فضلك", "task_type": "vision"}
+{"text": "describe this image بسرعة", "task_type": "vision"}
+{"text": "read this screenshot", "task_type": "vision"}
+{"text": "read this screenshot من فضلك", "task_type": "vision"}
+{"text": "read this screenshot بسرعة", "task_type": "vision"}
+{"text": "حلل لقطة الشاشة", "task_type": "vision"}
+{"text": "حلل لقطة الشاشة من فضلك", "task_type": "vision"}
+{"text": "حلل لقطة الشاشة بسرعة", "task_type": "vision"}
+{"text": "image recognition help", "task_type": "vision"}
+{"text": "image recognition help من فضلك", "task_type": "vision"}
+{"text": "image recognition help بسرعة", "task_type": "vision"}
+{"text": "what is in this photo", "task_type": "vision"}
+{"text": "what is in this photo من فضلك", "task_type": "vision"}
+{"text": "what is in this photo بسرعة", "task_type": "vision"}
+{"text": "فسر الرسمة دي", "task_type": "vision"}
+{"text": "فسر الرسمة دي من فضلك", "task_type": "vision"}
+{"text": "فسر الرسمة دي بسرعة", "task_type": "vision"}
+{"text": "اقرأ محتوى الصورة", "task_type": "vision"}
+{"text": "اقرأ محتوى الصورة من فضلك", "task_type": "vision"}
+{"text": "اقرأ محتوى الصورة بسرعة", "task_type": "vision"}
+{"text": "لخص مستند طويل PDF", "task_type": "long_document"}
+{"text": "لخص مستند طويل PDF من فضلك", "task_type": "long_document"}
+{"text": "لخص مستند طويل PDF بسرعة", "task_type": "long_document"}
+{"text": "اعمل تحليل لملف pdf", "task_type": "long_document"}
+{"text": "اعمل تحليل لملف pdf من فضلك", "task_type": "long_document"}
+{"text": "اعمل تحليل لملف pdf بسرعة", "task_type": "long_document"}
+{"text": "summarize a 200 page PDF", "task_type": "long_document"}
+{"text": "summarize a 200 page PDF من فضلك", "task_type": "long_document"}
+{"text": "summarize a 200 page PDF بسرعة", "task_type": "long_document"}
+{"text": "read long document", "task_type": "long_document"}
+{"text": "read long document من فضلك", "task_type": "long_document"}
+{"text": "read long document بسرعة", "task_type": "long_document"}
+{"text": "ملف طويل عايز تلخيصه", "task_type": "long_document"}
+{"text": "ملف طويل عايز تلخيصه من فضلك", "task_type": "long_document"}
+{"text": "ملف طويل عايز تلخيصه بسرعة", "task_type": "long_document"}
+{"text": "summarize PDF report", "task_type": "long_document"}
+{"text": "summarize PDF report من فضلك", "task_type": "long_document"}
+{"text": "summarize PDF report بسرعة", "task_type": "long_document"}
+{"text": "راجع وثيقة طويلة", "task_type": "long_document"}
+{"text": "راجع وثيقة طويلة من فضلك", "task_type": "long_document"}
+{"text": "راجع وثيقة طويلة بسرعة", "task_type": "long_document"}
+{"text": "long document overview", "task_type": "long_document"}
+{"text": "long document overview من فضلك", "task_type": "long_document"}
+{"text": "long document overview بسرعة", "task_type": "long_document"}
+{"text": "summarize 100 pages", "task_type": "long_document"}
+{"text": "summarize 100 pages من فضلك", "task_type": "long_document"}
+{"text": "summarize 100 pages بسرعة", "task_type": "long_document"}
+{"text": "مراجعة ملف pdf طويل", "task_type": "long_document"}
+{"text": "مراجعة ملف pdf طويل من فضلك", "task_type": "long_document"}
+{"text": "مراجعة ملف pdf طويل بسرعة", "task_type": "long_document"}
+{"text": "افتح الكروم", "task_type": "tool"}
+{"text": "افتح الكروم من فضلك", "task_type": "tool"}
+{"text": "افتح الكروم بسرعة", "task_type": "tool"}
+{"text": "شغل البرنامج", "task_type": "tool"}
+{"text": "شغل البرنامج من فضلك", "task_type": "tool"}
+{"text": "شغل البرنامج بسرعة", "task_type": "tool"}
+{"text": "نفذ الامر ده", "task_type": "tool"}
+{"text": "نفذ الامر ده من فضلك", "task_type": "tool"}
+{"text": "نفذ الامر ده بسرعة", "task_type": "tool"}
+{"text": "افتح المتصفح", "task_type": "tool"}
+{"text": "افتح المتصفح من فضلك", "task_type": "tool"}
+{"text": "افتح المتصفح بسرعة", "task_type": "tool"}
+{"text": "execute the terminal command", "task_type": "tool"}
+{"text": "execute the terminal command من فضلك", "task_type": "tool"}
+{"text": "execute the terminal command بسرعة", "task_type": "tool"}
+{"text": "run the build tool", "task_type": "tool"}
+{"text": "run the build tool من فضلك", "task_type": "tool"}
+{"text": "run the build tool بسرعة", "task_type": "tool"}
+{"text": "احذف الملف المحدد", "task_type": "tool"}
+{"text": "احذف الملف المحدد من فضلك", "task_type": "tool"}
+{"text": "احذف الملف المحدد بسرعة", "task_type": "tool"}
+{"text": "افتح برنامج الوورد", "task_type": "tool"}
+{"text": "افتح برنامج الوورد من فضلك", "task_type": "tool"}
+{"text": "افتح برنامج الوورد بسرعة", "task_type": "tool"}
+{"text": "تحكم في الكمبيوتر", "task_type": "tool"}
+{"text": "تحكم في الكمبيوتر من فضلك", "task_type": "tool"}
+{"text": "تحكم في الكمبيوتر بسرعة", "task_type": "tool"}
+{"text": "open Chrome browser", "task_type": "tool"}
+{"text": "open Chrome browser من فضلك", "task_type": "tool"}
+{"text": "open Chrome browser بسرعة", "task_type": "tool"}
