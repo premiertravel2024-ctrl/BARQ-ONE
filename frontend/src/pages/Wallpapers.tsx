@@ -1,7 +1,8 @@
 import {useEffect, useRef, useState} from 'react';
-import {Download, ExternalLink, Image, Pause, Play, Plus, RefreshCw, Shuffle, Square, Volume2} from 'lucide-react';
+import {Download, ExternalLink, Heart, Image, Layers, Pause, Play, Plus, RefreshCw, Search, Shuffle, Square, Volume2} from 'lucide-react';
 import {requestJSON} from '../lib/backend';
 import {useApp} from '../store';
+import './wallpaperGallery.css';
 
 type Wallpaper = {id: string; title: string; type: string; preview_available: boolean};
 type Reply = {
@@ -23,6 +24,19 @@ export function Wallpapers() {
   const [volume, setVolume] = useState(40);
   const [installing, setInstalling] = useState(false);
   const pending = useRef(false);
+  const [query,setQuery]=useState('');
+  const [filter,setFilter]=useState<'all'|'video'|'gif'|'favorites'>('all');
+  const [favorites,setFavorites]=useState<string[]>(()=>{
+    try{const value:unknown=JSON.parse(localStorage.getItem('barq-wallpaper-favorites')||'[]');
+      return Array.isArray(value)?value.filter((x):x is string=>typeof x==='string'):[]}catch{return []}
+  });
+  function toggleFavorite(id:string){
+    const list=favorites.includes(id)?favorites.filter(x=>x!==id):[...favorites,id];
+    setFavorites(list);try{localStorage.setItem('barq-wallpaper-favorites',JSON.stringify(list))}catch{}
+  }
+  function isGif(item:Wallpaper){return /gif/i.test(item.type)||/\.gif$/i.test(item.title)}
+  function isVideo(item:Wallpaper){return /video|mp4|webm|^0$|^1$/i.test(item.type)||/\.(mp4|webm)$/i.test(item.title)}
+
 
   async function refresh() {
     const result = await requestJSON<Reply>('/v1/wallpapers/status?metrics=false');
@@ -98,47 +112,67 @@ export function Wallpapers() {
   }
 
   const ready = data?.engine ? data.engine.supported : data?.lively.installed;
-  return <div className="barq-media" dir={ar ? 'rtl' : 'ltr'}>
-    {data?.engine?.supported && <section className="barq-media-panel">
-      <Image size={28} aria-hidden="true"/>
-      <h2>{ar ? 'محرك الخلفيات الحية المدمج' : 'Built-in live wallpaper engine'}</h2>
-      <p className="barq-muted">{ar ? 'شغّل فيديو أو GIF كخلفية من داخل برق من غير تنزيل أو تثبيت Lively. ملفاتك بتفضل على جهازك.' : 'Run videos or GIFs as wallpapers directly from BARQ; no separate Lively installation. Your files stay local.'}</p>
-      <span className="barq-chip">{data.engine.running ? (ar ? 'الخلفية شغالة' : 'Wallpaper running') : (ar ? 'جاهز للتشغيل' : 'Ready to play')}</span>
+  const list=(data?.library||[]).filter(item=>{
+    const match=(item.title+' '+item.type).toLowerCase().includes(query.trim().toLowerCase());
+    return match&&(filter==='all'||(filter==='favorites'?favorites.includes(item.id):filter==='gif'?isGif(item):isVideo(item)));
+  });
+  const featured=(data?.library||[]).find(x=>x.id===data?.engine?.wallpaper_id)||(data?.library||[])[0];
+  return <div className="barq-media barq-wallpaper-studio" dir={ar?'rtl':'ltr'}>
+   <header className="bws-hero">
+    <div className="bws-hero-copy">
+     <span className="bws-overline"><Layers size={16}/> BARQ WALLPAPER STUDIO</span>
+     <h2>{ar?'مساحتك، مزاجك، خلفيتك':'Your space. Your atmosphere.'}</h2>
+     <p>{ar?'اكتشف الخلفيات الحية اللي على جهازك، رتّب المفضلة، وشغّل اللي يعجبك في ثواني.':'Explore your local animated wallpapers, save favorites, and apply in one click.'}</p>
+     <div className="bws-hero-actions">
+       <button className="bws-main-btn" disabled={busy||!ready} onClick={addLocal}><Plus size={18}/>{ar?'أضف خلفية حية':'Add live wallpaper'}</button>
+       <button disabled={busy} onClick={()=>void operate(async()=>{await refresh()})}><RefreshCw size={16}/>{ar?'تحديث المكتبة':'Refresh library'}</button>
+     </div>
+     {data?.engine&&<span className={'bws-engine-state'+(data.engine.running?' bws-active':'')}>{data.engine.running?(ar?'الخلفية شغالة حاليًا':'Wallpaper playing'):(ar?'محرك برق جاهز':'BARQ engine ready')}</span>}
+    </div>
+    <div className="bws-feature-preview" aria-hidden="true">
+     {featured?.preview_available?<img alt="" src={'/v1/wallpapers/preview/'+encodeURIComponent(featured.id)}/>:<Image size={78}/>}
+     <span className="bws-feature-badge">{ar?'خلفياتك الحية':'YOUR LIBRARY'}</span>
+    </div>
+   </header>
+   {error&&<p className="barq-media-error" role="alert">{error}</p>}
+   {notice&&<p className="bws-notice" role="status">{notice}</p>}
+   {!data&&!error&&<p className="barq-muted" role="status">{ar?'بنفحص محرك الخلفيات…':'Checking wallpaper engine…'}</p>}
+   {data&&!ready&&<section className="bws-setup">
+     <Image size={28}/><div><strong>{ar?'المشغّل محتاج تجهيز':'Player setup required'}</strong>
+     <p>{data.engine?(ar?'المحرك المدمج محتاج Windows 10 أو 11 وWebView2.':'The built-in engine needs Windows 10/11 and WebView2.'):(ar?'التوافق القديم يحتاج Lively.':'Legacy Windows requires Lively.')}</p></div>
+     {!data.engine&&data.can_install&&<button disabled={busy||installing} onClick={install}><Download size={17}/>{installing?(ar?'جاري التثبيت…':'Installing…'):(ar?'تثبيت المشغّل':'Install player')}</button>}
+     {!data.engine&&!data.can_install&&<a target="_blank" rel="noreferrer" href={data.lively.official_url}><ExternalLink size={17}/>{ar?'الموقع الرسمي':'Official download'}</a>}
     </section>}
-    {error && <p className="barq-media-error" role="alert">{error}</p>}
-    {notice && <p className="barq-muted" role="status">{notice}</p>}
-    {!data && !error && <p className="barq-muted" role="status">{ar ? 'بنفحص مشغّل الخلفيات…' : 'Checking the wallpaper player…'}</p>}
-    {data && !ready && <section className="barq-media-panel">
-      <Image size={29} aria-hidden="true"/>
-      <h2>{ar ? 'جهّز الخلفيات الحية' : 'Set up live wallpapers'}</h2>
-      <p className="barq-muted">{data.engine ? (ar ? 'المحرك المدمج محتاج Windows 10 أو 11 مع WebView2.' : 'The integrated engine requires Windows 10/11 with WebView2.') : (ar ? 'وضع التوافق القديم يحتاج Lively.' : 'Legacy compatibility mode needs Lively.')}</p>
-      {!data.engine && data.can_install && <button className="barq-media-primary" disabled={busy || installing} onClick={install}><Download size={17}/>{installing ? (ar ? 'التثبيت شغّال في Windows…' : 'Windows installer is running…') : (ar ? 'تثبيت مشغّل الخلفيات' : 'Install wallpaper player')}</button>}
-      {!data.engine && !data.can_install && <a href={data.lively.official_url} target="_blank" rel="noreferrer"><ExternalLink size={16}/>{ar ? 'تنزيل Lively' : 'Download Lively'}</a>}
-      <button disabled={busy} onClick={() => void operate(async () => { await refresh(); })}><RefreshCw size={16}/>{ar ? 'إعادة الفحص' : 'Check again'}</button>
-    </section>}
-    {data && ready && <>
-      <p className="barq-muted">{ar ? 'اختار MP4 أو WebM أو GIF من جهازك، أو طبّق خلفية من مكتبتك.' : 'Choose a local MP4, WebM or GIF, or apply a wallpaper from your library.'}</p>
-      <div className="barq-media-toolbar">
-        <button className="barq-media-primary" disabled={busy} onClick={addLocal}><Plus size={17}/>{ar ? 'إضافة خلفية' : 'Add wallpaper'}</button>
-        <button disabled={busy} onClick={() => invoke('play')}><Play size={16}/>{ar ? 'تشغيل' : 'Play'}</button>
-        <button disabled={busy} onClick={() => invoke('pause')}><Pause size={16}/>{ar ? 'إيقاف مؤقت' : 'Pause'}</button>
-        <button disabled={busy} onClick={() => invoke('stop')}><Square size={16}/>{ar ? 'إيقاف' : 'Stop'}</button>
-        {data.capabilities.family !== 'legacy' && <button disabled={busy} onClick={() => invoke('random')}><Shuffle size={16}/>{ar ? 'عشوائي' : 'Random'}</button>}
-        <label><Volume2 size={16}/><input type="range" min="0" max="100" value={volume} onChange={e => setVolume(Number(e.target.value))} aria-label={ar ? 'مستوى الصوت' : 'Volume'}/>{volume}%</label>
-        <button disabled={busy} onClick={() => invoke('volume')}>{ar ? 'تطبيق الصوت' : 'Set volume'}</button>
-        {!data.engine && <button disabled={busy} onClick={() => invoke('show')}><Image size={16}/>{ar ? 'فتح Lively' : 'Open Lively'}</button>}
-        <button disabled={busy} onClick={() => void operate(async () => { await refresh(); })} aria-label={ar ? 'تحديث المكتبة' : 'Refresh library'}><RefreshCw size={16}/></button>
+   {data&&ready&&<>
+    <section className="bws-discovery">
+     <div className="bws-titlebar"><div><span>{ar?'مكتبتك':'YOUR COLLECTION'}</span><h3>{ar?'استكشف الخلفيات':'Explore wallpapers'}</h3></div>
+      <small>{data.library.length} {ar?'خلفية':'wallpapers'}</small></div>
+     <div className="bws-toolbar">
+      <label className="bws-search"><Search size={18}/><input aria-label={ar?'بحث الخلفيات':'Search wallpapers'} value={query} onChange={e=>setQuery(e.target.value)} placeholder={ar?'ابحث عن خلفية...':'Search wallpapers...'}/></label>
+      <div className="bws-tabs" role="group" aria-label={ar?'تصفية الخلفيات':'Filter wallpapers'}>
+       {([['all',ar?'الكل':'All'],['video',ar?'فيديو':'Videos'],['gif','GIF'],['favorites',ar?'المفضلة':'Favorites']] as const).map(([key,label])=><button type="button" key={key} aria-pressed={filter===key} onClick={()=>setFilter(key)}>{label}</button>)}
       </div>
-      {data.library.length === 0 && <p className="barq-muted">{ar ? 'مكتبة الخلفيات فاضية. اضغط إضافة خلفية عشان تبدأ.' : 'Your library is empty. Add a wallpaper to get started.'}</p>}
-      <div className="barq-media-grid">
-        {data.library.map(item => <article key={item.id} className="barq-wallpaper-card">
-          <div className="barq-wallpaper-preview">{item.preview_available ? <img src={'/v1/wallpapers/preview/' + encodeURIComponent(item.id)} alt="" loading="lazy" decoding="async"/> : <Image size={30}/>}</div>
-          <div className="barq-wallpaper-detail">
-            <strong dir="auto">{item.title}</strong>
-            <button disabled={busy} onClick={() => invoke('apply', item.id)}>{ar ? 'تطبيق' : 'Apply'}</button>
-          </div>
-        </article>)}
+     </div>
+     {list.length?<div className="bws-gallery">{list.map(item=><article key={item.id} className={'bws-wallpaper'+(data.engine?.wallpaper_id===item.id?' is-playing':'')}>
+      <div className="bws-thumb">{item.preview_available?<img alt="" loading="lazy" decoding="async" src={'/v1/wallpapers/preview/'+encodeURIComponent(item.id)}/>:<Image size={36}/>}
+       <span className="bws-type">{isGif(item)?'GIF':isVideo(item)?'VIDEO':String(item.type).slice(0,12)}</span>
+       <button type="button" className="bws-heart" aria-label={favorites.includes(item.id)?(ar?'إزالة من المفضلة':'Remove favorite'):(ar?'إضافة للمفضلة':'Add favorite')} aria-pressed={favorites.includes(item.id)} onClick={()=>toggleFavorite(item.id)}><Heart size={17} fill={favorites.includes(item.id)?'currentColor':'none'}/></button>
       </div>
-    </>}
+      <div className="bws-wallpaper-text"><strong dir="auto">{item.title}</strong><small>{data.engine?.wallpaper_id===item.id&&data.engine.running?(ar?'قيد التشغيل':'Playing'):(ar?'من مكتبتك المحلية':'From local library')}</small>
+       <button disabled={busy} onClick={()=>invoke('apply',item.id)}><Play size={15}/>{ar?'تطبيق الخلفية':'Apply wallpaper'}</button></div>
+     </article>)}</div>:<div className="bws-empty"><Image size={30}/><strong>{data.library.length===0?(ar?'مكتبتك لسه فاضية':'Your library is empty'):(ar?'مفيش خلفيات مطابقة':'No matching wallpapers')}</strong><p>{ar?'ضيف ملف فيديو أو GIF من جهازك، أو غيّر البحث.':'Import a video or GIF, or adjust your filters.'}</p><button disabled={busy} onClick={addLocal}><Plus size={16}/>{ar?'إضافة خلفية':'Add wallpaper'}</button></div>}
+    </section>
+    <details className="bws-player-settings"><summary>{ar?'التحكم في تشغيل الخلفيات':'Playback controls'}</summary>
+     <div className="bws-controls">
+      <button disabled={busy} onClick={()=>invoke('play')}><Play size={16}/>{ar?'تشغيل':'Play'}</button>
+      <button disabled={busy} onClick={()=>invoke('pause')}><Pause size={16}/>{ar?'إيقاف مؤقت':'Pause'}</button>
+      <button disabled={busy} onClick={()=>invoke('stop')}><Square size={16}/>{ar?'إيقاف':'Stop'}</button>
+      {data.capabilities.family!=='legacy'&&<button disabled={busy} onClick={()=>invoke('random')}><Shuffle size={16}/>{ar?'خلفية عشوائية':'Shuffle'}</button>}
+      <label><Volume2 size={16}/><input type="range" min="0" max="100" value={volume} onChange={e=>setVolume(Number(e.target.value))} aria-label={ar?'الصوت':'Volume'}/>{volume}%</label>
+      <button disabled={busy} onClick={()=>invoke('volume')}>{ar?'تطبيق الصوت':'Set volume'}</button>
+      {!data.engine&&<button disabled={busy} onClick={()=>invoke('show')}><Image size={16}/>{ar?'فتح Lively':'Open Lively'}</button>}
+     </div>
+    </details>
+   </>}
   </div>;
 }
