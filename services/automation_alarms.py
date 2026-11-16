@@ -151,4 +151,7 @@ def start() -> None:
 
 
 def stop() -> None:
-    _STOP.set()
+    global _STARTED
+    with _LOCK:
+        _STOP.set()
+        _STARTED = False

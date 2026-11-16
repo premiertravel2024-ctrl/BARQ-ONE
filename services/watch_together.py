@@ -506,7 +506,7 @@ def room_page(request: Request,room_id:str,role:str="",token:str=""):
 def _page_headers():
     return {"Cache-Control":"no-store","Referrer-Policy":"no-referrer",
             "Content-Security-Policy":("default-src 'self'; img-src 'self' data: blob:; "
-              "media-src blob: https:; frame-src https://open.spotify.com https://play.anghami.com; connect-src 'self' ws: wss:; "
+              "media-src blob: https:; frame-src https://open.spotify.com https://play.anghami.com https://widget.anghami.com; connect-src 'self' ws: wss: https://barq-one.ashraf-mohamed.workers.dev; "
               "style-src 'unsafe-inline'; script-src 'unsafe-inline'")}
 
 

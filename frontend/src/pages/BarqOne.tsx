@@ -317,7 +317,7 @@ function OverviewSignals({providers,onTools}:{providers:RouterProvider[];onTools
 
 type Props={page:Exclude<OnePage,'chat'|'settings'>;providers:RouterProvider[];onVoice:()=>void;
  onNavigate:(page:OnePage)=>void;onModels:()=>void;onAssistantSettings:()=>void;onQuick:(command:string)=>void};
-export function BarqOne({page,providers,onVoice,onNavigate,onModels,onAssistantSettings,onQuick}:Props){
+export function BarqOne({page,providers,onVoice,onNavigate,onModels,onQuick}:Props){
  const ar=useApp(s=>s.language)==='ar';
  const title=sections.find(([key])=>key===page);
  return <section className="one-page">
