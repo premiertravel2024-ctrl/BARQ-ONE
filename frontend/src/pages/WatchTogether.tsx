@@ -2,6 +2,7 @@ import {useEffect, useRef, useState} from 'react';
 import {Copy, ExternalLink, Headphones, Link2, Radio, Video, XCircle} from 'lucide-react';
 import {requestJSON} from '../lib/backend';
 import {useApp} from '../store';
+import {CinemaDiscovery} from './CinemaDiscovery';
 
 type Mode = 'video' | 'music';
 type Room = {
@@ -130,6 +131,10 @@ export function WatchTogether({mode = 'video'}: {mode?: Mode}) {
       </div>
       <div className="barq-watch-live-label">{ar ? 'جلسة خاصة' : 'Private session'}</div>
     </header>
+    {!music && <CinemaDiscovery ar={ar} roomActive={Boolean(current||guest)} onRoom={() => {
+      if(current||guest) document.querySelector('.barq-watch-player')?.scrollIntoView({behavior:'smooth',block:'start'});
+      else start(false);
+    }}/>}
     {error && <p className="barq-media-error" role="alert">{error}</p>}
     {!room && !guest && <div className="barq-room-entry">
       <section className="barq-media-panel barq-watch-choose-panel">
