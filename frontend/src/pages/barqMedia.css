@@ -108,3 +108,31 @@
  .barq-room-share>button,.barq-room-share>a{flex:1 1 auto}
  .barq-watch-player-top>span{display:none}
 }
+
+/* Music Player Desktop App inspiration - preserve same native room APIs */
+.barq-music-app{gap:17px}
+.barq-music-hero{min-height:245px;padding:25px 32px;background:radial-gradient(circle at 82% 30%,#8d3f6163,transparent 44%),linear-gradient(125deg,#2b1c2b,#15151d 76%);border-color:#72475f;position:relative;overflow:hidden;isolation:isolate}
+.barq-music-hero .barq-watch-hero-mark{display:none}
+.barq-music-hero .barq-watch-hero-copy{max-width:580px;position:relative;z-index:2}
+.barq-music-hero .barq-watch-hero-copy>span{font-weight:850;font-size:.74rem;letter-spacing:2px}
+.barq-music-hero .barq-watch-hero-copy h2{font-size:clamp(1.7rem,3.5vw,2.5rem);font-weight:900;margin:10px 0 8px}
+.barq-music-hero .barq-watch-hero-copy p{display:block!important;font-size:.9rem;color:#d5bcca;line-height:1.8}
+.bma-vinyl{width:172px;height:172px;border:2px solid #d66c928a;border-radius:50%;background:repeating-radial-gradient(circle,#3a2334 0,#3a2334 4px,#211922 5px,#211922 9px);box-shadow:0 0 70px #c4427270,0 0 0 15px #a9476650;display:grid;place-items:center;position:relative;flex-shrink:0}
+.bma-vinyl-center{height:58px;width:58px;display:grid;place-items:center;color:#fff;border-radius:50%;background:#a34067;border:6px solid #321826}
+.bma-bars{position:absolute;bottom:-25px;display:flex;align-items:center;justify-content:center;gap:5px;height:24px}
+.bma-bars i{display:block;width:4px;height:40%;background:#fa7b9e;border-radius:99px;animation:bma-eq 1.3s ease-in-out infinite alternate}
+.bma-bars i:nth-child(2n){height:100%;animation-delay:.35s}
+.bma-bars i:nth-child(3n){height:70%;animation-delay:.65s}
+@keyframes bma-eq{from{transform:scaleY(.35)}to{transform:scaleY(1)}}
+.barq-music-app .barq-room-entry{gap:12px}
+.barq-music-app .barq-watch-choose-panel{background:linear-gradient(130deg,#231c29,#16151d);border:1px solid #5c4053;min-height:235px;justify-items:start;position:relative}
+.barq-music-app .barq-watch-choose-panel>svg{color:#ff8aaf;background:#48273b}
+.barq-music-app .barq-watch-choose-panel h2{font-size:1.12rem;font-weight:830}
+.barq-music-app .barq-watch-choose-panel p{line-height:1.75}
+.barq-music-app .barq-watch-choose-panel button{min-height:44px}
+.barq-music-app .barq-watch-choose-panel .barq-media-primary{background:linear-gradient(120deg,#c54771,#933455)}
+.barq-music-app .barq-watch-player{border-radius:19px;background:#15131b}
+.barq-music-app .barq-watch-player iframe{min-height:570px;height:clamp(580px,72vh,880px)}
+@media(max-width:760px){.barq-music-hero{padding:22px;min-height:225px}.bma-vinyl{width:125px;height:125px}.bma-vinyl-center{width:46px;height:46px}.barq-music-app .barq-room-entry{grid-template-columns:1fr}.barq-music-app .barq-watch-player iframe{min-height:700px;height:810px}}
+@media(max-width:480px){.barq-music-hero{padding:16px;min-height:185px}.bma-vinyl{width:70px;height:70px;box-shadow:0 0 25px #c4427270}.bma-vinyl-center{width:31px;height:31px;border-width:3px}.bma-vinyl-center svg{width:16px}.bma-bars{display:none}.barq-music-hero .barq-watch-hero-copy h2{font-size:1.4rem}.barq-music-hero .barq-watch-hero-copy p{font-size:.73rem}.barq-music-app .barq-watch-choose-panel{min-height:0}.barq-music-app .barq-watch-player iframe{height:810px}}
+@media(prefers-reduced-motion:reduce){.bma-bars i{animation:none}}

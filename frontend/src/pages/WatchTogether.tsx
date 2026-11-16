@@ -121,15 +121,15 @@ export function WatchTogether({mode = 'video'}: {mode?: Mode}) {
     catch { setError(ar ? 'انسخ كود الدعوة يدويًا من الحقل.' : 'Select and copy the invitation code manually.'); }
   }
 
-  return <div className="barq-media barq-watch-room" dir={ar ? 'rtl' : 'ltr'}>
-    <header className="barq-watch-hero">
+  return <div className={'barq-media barq-watch-room'+(music?' barq-music-app':'')} dir={ar ? 'rtl' : 'ltr'}>
+    <header className={'barq-watch-hero'+(music?' barq-music-hero':'')}>
       <div className="barq-watch-hero-mark"><Icon size={22} aria-hidden="true"/></div>
       <div className="barq-watch-hero-copy">
         <span>BARQ ONE · {music ? 'MUSIC ROOM' : 'WATCH ROOM'}</span>
-        <h2>{music ? (ar ? 'اسمعوا مع بعض' : 'Listen together') : (ar ? 'سينما برق' : 'BARQ Cinema')}</h2>
-        <p>{ar ? 'شارك الوسائط والدردشة في غرفة خاصة. ملفاتك بتفضل على جهازك.' : 'Share media and chat in a private room. Your files stay local.'}</p>
+        <h2>{music ? (ar ? 'غرفة الموسيقى' : 'BARQ Music Room') : (ar ? 'سينما برق' : 'BARQ Cinema')}</h2>
+        <p>{music?(ar?'موسيقاك المفضلة، وجلسة استماع خاصة مع صاحبك. من ملفك أو مشغّل Spotify وأنغامي الرسمي.':'Your music, your listening lounge. Share local audio or an official Spotify/Anghami player.'):(ar?'شوف الأفلام والمسلسلات والأنمي، وشارك ملف فيديو من جهازك في غرفة خاصة.':'Explore films, series and anime. Watch your own video together privately.')}</p>
       </div>
-      <div className="barq-watch-live-label">{ar ? 'جلسة خاصة' : 'Private session'}</div>
+      {music?<div className="bma-vinyl" aria-hidden="true"><div className="bma-vinyl-center"><Headphones size={28}/></div><div className="bma-bars"><i/><i/><i/><i/><i/><i/><i/></div></div>:<div className="barq-watch-live-label">{ar ? 'جلسة خاصة' : 'Private session'}</div>}
     </header>
     {!music && <CinemaDiscovery ar={ar} roomActive={Boolean(current||guest)} onRoom={() => {
       if(current||guest) document.querySelector('.barq-watch-player')?.scrollIntoView({behavior:'smooth',block:'start'});
@@ -137,7 +137,7 @@ export function WatchTogether({mode = 'video'}: {mode?: Mode}) {
     }}/>}
     {error && <p className="barq-media-error" role="alert">{error}</p>}
     {!room && !guest && <div className="barq-room-entry">
-      <section className="barq-media-panel barq-watch-choose-panel">
+      <section className={'barq-media-panel barq-watch-choose-panel'+(music?' bma-choose':'')}>
         <Icon size={28} aria-hidden="true"/>
         <h2>{ar ? 'افتح غرفة' : 'Host a room'}</h2>
         <p className="barq-muted">{ar
