@@ -1,7 +1,8 @@
 @echo off
 setlocal
 set "APP=%~dp0"
-set "DLL=%APP%hardware-monitor\LibreHardwareMonitorLib.dll"
+set "DLL=%APP%hardware-monitor\bundled-v0.9.6\LibreHardwareMonitorLib.dll"
+if not exist "%DLL%" set "DLL=%APP%hardware-monitor\LibreHardwareMonitorLib.dll"
 if exist "%DLL%" (
   echo [BARQ] Checking real local CPU and GPU sensor values...
   powershell.exe -NoProfile -NonInteractive -ExecutionPolicy Bypass -File "%APP%scripts\read_hardware_monitor.ps1" -LibraryPath "%DLL%"

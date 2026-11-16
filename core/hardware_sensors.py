@@ -66,6 +66,9 @@ def _monitor_executable() -> Path | None:
         try:
             if not folder.is_dir():
                 continue
+            bundled = folder / 'bundled-v0.9.6' / 'LibreHardwareMonitor.exe'
+            if bundled.is_file():
+                return bundled
             direct = folder / 'LibreHardwareMonitor.exe'
             if direct.is_file():
                 return direct

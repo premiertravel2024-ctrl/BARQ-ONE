@@ -31,6 +31,7 @@ $resultPath = Join-Path $ReportDir 'installer-smoke-result.json'
 $stage = 'starting'
 $exitCode = $null
 $success = $false
+$legacyLock = $null
 $installerLaunched = $false
 foreach ($p in @($report, $installLog, $diagnostics, $resultPath)) {
   if (Test-Path -LiteralPath $p) { Remove-Item -LiteralPath $p -Force }
@@ -48,6 +49,13 @@ function Get-InstallLogTail {
   }
 }
 try {
+  $stage = 'seed-locked-legacy-sensor'
+  $legacyFolder = Join-Path $target 'hardware-monitor'
+  New-Item -ItemType Directory -Force -Path $legacyFolder | Out-Null
+  $legacyDll = Join-Path $legacyFolder 'Aga.Controls.dll'
+  $legacyContents = 'BARQ smoke fixture: locked legacy hardware monitor'
+  [IO.File]::WriteAllText($legacyDll, $legacyContents)
+  $legacyLock = [IO.File]::Open($legacyDll, [IO.FileMode]::Open, [IO.FileAccess]::Read, [IO.FileShare]::Read)
   $stage = 'inno-setup-install'
   # Inno Setup /DIR and /LOG must be quoted explicitly: user names may contain
   # spaces. Keep a distinct smoke AppId so upgrades/shortcuts are not touched.
@@ -74,8 +82,12 @@ try {
   }
   $stage = 'verify-installed-files'
   $installed = Join-Path $target 'BARQ.exe'
+  if ([IO.File]::ReadAllText($legacyDll) -ne $legacyContents) {
+    throw 'Installer modified the locked legacy hardware monitor directory.'
+  }
+  $sensorBundle = 'hardware-monitor\bundled-v0.9.6'
   foreach ($file in @('BARQ.exe','BARQ_Wake.exe','SHOW_BARQ_FILES.bat','BARQ_SYSTEM_ACCESS_INSTALL_REPORT_AR.md',
-  'hardware-monitor\LibreHardwareMonitor.exe','hardware-monitor\LibreHardwareMonitorLib.dll')) {
+  "$sensorBundle\LibreHardwareMonitor.exe","$sensorBundle\LibreHardwareMonitorLib.dll","$sensorBundle\Aga.Controls.dll")) {
     if (-not (Test-Path -LiteralPath (Join-Path $target $file) -PathType Leaf)) {
       throw "Installer omitted: $file"
     }
@@ -100,7 +112,7 @@ try {
     throw 'Installed executable reported invalid health or version.'
   }
   $success = $true
-  Write-Host '[BARQ SMOKE] Installed Setup + wake + BARQ runtime self-tests PASSED.' -ForegroundColor Green
+  Write-Host '[BARQ SMOKE] Installed Setup with the legacy sensor DLL locked. Wake and BARQ runtime self-tests PASSED.' -ForegroundColor Green
 } catch {
   $problem = $_.Exception.Message
   $tail = Get-InstallLogTail
@@ -120,6 +132,7 @@ try {
   Write-Host $content -ForegroundColor Yellow
   throw "BARQ installer smoke FAILED at [$stage]. Diagnostic: $diagnostics. Original: $problem"
 } finally {
+  if ($legacyLock) { $legacyLock.Dispose() }
   # Persist status independently of success/failure. A failing smoke never
   # produces a build-ok marker. Use a private short-lived test AppId.
   $resultObject = [ordered]@{

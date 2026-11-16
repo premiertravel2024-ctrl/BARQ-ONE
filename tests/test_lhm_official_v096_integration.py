@@ -11,6 +11,22 @@ from voice import computer_tools
 ROOT = Path(__file__).resolve().parents[1]
 
 
+def test_installed_sensor_bundle_takes_priority_over_legacy_copy(monkeypatch, tmp_path):
+    from core import paths, tool_locator
+
+    legacy = tmp_path / 'hardware-monitor' / 'LibreHardwareMonitor.exe'
+    bundled = legacy.parent / 'bundled-v0.9.6' / legacy.name
+    bundled.parent.mkdir(parents=True)
+    bundled.touch()
+    legacy.touch()
+    monkeypatch.setattr(paths, 'resource', lambda: tmp_path)
+    monkeypatch.setattr(tool_locator, 'hardware_monitor_folder', lambda: None)
+    assert hw._monitor_executable() == bundled
+
+    bundled.unlink()
+    assert hw._monitor_executable() == legacy
+
+
 def test_gpu_only_wmi_does_not_mask_real_cpu_from_direct_library(monkeypatch, tmp_path):
     monitor = tmp_path / 'hardware-monitor' / 'LibreHardwareMonitor.exe'
     monitor.parent.mkdir(); monitor.touch()
@@ -62,8 +78,10 @@ def test_installer_pins_verified_official_release_and_includes_sensor_tasks():
         body = (ROOT / 'scripts' / name).read_text()
         assert 'Name: hardwaresensors;' in body
         if name=='installer.iss':
-            # Setup recursively copies the same binary directory as portable.
+            # Setup copies the built binaries and stores the pinned sensor bundle separately.
             assert 'Source: "{#BinaryDir}\\*"' in body
+            assert 'Excludes: "\\hardware-monitor,\\hardware-monitor\\*"' in body
+            assert 'DestDir: "{app}\\hardware-monitor\\bundled-v0.9.6"' in body
             assert 'Copy-Item -LiteralPath $monitorRoot' in (ROOT/'scripts/build_windows.ps1').read_text()
         else:
             assert 'Source: "..\\hardware-monitor\\*"' in body

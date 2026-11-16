@@ -43,7 +43,9 @@ Source: "..\scripts\ensure_webview2.ps1"; DestDir: "{app}\scripts"; Flags: ignor
 Source: "..\scripts\inno_compiler_probe.ps1"; DestDir: "{app}\scripts"; Flags: ignoreversion
 Source: "..\scripts\find_inno.ps1"; DestDir: "{app}\scripts"; Flags: ignoreversion
 Source: "..\scripts\build_prerequisites.ps1"; DestDir: "{app}\scripts"; Flags: ignoreversion
-Source: "{#BinaryDir}\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
+Source: "{#BinaryDir}\*"; Excludes: "\hardware-monitor,\hardware-monitor\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
+; Keep the pinned sensor bundle separate from the legacy copy, which may be running elevated.
+Source: "{#BinaryDir}\hardware-monitor\*"; DestDir: "{app}\hardware-monitor\bundled-v0.9.6"; Flags: replacesameversion recursesubdirs createallsubdirs
 Source: "..\scripts\barq_wake_tray.ps1"; DestDir: "{app}\scripts"; Flags: ignoreversion
 Source: "..\START_BARQ_WAKE.bat"; DestDir: "{app}"; Flags: ignoreversion
 Source: "..\START_BARQ_WAKE.vbs"; DestDir: "{app}"; Flags: ignoreversion

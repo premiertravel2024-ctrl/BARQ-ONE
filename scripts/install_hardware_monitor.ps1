@@ -13,7 +13,11 @@ $Stage = Join-Path ([System.IO.Path]::GetTempPath()) ('barq-lhm-' + [guid]::NewG
 $ZipPath = Join-Path $Stage 'LibreHardwareMonitor.zip'
 $Cleanup = $false
 try {
-    $Exe = Get-ChildItem -LiteralPath $Target -Filter 'LibreHardwareMonitor.exe' -Recurse -File -ErrorAction SilentlyContinue | Select-Object -First 1
+    $Bundled = Join-Path $Target ('bundled-' + $Version)
+    $Exe = Get-Item -LiteralPath (Join-Path $Bundled 'LibreHardwareMonitor.exe') -ErrorAction SilentlyContinue
+    if (-not $Exe) {
+        $Exe = Get-ChildItem -LiteralPath $Target -Filter 'LibreHardwareMonitor.exe' -Recurse -File -ErrorAction SilentlyContinue | Select-Object -First 1
+    }
     $Dll = if ($Exe) { Get-ChildItem -LiteralPath $Exe.DirectoryName -Filter 'LibreHardwareMonitorLib.dll' -Recurse -File -ErrorAction SilentlyContinue | Select-Object -First 1 } else { $null }
     if (-not $Exe -or -not $Dll) {
         New-Item -ItemType Directory -Force -Path $Stage | Out-Null
