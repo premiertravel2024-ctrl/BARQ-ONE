@@ -29,6 +29,10 @@ from dataclasses import dataclass
 from fastapi import FastAPI, Request, WebSocket, WebSocketDisconnect
 from fastapi.responses import HTMLResponse, JSONResponse
 
+# Cloudflare-managed workers.dev blocks the default Python-urllib User-Agent (BIC 1010).
+# Identify this app honestly on HTTP and WebSocket signaling requests.
+CLOUDFLARE_CLIENT_AGENT="BARQ-ONE/2.40.2 (+https://github.com/premiertravel2024-ctrl/BARQ-ONE)"
+
 PORT=0  # OS-selected loopback port; never expose BARQ's admin API
 app=FastAPI(title="BARQ Watch Room (isolated)",docs_url=None,redoc_url=None,openapi_url=None)
 _lock=threading.RLock()
@@ -183,7 +187,10 @@ class _NoRedirect(HTTPRedirectHandler):
 
 def _relay_request(origin: str,path: str,token: str,*,method: str,data=None):
     request=HttpRequest(origin+path,method=method,
-        headers={**({"Authorization":"Bearer "+token} if token else {}),"Content-Type":"application/json"},
+        headers={**({"Authorization":"Bearer "+token} if token else {}),
+                 "Content-Type":"application/json",
+                 "User-Agent":CLOUDFLARE_CLIENT_AGENT,
+                 "Accept":"application/json"},
         data=json.dumps(data).encode() if data is not None else None)
     with build_opener(_NoRedirect()).open(request,timeout=8) as result:
         return json.loads(result.read(16384))
@@ -568,7 +575,8 @@ async def join_signal(ws: WebSocket,key: str):
         return
     await ws.accept()
     try:
-        async with DirectConnection(invite[0],open_timeout=8,close_timeout=2,max_size=65536,proxy=None) as remote:
+        async with DirectConnection(invite[0],open_timeout=8,close_timeout=2,max_size=65536,
+                                    proxy=None,user_agent_header=CLOUDFLARE_CLIENT_AGENT) as remote:
             async def upstream():
                 while True:
                     message=await ws.receive_text()
