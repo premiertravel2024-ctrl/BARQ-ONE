@@ -119,6 +119,11 @@ def run(*, command: list[str] | None = None, root: Path = ROOT,
     env['PYTHONUNBUFFERED'] = '1'
     # Surface Python/native extension crash stacks in the release log when possible.
     env['PYTHONFAULTHANDLER'] = '1'
+    # User-supplied pytest options/plugins must never silently alter what the
+    # strict BARQ release suite tests or inject foreign pytest plugins.
+    env.pop('PYTEST_ADDOPTS', None)
+    env.pop('PYTEST_PLUGINS', None)
+    env['PYTHONNOUSERSITE'] = '1'
     # stderr and stdout merge for a single, chronological diagnostic stream.
     creationflags = subprocess.CREATE_NEW_PROCESS_GROUP if os.name == 'nt' else 0
     proc = subprocess.Popen(command, cwd=str(root), stdout=subprocess.PIPE,
@@ -281,6 +286,59 @@ def _junit_counts(path: Path) -> tuple[ET.Element, dict[str, int]]:
     return aggregate, counts
 
 
+def _shard_failure_details(log_path: Path, junit_path: Path) -> tuple[list[str], str]:
+    """Extract actionable pytest failures even when the subprocess exits 1.
+
+    Use structured JUnit failure/error tags first (handles collection and
+    fixture errors), then the textual pytest summary, then a short traceback.
+    A nonzero subprocess is NEVER treated as success because of these hints.
+    """
+    cases: list[str] = []
+    excerpts: list[str] = []
+    if junit_path.is_file():
+        try:
+            tree = ET.parse(junit_path)
+            for case in tree.getroot().iter('testcase'):
+                for node in case:
+                    if node.tag not in ('failure', 'error'):
+                        continue
+                    title = (f"{case.get('classname', '?')}::{case.get('name', '?')} "
+                             f"({node.tag})")
+                    if title not in cases:
+                        cases.append(title)
+                    body = (node.get('message') or node.text or '').strip()
+                    if body:
+                        excerpts.append(f"{title}: {body[:1600]}")
+        except (OSError, ValueError, ET.ParseError):
+            pass
+    try:
+        contents = log_path.read_text(encoding='utf-8', errors='replace')
+    except OSError:
+        contents = ''
+    for line in contents.splitlines():
+        trimmed = line.strip()
+        if (trimmed.startswith('FAILED tests/') or
+                trimmed.startswith('FAILED tests\\') or
+                trimmed.startswith('ERROR tests/') or
+                trimmed.startswith('ERROR tests\\')):
+            title = trimmed.split(' - ', 1)[0]
+            if title not in cases:
+                cases.append(title[:330])
+    if not excerpts and contents:
+        # Keep the diagnostic part of pytest logs rather than only the
+        # start banner and warnings. Bound excerpts to avoid huge reports.
+        for heading in ('=== FAILURES ===', '=== ERRORS ===',
+                        'ERROR collecting', 'INTERNALERROR>', 'Fatal Python error',
+                        'Traceback (most recent call last):'):
+            pos = contents.find(heading)
+            if pos >= 0:
+                excerpts.append(contents[pos:pos+3500])
+                break
+    if not excerpts and contents:
+        excerpts.append(contents[-1800:])
+    return cases[:100], '\n'.join(excerpts)[:5000]
+
+
 def run_sharded_suite(*, root: Path = ROOT,
                       shard_size: int = DEFAULT_SHARD_FILES,
                       files: list[Path] | None = None,
@@ -326,6 +384,10 @@ def run_sharded_suite(*, root: Path = ROOT,
     total_counts = dict.fromkeys(('tests', 'errors', 'failures', 'skipped'), 0)
     start = time.monotonic()
     outcome = 0
+    # Do not stop the ENTIRE release suite at the first failed test module.
+    # Each shard already has its own fresh interpreter, allowing the other
+    # shards to run even after a native DLL crash in one interpreter.
+    failed_shards: list[str] = []
     try:
         # Streamed logs from run() are accumulated WITHOUT losing evidence for
         # previous batches.  The runner's existing tests and safety checks remain.
@@ -334,7 +396,7 @@ def run_sharded_suite(*, root: Path = ROOT,
                 remaining = TOTAL_TIMEOUT - (time.monotonic() - start)
                 if remaining <= 0:
                     outcome = 124
-                    failures.write_text('Full isolated pytest suite exceeded total timeout\n', encoding='utf-8')
+                    failed_shards.append('Full isolated pytest suite exceeded total timeout')
                     break
                 title = (f'\\n[BARQ PYTEST SHARD {index}/{len(shards)}] '
                          f'{len(group)} file(s), Python subprocess with fresh native state\\n')
@@ -352,8 +414,23 @@ def run_sharded_suite(*, root: Path = ROOT,
                            f'--basetemp={basetemp / f"shard-{index:03d}"}',
                            f'--junitxml={shard_junit}', *relative_files]
                 started = time.monotonic()
-                code = run(command=command, root=root, idle_timeout=INACTIVITY_TIMEOUT,
-                           total_timeout=min(remaining, TOTAL_TIMEOUT))
+                # Every shard runs with a *fresh* BARQ user-state directory.
+                # Tests should never consume or modify the developer's real
+                # Computer Control approvals, history, cache or indexing state.
+                # This isolation is for pytest only; production keeps its
+                # normal LOCALAPPDATA path and explicit consent policies.
+                state_dir = basetemp / f'state-shard-{index:03d}'
+                state_dir.mkdir(parents=True, exist_ok=True)
+                prior_state = os.environ.get('AI_ROUTER_DATA_DIR')
+                os.environ['AI_ROUTER_DATA_DIR'] = str(state_dir)
+                try:
+                    code = run(command=command, root=root, idle_timeout=INACTIVITY_TIMEOUT,
+                               total_timeout=min(remaining, TOTAL_TIMEOUT))
+                finally:
+                    if prior_state is None:
+                        os.environ.pop('AI_ROUTER_DATA_DIR', None)
+                    else:
+                        os.environ['AI_ROUTER_DATA_DIR'] = prior_state
                 shard_source = release / 'python-tests.log'
                 if shard_source.exists():
                     shutil.copyfile(shard_source, shard_log)
@@ -362,34 +439,52 @@ def run_sharded_suite(*, root: Path = ROOT,
                               duration_seconds=round(time.monotonic() - started, 2),
                               log=str(shard_log), junit=str(shard_junit))
                 if code:
-                    outcome = 1 if code not in (2, 124) else code
-                    # Report raw signed/unsigned hex Windows status and exact
-                    # shard paths; the last test marker alone is not root cause.
+                    # Keep every failed shard in its own log. Never treat a
+                    # native crash or an XML-less pytest exit as a pass.
+                    if code == 124:
+                        outcome = 124
+                    elif outcome == 0:
+                        outcome = 2 if code == 2 else 1
                     record['failure'] = ('native_or_process_exit'
                                          if code < 0 or code > 255 else 'pytest_error')
                     record['exit_hex'] = f'0x{code & 0xffffffff:08X}'
-                    old = failures.read_text(encoding='utf-8') if failures.exists() else ''
-                    failures.write_text(
-                        f'Shard {index}/{len(shards)} crashed/failed: exit={code} '
-                        f'({record["exit_hex"]})\\n'.replace('\\n', '\n') +
-                        '\n'.join(relative_files) + '\n' + old,
-                        encoding='utf-8')
+                    failed, traceback = _shard_failure_details(shard_log, shard_junit)
+                    record['failed_tests'] = failed
+                    record['diagnostic_excerpt'] = traceback[:3000]
+                    description = (f'SHARD {index}/{len(shards)} failed: {code} '
+                                   f'({record["exit_hex"]}), '
+                                   f'type={record["failure"]}, log={shard_log}\n'
+                                   + ('\n'.join(failed) if failed else
+                                      'Nonzero exit without named FAILED tests')
+                                   + ('\n' + traceback[:3000] if traceback else
+                                      '\nNo log or JUnit diagnostics were captured'))
+                    failed_shards.append(description)
                     records.append(record)
-                    break
+                    # CONTINUE after failure: don't force another expensive
+                    # React/npm/build cycle just to find the next test failure.
+                    continue
                 try:
                     shard_xml, counts = _junit_counts(shard_junit)
                 except (ValueError, ET.ParseError, OSError) as exc:
                     record['failure'] = f'Invalid pytest completion evidence: {exc}'
                     records.append(record)
-                    failures.write_text(record['failure'] + '\n', encoding='utf-8')
-                    outcome = 2
-                    break
+                    failed_shards.append(
+                        f'SHARD {index}/{len(shards)} JUnit invalid: {exc}\n'
+                        f'log={shard_log}')
+                    outcome = outcome or 2
+                    continue
                 for suite in shard_xml:
                     combined.append(suite)
                 for key, count in counts.items():
                     total_counts[key] += count
                 record['counts'] = counts
                 records.append(record)
+            if failed_shards:
+                report = ('BARQ Python test failures across ALL independent shards:\n'
+                          + '\n\n'.join(failed_shards) + '\n')
+                failures.write_text(report, encoding='utf-8')
+                full_log.write(report.encode('utf-8', errors='replace'))
+                print(report, flush=True)
             if outcome == 0:
                 # Guard against a partial shard schedule being called success.
                 tested = [name for r in records for name in r['files']]

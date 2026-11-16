@@ -24,7 +24,12 @@ def test_index_requires_explicit_optin(private_index):
     device_index.configure(enabled=False)
     assert not device_index.settings()['enabled']
 
-def test_private_indexing_searches_nested_files_without_fixed_entry_cap(private_index):
+def test_private_indexing_searches_nested_files_without_fixed_entry_cap(private_index,monkeypatch):
+    # This regression is specifically about BARQ's SQLite metadata index.
+    # On Windows, a globally installed Everything es.exe takes precedence
+    # over SQLite and can return a different engine/results even for the same
+    # consented directory. Keep the production acceleration path unchanged.
+    monkeypatch.setattr(device_index,'_everything_search',lambda *a,**k:None)
     device_index.configure(enabled=True)
     collection=private_index/'Movies'/'Deep';collection.mkdir(parents=True)
     (collection/'Film.With.Good.Quality.1080p.mkv').write_text('metadata test')
@@ -37,6 +42,13 @@ def test_private_indexing_searches_nested_files_without_fixed_entry_cap(private_
     assert found['engine']=='local-index' and len(found['results'])==1
     assert found['results'][0]['name']=='other-report.pdf'
     assert 'content must never' not in str(found)
+    # A globally installed Everything can legitimately have no result for a
+    # freshly created approved file. In that case BARQ must fall back to its
+    # own SQLite index rather than claiming the file is absent.
+    monkeypatch.setattr(device_index,'_everything_search',lambda *a,**k:[])
+    fallback=device_index.search('report',allowed_folders=[str(private_index)])
+    assert fallback['engine']=='local-index'
+    assert [entry['name'] for entry in fallback['results']]==['other-report.pdf']
     assert device_index.search('hidden-report',allowed_folders=[str(private_index)])['results']==[]
     assert device_index.search('Film',extension='mkv',allowed_folders=[str(private_index)])['results'][0]['extension']=='.mkv'
 

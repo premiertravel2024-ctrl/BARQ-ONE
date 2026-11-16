@@ -95,19 +95,26 @@ def _answer_sensor_question(question: str) -> str | None:
     if not (thermal or workload) or not (target_cpu or target_gpu or target_disk or target_pc):
         return None
     if thermal:
-        from core.hardware_sensors import ensure_sensors_ready, snapshot as sensors_snapshot
+        from core.hardware_sensors import auto_setup_sensors, snapshot as sensors_snapshot
         key='gpu_c' if target_gpu and not target_cpu else 'storage_c' if target_disk and not target_cpu else 'cpu_c'
         readings=sensors_snapshot(include_gpu=key=='gpu_c')
         reason=readings.get('reason')
         if readings.get(key) is None and reason=='monitor_not_installed':
-            status=ensure_sensors_ready()
+            # Start official optional setup, but NEVER block the chat for a
+            # 170-second installer wait. The next request can read the device
+            # once it is ready, and monitor status remains available.
+            status=auto_setup_sensors()
             if status=='installed':
                 readings=sensors_snapshot(include_gpu=key=='gpu_c')
                 reason=readings.get('reason')
-            elif status=='timeout':
-                return 'تجهيز الحساسات أخد وقت أطول من المهلة. مفيش قراءة مؤكدة لسه، وتفاصيل التجهيز موجودة في سجل الحساسات.'
+            elif status in ('started','running'):
+                return ('بدأت تجهيز حساس الحرارة محليًا في الخلفية، ولسه مفيش رقم موثوق. '
+                        'لو LibreHardwareMonitor مفتوح عندك بالفعل، فعّل Options > Remote Web Server > Run '
+                        'مرة واحدة عشان برق يقرأ نفس CPU Package بسرعة.')
             else:
-                return 'تعذّر تجهيز الحساسات تلقائيًا. تأكد إن الإنترنت شغّال لو الأداة مش موجودة، وراجع sensor-install.log من مجلد بيانات برق. مفيش قراءة مؤكدة.'
+                return ('برق مش لاقي قناة لقراءة حرارة المعالج رغم طلب القياس. '
+                        'لو LibreHardwareMonitor مفتوح وبيعرض CPU Package، فعّل Options > Remote Web Server > Run '
+                        'منه مرة واحدة، وبعدها اسألني تاني. مش هخمن الحرارة.')
         temp=readings.get(key)
         if key=='gpu_c':
             return (f'حرارة كارت الشاشة حاليًا {temp} درجة مئوية، حسب {readings.get("gpu_source") or readings.get("provider") or "مستشعر الجهاز"}.'
@@ -116,14 +123,22 @@ def _answer_sensor_question(question: str) -> str | None:
             return f'حرارة وحدة التخزين حوالي {temp} درجة مئوية حسب الحساس المحلي.' if temp is not None else 'حرارة وحدة التخزين مش متاحة من الحساسات حاليًا.'
         if temp is not None:
             return f'درجة حرارة المعالج حاليًا {temp} درجة مئوية، حسب {readings.get("cpu_sensor") or "حساس المعالج"} من LibreHardwareMonitor.'
+        if reason == 'sensor_library_missing':
+            return ('LibreHardwareMonitor موجود، لكن مكتبة LibreHardwareMonitorLib.dll مش موجودة جنب البرنامج. '
+                    'استخدم إعداد الحساسات من داخل برق أو نسخة LibreHardwareMonitor الرسمية الكاملة، '
+                    'وبعدها جرّب تاني. مفيش قراءة مؤكدة.')
+        if reason == 'sensor_library_unavailable':
+            return ('مكتبة LibreHardwareMonitor موجودة لكن قراءتها المباشرة فشلت. '
+                    'طالما برنامج LibreHardwareMonitor نفسه بيعرض CPU Package، '
+                    'فعّل Options > Remote Web Server > Run عشان برق يستخدم قراءته الجاهزة مباشرة. '
+                    'مفيش حرارة مؤكدة لحد ما الاتصال ينجح.')
         if reason == 'sensor_provider_unavailable':
-            return ('LibreHardwareMonitor موجود، وبرق حاول يشغّله تلقائيًا، '
-                    'بس قناة القراءة مش متاحة حتى بعد محاولة التشغيل. لو Windows '
-                    'طلب صلاحية مسؤول، الموافقة عليها قرارك؛ مش هتتجاوز تلقائيًا. '
-                    'مش هخمن درجة حرارة المعالج.')
+            return ('قراءة حرارة المعالج مش متاحة لبرق حاليًا من WMI أو مكتبة الحساسات. '
+                    'لو LibreHardwareMonitor بيعرض CPU Package، فعّل فيه Options > Remote Web Server > Run '
+                    'مرة واحدة. برق بعدها هيقرأها محليًا من غير ما يفتح نافذة أو يطلب صلاحية في كل مرة.')
         if reason == 'no_matching_sensors':
             return ('LibreHardwareMonitor شغال، لكن حساس حرارة CPU نفسه مش ظاهر. '
-                    'اتأكد إن قراءة المعالج مفعّلة وإن البرنامج عنده الصلاحيات اللازمة. '
+                    'افتح مراقبة النظام واضغط «تشغيل الحساسات بصلاحية مسؤول» ووافق على طلب ويندوز. '
                     'مش هستخدم حرارة اللوحة الأم بدل حرارة CPU.')
         return ('مش قادر أقرأ حرارة المعالج حاليًا من حساسات موثوقة. '
                 'جرب إصلاح الحساسات من مجلد برق، ومش هخمن الرقم.')

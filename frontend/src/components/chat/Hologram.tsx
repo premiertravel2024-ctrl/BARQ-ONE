@@ -17,6 +17,7 @@ export function Hologram({onStart}:{onStart:()=>void}){
  const streaming=useApp(state=>state.streaming);
  const [voice,setVoice]=useState(getHandsFreeState);
  const [speaking,setSpeaking]=useState(isSpeechPlaying);
+ const [lightweight,setLightweight]=useState(()=>localStorage.getItem('barq-hologram-quality')==='low');
  useEffect(()=>{
   const syncVoice=()=>setVoice(getHandsFreeState());
   const syncPlayback=()=>setSpeaking(isSpeechPlaying());
@@ -31,8 +32,11 @@ export function Hologram({onStart}:{onStart:()=>void}){
  },[]);
  const task=voice.task;
  const working=task&&['planning','running','approval'].includes(task.status);
- const phase=task?.pending?'approval':speaking?'speaking':working||streaming?'busy':voice.phase;
+ const phase=task?.pending?'approval':speaking?'speaking':
+  voice.phase==='hearing'||voice.phase==='processing'||voice.phase==='executing'?voice.phase:
+  working||streaming?'busy':voice.phase;
  const status=labels[ar?'ar':'en'][phase];
+ const caption=working?(task?.message||voice.caption):(voice.caption||task?.message);
  function toggleVoice(){
   if(getHandsFreeState().active)window.dispatchEvent(new Event('barq-handsfree-stop'));
   else onStart();
@@ -44,13 +48,12 @@ export function Hologram({onStart}:{onStart:()=>void}){
      <h2>{ar?'برق':'BARQ'}</h2>
      <p role="status">{status}</p>
     </div>
-    <HologramCore phase={phase} level={voice.inputLevel/100}/>
+    <HologramCore phase={phase} level={voice.inputLevel/100} lightweight={lightweight}/>
    </div>
   <div className="barq-hologram-controls">
    {task?.is_sequence&&!!task.steps?.length&&<progress className="barq-hologram-progress" max={task.steps.length}
     value={task.verified_steps??0} aria-label={ar?'خطوات التنفيذ المتحقق منها':'Verified execution steps'}/>}
-   {task?.message&&<p className="barq-hologram-caption" dir="auto">{task.message}</p>}
-   {voice.caption&&voice.caption!==task?.message&&<p className="barq-hologram-caption" dir="auto">{voice.caption}</p>}
+   {caption&&<p className="barq-hologram-caption" dir="auto">{caption}</p>}
    <div className="flex flex-wrap justify-center gap-2">
     <Button variant={voice.active?'secondary':'primary'} icon={<AudioLines size={18}/>} onClick={toggleVoice}>
      {voice.active?(ar?'اقفل الصوت':'End voice'):(ar?'اتكلم مع برق':'Talk to BARQ')}
@@ -58,10 +61,13 @@ export function Hologram({onStart}:{onStart:()=>void}){
     {voice.active&&speaking&&<Button icon={<VolumeX size={18}/>} title="Alt+V" onClick={()=>{window.dispatchEvent(new Event('barq-handsfree-interrupt'));}}>
      {ar?'وقف الرد':'Interrupt reply'}
     </Button>}
-    {voice.speakerBlocked&&<Button icon={<Volume2 size={18}/>} onClick={()=>{window.dispatchEvent(new Event('barq-handsfree-unlock'));}}>
-     {ar?'فعّل السماعة':'Enable audio'}
+    {(voice.speakerBlocked||voice.micBlocked)&&<Button icon={<Volume2 size={18}/>} onClick={()=>{window.dispatchEvent(new Event('barq-handsfree-unlock'));}}>
+     {voice.micBlocked?(ar?'فعّل الميكروفون':'Enable microphone'):(ar?'فعّل السماعة':'Enable audio')}
     </Button>}
    </div>
+   <label className="barq-hologram-quality"><input type="checkbox" checked={lightweight} onChange={e=>{
+    setLightweight(e.target.checked);localStorage.setItem('barq-hologram-quality',e.target.checked?'low':'default');
+   }}/>{ar?'عرض خفيف':'Low graphics'}</label>
    {(voice.timings.audioMs!==undefined||voice.timings.executionMs!==undefined)&&<details className="barq-hologram-timings">
     <summary>{ar?'زمن الاستجابة':'Response timing'}</summary>
     {voice.timings.executionMs!==undefined&&<p>{ar?'بداية معالجة الأمر':'Command dispatch'} · {(voice.timings.executionMs/1000).toFixed(2)} {ar?'ث':'s'}</p>}

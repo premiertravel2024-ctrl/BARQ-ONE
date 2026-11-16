@@ -44,6 +44,9 @@ LIVE_REPOSITORY_INSTRUCTION = ('When the user says "خد المستودع الل
 
 LIVE_MODEL='gemini-3.8-live'
 logger=logging.getLogger(__name__)
+COMPUTER_FUNCTION_NAMES = frozenset(
+    tool['name'] for group in LIVE_COMPUTER_TOOLS for tool in group['function_declarations']
+)
 # Lead with concise Arabic facts: a long generic model/router prompt can cause
 # Gemini Live to forget the product identity during a spoken conversation.
 LIVE_IDENTITY = (
@@ -225,7 +228,7 @@ async def handle_live(ws:WebSocket):
         await ws.close(code=1008);return
     key=gemini_key()
     if not key:
-        await ws.send_json({'type':'error','message':'GEMINI_API_KEY is not configured'})
+        await ws.send_json({'type':'error','code':'missing_key','message':'مفتاح Gemini مش متظبط. افتح إعدادات النماذج وأضف مفتاح Gemini.'})
         await ws.close(code=1008);return
     try:
         from google import genai
@@ -334,8 +337,13 @@ async def handle_live(ws:WebSocket):
                             # tool on garbled input or claim to hear everything.
                             raise AudioUplinkOverrun('Live microphone frames could not be sent without loss')
                     elif incoming.get('text'):
-                        if len(incoming['text'])>24000:raise ValueError('Context exceeds limit')
+                        # The client can send 12 history turns and 16 separate
+                        # references. Escaped characters also expand on the wire.
+                        if len(incoming['text'])>196608:
+                            raise ValueError('Context exceeds limit')
                         msg=json.loads(incoming['text'])
+                        if not isinstance(msg,dict):
+                            raise ValueError('Invalid voice request')
                         if msg.get('type')=='context' and not context_received:
                             context_received=True
                             progress_events=msg.get('voice_progress') is True
@@ -427,13 +435,44 @@ async def handle_live(ws:WebSocket):
               direct_outcome=None
               tool_outcome=None
               nonlocal result_speech
+
+              async def execute_direct_turn():
+                  nonlocal direct_outcome, result_speech
+                  spoken = spoken_command_gate.last_text
+                  if (direct_outcome is not None or spoken_command_gate.used
+                      or not (computer_enabled or is_temperature_request(spoken))):
+                      return
+                  if not (barq_voice_brain.is_direct_turn(spoken)
+                          or (work_state.get('task_id') and action_route(spoken) == 'continue_current_work')):
+                      return
+                  generation = output_generation
+                  await announce_execution()
+                  direct_outcome = await barq_voice_brain.ask(
+                      spoken_command_gate, conversation_id=linked_chat_id,
+                      computer_enabled=computer_enabled, work_state=work_state)
+                  await publish_outcome(direct_outcome)
+                  await ws.send_json({'type':'verified_output_text','text':direct_outcome['spoken_ar']})
+                  if generation == output_generation:
+                      if result_speech and not result_speech.done():
+                          result_speech.cancel()
+                      result_speech = asyncio.create_task(speak_direct_result(direct_outcome['spoken_ar']))
+                      tasks.add(result_speech)
+                      result_speech.add_done_callback(tasks.discard)
+
               async for response in ordered_responses(session, spoken_command_gate):
                         # Gemini Live function calling is explicitly handled by BARQ,
                         # never executed inside the model or direct shell access.
                         if getattr(response,'tool_call',None):
+                            calls = response.tool_call.function_calls or []
+                            # The verified speech has priority over any overlapping model tool.
+                            if any(fc.name == 'ask_barq' or fc.name in COMPUTER_FUNCTION_NAMES for fc in calls):
+                                await execute_direct_turn()
                             replies=[]
-                            for fc in response.tool_call.function_calls or []:
+                            for fc in calls:
                                 tool_calls_used+=1
+                                if direct_outcome is not None and (fc.name == 'ask_barq' or fc.name in COMPUTER_FUNCTION_NAMES):
+                                    replies.append(types.FunctionResponse(id=fc.id,name=fc.name,response=safe_cloud_view(direct_outcome)))
+                                    continue
                                 if fc.name=='ask_barq':
                                     if direct_outcome is not None or tool_outcome is not None:
                                         outcome=direct_outcome or tool_outcome
@@ -576,27 +615,8 @@ async def handle_live(ws:WebSocket):
                                 recent_repository_handoff.update(url=preview['url'],at=now)
                                 await ws.send_json({'type':'repository_handoff',
                                                     'url':preview['url']})
-                        # A finished ASR transcript is already available to BARQ.
-                        # Explicit commands can start before Gemini generates a reply.
-                        ready_to_act=bool(content.input_transcription or content.turn_complete
-                                          or content.model_turn or content.output_transcription)
-                        if (ready_to_act and not content.interrupted
-                                and not spoken_command_gate.used and direct_outcome is None
-                                and (computer_enabled or is_temperature_request(spoken_command_gate.last_text))
-                                and (barq_voice_brain.is_direct_turn(spoken_command_gate.last_text)
-                                     or (computer_enabled and work_state.get('task_id')
-                                         and action_route(spoken_command_gate.last_text)=='continue_current_work'))):
-                            generation=output_generation
-                            await announce_execution()
-                            direct_outcome=await barq_voice_brain.ask(spoken_command_gate,
-                                conversation_id=linked_chat_id,computer_enabled=computer_enabled,work_state=work_state)
-                            await publish_outcome(direct_outcome)
-                            await ws.send_json({'type':'verified_output_text','text':direct_outcome['spoken_ar']})
-                            if generation==output_generation:
-                                if result_speech and not result_speech.done():result_speech.cancel()
-                                result_speech=asyncio.create_task(speak_direct_result(direct_outcome['spoken_ar']))
-                                tasks.add(result_speech)
-                                result_speech.add_done_callback(tasks.discard)
+                        if not content.interrupted:
+                            await execute_direct_turn()
                         if not direct_outcome and content.output_transcription and content.output_transcription.text:
                             text=content.output_transcription.text
                             if audit_unverified_live_claim(text,had_verified_tool_result):

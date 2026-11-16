@@ -27,13 +27,18 @@ test('chat-only composer keeps send and cancellation, with voice controlled outs
   assert.ok(app.includes('<ComputerControlStatus/>'));
   assert.ok(app.includes('barq-start-live-voice'));
 });
-test('chat-only navigation retains model selection without mounting the removed workspace',()=>{
+test('BARQ ONE navigation retains model selection without mounting the removed workspace',()=>{
   const app=read('App.tsx');
-  const sidebar=read('components/layout/Sidebar.tsx');
-  assert.doesNotMatch(read('components/layout/TopBar.tsx'),/barq-open-workspace|مساحة العمل/);
-  assert.match(read('components/layout/TopBar.tsx'),/barq-header-actions/);
+  const sidebar=read('components/layout/OperationsFrame.tsx');
+  assert.match(app,/<OperationsRail /);
+  assert.match(app,/<ConversationHeader /);
+  assert.doesNotMatch(app,/<Sidebar |<TopBar /);
+  assert.match(sidebar,/<ModelSelector compact\/>/);
   assert.doesNotMatch(app,/<WorkspaceStudio/);
-  assert.ok(sidebar.includes("(['chat'] as const)"));
+  assert.ok(sidebar.includes('sections.map('));
+  const shell=read('pages/BarqOne.tsx');
+  for(const section of ['chat','center','voice','mission','library','installed','tools','monitor','automation','settings'])
+    assert.ok(shell.includes(`['${section}',`),section);
   assert.doesNotMatch(sidebar,/onModeChange/);
   assert.match(read('components/chat/Composer.tsx'),/<ModelSelector\s*\/>/);
 });
@@ -61,7 +66,9 @@ test('voice controller remains functional but has no floating overlay',()=>{
   // Desktop approvals outlive the voice session and live in the global controller.
   const desktop=read('components/workspace/ComputerControlStatus.tsx');
   assert.match(desktop,/\/v1\/computer\/approve/);
-  assert.match(desktop,/\/v1\/computer\/stop/);
+  // Stop moved into the chat task card; the floating execution HUD is removed.
+  assert.match(read('components/chat/Message.tsx'),/\/v1\/computer\/stop/);
+  assert.doesNotMatch(desktop,/barq-execution-panel/);
   assert.match(desktop,/onClick=\{\(\)=>void decide\(true\)\}/);
   assert.match(desktop,/onClick=\{\(\)=>void decide\(false\)\}/);
   assert.match(read('App.tsx'),/<ComputerControlStatus\/>/);

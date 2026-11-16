@@ -36,14 +36,26 @@ async def test_permission_checked_before_search_or_capture():
   assert result['status']=='disabled'
 
 @pytest.mark.asyncio
-async def test_youtube_exact_video_launch_and_honest_playback():
+async def test_youtube_exact_video_launch_and_honest_playback(monkeypatch):
  calls=[]
+ playback=[]
  class Manager:
   def launch_direct(self,tool,args,**kw):calls.append((tool,args));return {'status':'opened'}
  async def finder(q):return {'url':'https://youtu.be/abcdefghijk','title':'Song'}
- result=await command('شغلي اغنية على يوتيوب',policy=Policy(enabled=True,direct_commands=True),manager_instance=Manager(),finder=finder)
+ def fake_playback(title,*,policy):
+  playback.append((title,policy.enabled))
+  return False
+ # Even if someone refactors command(), an attempted real native Windows UIA
+ # probe MUST fail this unit test instead of silently reading/clicking a browser
+ # or crashing the release pytest interpreter.
+ from services import youtube_playback
+ monkeypatch.setattr(youtube_playback,'verify_playback',
+                     lambda *args,**kwargs:pytest.fail('Unit test touched real Windows UI Automation'))
+ result=await command('شغلي اغنية على يوتيوب',policy=Policy(enabled=True,direct_commands=True),
+                      manager_instance=Manager(),finder=finder,playback_verifier=fake_playback)
  assert result['status']=='opened' and result['playback_verified'] is False
  assert calls==[('open_url',{'url':'https://www.youtube.com/watch?v=abcdefghijk&autoplay=1'})]
+ assert playback==[('Song',True)]
 
 @pytest.mark.asyncio
 async def test_search_result_cannot_open_untrusted_host():

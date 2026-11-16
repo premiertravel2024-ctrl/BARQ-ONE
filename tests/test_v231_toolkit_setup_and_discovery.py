@@ -21,16 +21,40 @@ def test_find_tool_prefers_process_path_without_installer_inventory(tmp_path):
         assert tool_locator.find_tool('git') == str(installed.resolve())
 
 
-def test_fixed_lhm_toolkit_install_is_detected(tmp_path):
+def test_fixed_lhm_toolkit_install_is_detected(tmp_path, monkeypatch):
+    # Test BARQ's FIXED toolkit install path, never the real machine's
+    # independently installed or running LibreHardwareMonitor instance.
+    # A developer with LibreHardwareMonitor already installed must get
+    # the exact same result as a clean Windows CI runner.
+    from core import hardware_sensors, paths
+    folder = tmp_path / 'BARQ' / 'toolkit' / 'hardware-monitor'
+    folder.mkdir(parents=True)
+    executable = folder / 'LibreHardwareMonitor.exe'
+    executable.write_bytes(b'unit-test')
+    (folder / 'LibreHardwareMonitorLib.dll').write_bytes(b'unit-test')
+    isolated_program_files = tmp_path / 'program-files-empty'
+    isolated_local = tmp_path / 'local-app-data-empty'
+    isolated_resource = tmp_path / 'resource-empty'
+    monkeypatch.setenv('LOCALAPPDATA', str(isolated_local))
+    monkeypatch.setenv('ProgramFiles', str(isolated_program_files))
+    monkeypatch.setenv('ProgramFiles(x86)', str(isolated_program_files))
+    monkeypatch.setattr(paths, 'resource', lambda *parts: isolated_resource.joinpath(*parts))
+    monkeypatch.setattr(hardware_sensors, '__file__',
+                        str(tmp_path / 'isolated-source' / 'hardware_sensors.py'))
+    monkeypatch.setattr(hardware_sensors, '_running_monitor_executable', lambda: None)
+    with (patch.object(tool_locator.sys, 'platform', 'win32'),
+          patch.object(tool_locator, '_roots', return_value=(tmp_path, tmp_path, tmp_path))):
+        assert tool_locator.hardware_monitor_folder() == folder
+        assert hardware_sensors._monitor_executable() == executable
+
+
+def test_toolkit_requires_monitor_dll_not_only_executable(tmp_path):
     folder = tmp_path / 'BARQ' / 'toolkit' / 'hardware-monitor'
     folder.mkdir(parents=True)
     (folder / 'LibreHardwareMonitor.exe').write_bytes(b'unit-test')
-    assert tool_locator.hardware_monitor_folder() is None or tool_locator.hardware_monitor_folder() != folder
-    (folder / 'LibreHardwareMonitorLib.dll').write_bytes(b'unit-test')
-    with patch.object(tool_locator.sys, 'platform', 'win32'), patch.object(tool_locator, '_roots', return_value=(tmp_path,tmp_path,tmp_path)):
-        assert tool_locator.hardware_monitor_folder() == folder
-        from core import hardware_sensors
-        assert hardware_sensors._monitor_executable() == folder / 'LibreHardwareMonitor.exe'
+    with (patch.object(tool_locator.sys, 'platform', 'win32'),
+          patch.object(tool_locator, '_roots', return_value=(tmp_path, tmp_path, tmp_path))):
+        assert tool_locator.hardware_monitor_folder() is None
 
 
 def test_installer_has_fixed_official_sources_no_unreviewed_privilege_escalation():

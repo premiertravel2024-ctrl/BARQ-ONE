@@ -59,7 +59,7 @@ async def find_video(query:str)->dict|None:
                 parts.append(chunk)
     return first_video(b''.join(parts).decode('utf-8',errors='replace'))
 
-async def command(text:str,*,source='chat',policy=None,manager_instance=None,engine=None,finder=None,capture=None,analyzer=None,fps_reader=None)->dict:
+async def command(text:str,*,source='chat',policy=None,manager_instance=None,engine=None,finder=None,capture=None,analyzer=None,fps_reader=None,playback_verifier=None)->dict:
     parsed=intent(text)
     if not parsed:return {'matched':False}
     kind,query=parsed
@@ -92,9 +92,18 @@ async def command(text:str,*,source='chat',policy=None,manager_instance=None,eng
         opened=result.get('status')=='opened'
         verified=False
         if opened and title!='فيديو يوتيوب':
-            from services.youtube_playback import verify_playback
-            try:verified=await asyncio.wait_for(asyncio.to_thread(verify_playback,title,policy=policy),timeout=3)
-            except (TimeoutError,OSError):pass
+            # The real verifier uses native Windows UI Automation, and may
+            # interact with the active browser. Tests with injected launchers
+            # must supply a no-UI verifier; never hit a physical desktop in
+            # a release-test process just because the URL launcher was mocked.
+            if playback_verifier is None:
+                from services.youtube_playback import verify_playback
+                playback_verifier=verify_playback
+            try:
+                verified=await asyncio.wait_for(
+                    asyncio.to_thread(playback_verifier,title,policy=policy),timeout=3)
+            except (TimeoutError,OSError):
+                pass
         message=('الفيديو بدأ في مشغّل يوتيوب: '+title+'.') if verified else ('بعت الفيديو للمتصفح بطلب تشغيل: '+title+'. التشغيل الصوتي ممكن يحتاج ضغطة Play حسب المتصفح.') if opened else 'المتصفح ما أكدش فتح الفيديو.'
         return {'matched':True,'status':'opened' if opened else result.get('status','unavailable'),'message':message,'url':url,'playback_verified':verified}
 

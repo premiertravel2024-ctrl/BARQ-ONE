@@ -323,6 +323,14 @@ def apply_explicit_install_computer_consent() -> int:
         return 1
 
 def main() -> int:
+    # Separate lightweight watchdog in the same frozen BARQ.exe. It never
+    # launches the desktop UI, model engine, voice session, or local API.
+    if len(sys.argv)==5 and sys.argv[1]=='--resource-saver-guardian':
+        try:
+            from services.resource_saver_guardian import main as guardian_main
+            return guardian_main(sys.argv[2:])
+        except (OSError,RuntimeError,ValueError):
+            return 2
     if len(sys.argv)==2 and sys.argv[1]=='--setup-personal-assistant':
         try:
             from voice.background_autostart import configure

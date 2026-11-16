@@ -27,3 +27,7 @@ web/react/
 # Local desktop and diagnostics
 *.tmp
 .DS_Store
+
+# Downloaded SHA256-pinned speaker model; never commit binary weights
+models/speaker/*.onnx
+models/speaker/*.onnx.download

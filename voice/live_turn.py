@@ -32,6 +32,7 @@ async def ordered_responses(session, gate: VoiceCommandGate):
     text = ''
     finished = None
     deadline = None
+    turn_end = None
     reader = None
     loop = asyncio.get_running_loop()
 
@@ -62,6 +63,10 @@ async def ordered_responses(session, gate: VoiceCommandGate):
                 for response in pending:
                     yield response
                 pending.clear()
+                if turn_end is not None:
+                    yield turn_end
+                    turn_end = None
+                    reset()
                 deadline = None
                 continue
 
@@ -76,12 +81,15 @@ async def ordered_responses(session, gate: VoiceCommandGate):
                         call for call in deferred.tool_call.function_calls or [] if call.id not in cancelled
                     ]
                 pending = [deferred for deferred in pending if deferred.tool_call.function_calls]
-                if not pending:
+                if not pending and turn_end is None:
                     deadline = None
             if content and content.interrupted:
                 reset()
                 # A cancelled call must never bind to the next speaker turn.
                 pending.clear()
+                if turn_end is not None:
+                    yield turn_end
+                    turn_end = None
                 deadline = None
             if content and content.input_transcription:
                 transcript = content.input_transcription
@@ -99,15 +107,25 @@ async def ordered_responses(session, gate: VoiceCommandGate):
                 continue
 
             boundary = bool(content and content.turn_complete)
-            if boundary and not content.interrupted and finished is not False:
-                commit()
+            if boundary and not content.interrupted and not gate.last_text and turn_end is None:
+                # Transcription is delivered separately from model output. Let
+                # a late final packet arrive before forgetting this turn.
+                turn_end = response
+                deadline = loop.time() + TRANSCRIPT_GRACE
+                continue
             if not boundary:
                 yield response
             if pending and (gate.last_text or boundary):
                 for deferred in pending:
                     yield deferred
                 pending.clear()
+                if turn_end is None:
+                    deadline = None
+            if turn_end is not None and gate.last_text:
+                yield turn_end
+                turn_end = None
                 deadline = None
+                reset()
             if boundary:
                 yield response
             if boundary and not content.interrupted:

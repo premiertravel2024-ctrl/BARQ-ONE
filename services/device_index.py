@@ -289,7 +289,12 @@ def search(query:str,*,extension:str='',limit:int=15,allowed_folders:list[str]|N
     roots=scan_roots(cfg,allowed_folders or [])
     if not roots:return {'status':'no_roots','results':[]}
     found=_everything_search(query.strip(),extension,limit,roots)
-    if found is not None:
+    # A valid Everything/es.exe CLI can still return NO matches for an
+    # explicitly consented folder that it has not indexed (e.g. a new USB
+    # disk or user's just-created test folder). An empty accelerated result
+    # is not proof of absence: check BARQ's own approved SQLite index too.
+    # Neither path reads file contents or bypasses the root safety filters.
+    if found:
         return {'status':'ok','engine':'Everything','results':found,'index':status()}
     try:
         with closing(_connect()) as db:

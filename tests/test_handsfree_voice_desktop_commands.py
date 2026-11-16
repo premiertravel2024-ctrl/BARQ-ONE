@@ -51,7 +51,12 @@ def run_call(monkeypatch, *, voice_opt_in: bool, desktop_policy: bool):
         calls.append(('dispatch',name,args,conv))
         return {'status':'approval_required','message':'يتطلب موافقة الشاشة',
                 '_ui':{'candidate_id':'local-candidate','approval_token':'not-for-cloud','label':'Notepad'}}
-    monkeypatch.setattr(live,'dispatch_computer_tool',fake_dispatch)
+    monkeypatch.setattr('voice.computer_tools.dispatch_computer_tool',fake_dispatch)
+
+    async def silent_speech(*args):
+        return b'', 'audio/wav'
+
+    monkeypatch.setattr('voice.gemini.synthesize_speech',silent_speech)
     app=FastAPI();app.websocket('/live')(live.handle_live)
     with TestClient(app).websocket_connect('/live?mode=open&computer='+('1' if voice_opt_in else '0')+'&conversation_id=abc_123') as ws:
         event=ws.receive_json()
@@ -63,8 +68,9 @@ def run_call(monkeypatch, *, voice_opt_in: bool, desktop_policy: bool):
             assert 'المفكرة' in heard['text']
             approve=ws.receive_json();assert approve['type']=='launch_approval'
             assert approve['approval_token']=='not-for-cloud'
-            message=ws.receive_json();assert message['type']=='computer_task'
+            message=ws.receive_json();assert message['type']=='barq_task'
             assert message['status']=='approval_required'
+            assert ws.receive_json()['type']=='verified_output_text'
         ws.send_json({'type':'end'})
     assert len(config)==1
     from voice.public_tools import LIVE_PUBLIC_TOOLS
@@ -76,6 +82,7 @@ def run_call(monkeypatch, *, voice_opt_in: bool, desktop_policy: bool):
     assert ('start_computer_task' in str(config[0]['tools'])) is allowed
     if voice_opt_in and desktop_policy:
         assert [c[0] for c in calls]==['dispatch','result']
+        assert calls[0][1:] == ('open_on_computer',{'request':'يا برق افتح المفكرة'},'abc_123')
         fn=calls[1][1][0]
         assert fn.name=='start_computer_task' and fn.id=='call_7'
         assert 'not-for-cloud' not in str(fn.response)
@@ -121,12 +128,14 @@ def test_handsfree_ui_displays_real_task_status_and_approval_buttons():
     assert 'setComputerReady(!!message.computer_enabled)' in overlay
     assert 'onClick={()=>void decide(false)}' in desktop_status
     assert 'onClick={()=>void decide(true)}' in desktop_status
-    # The separate, globally mounted kill switch still actually calls stop;
-    # a status-only label would not satisfy the regression contract.
-    assert "'/v1/computer/stop'" in desktop_status
-    assert "method:'POST'" in desktop_status
-    assert "['running','planning','approval']" in desktop_status
-    assert 'onClick={()=>{' in desktop_status
+    # The kill switch is now inside the active chat task card, not a
+    # floating overlay; the independent global controller retains approvals.
+    inline_chat = (root / 'frontend/src/components/chat/Message.tsx').read_text(encoding='utf-8')
+    assert "'/v1/computer/stop'" in inline_chat
+    assert "method:'POST'" in inline_chat
+    assert "message.agentTask.status==='running'" in inline_chat
+    assert 'onClick={()=>void stopComputerTask()}' in inline_chat
+    assert 'barq-execution-panel' not in desktop_status
     assert 'computer_enabled=enabled_on_platform(' in live
     assert "computer_enabled=bool(load_policy().enabled)" in live
     assert 'await dispatch_computer_tool(fc.name,arguments,linked_chat_id)' in live

@@ -1,7 +1,8 @@
 """Approved build profiles, bounded logs, and real process exit verification."""
 from pathlib import Path
-import asyncio, os, re, shutil, sys, time, uuid
+import asyncio, os, re, shutil, sys, tempfile, time, uuid
 from core.security import child_env
+from core.tool_locator import find_tool
 from workspace.manager import root_of, checked_path
 
 JOBS={}
@@ -12,8 +13,8 @@ class BuildError(ValueError):pass
 def profiles(workspace):
     root=root_of(workspace)
     return [{'id':'python','label':'Python → Windows EXE (PyInstaller)','ready':sys.platform=='win32' and bool(shutil.which('pyinstaller') or shutil.which('python'))},
-            {'id':'tauri','label':'Tauri 2 → Windows Installer','ready':sys.platform=='win32' and bool(shutil.which('npm')) and (root/'src-tauri/tauri.conf.json').exists()},
-            {'id':'electron','label':'Electron → Windows Installer','ready':sys.platform=='win32' and bool(shutil.which('npm')) and (root/'package.json').exists()}]
+            {'id':'tauri','label':'Tauri 2 → Windows Installer','ready':sys.platform=='win32' and bool(find_tool('npm')) and (root/'src-tauri/tauri.conf.json').exists()},
+            {'id':'electron','label':'Electron → Windows Installer','ready':sys.platform=='win32' and bool(find_tool('npm')) and (root/'package.json').exists()}]
 
 def preview(workspace,profile,entry='',name='Application'):
     root=root_of(workspace)
@@ -22,21 +23,18 @@ def preview(workspace,profile,entry='',name='Application'):
     if profile=='python':
         path=checked_path(workspace,entry)
         if path.suffix.lower()!='.py' or not path.is_file():raise BuildError('Select an existing Python entry script')
-        python=sys.executable if not getattr(sys,'frozen',False) else (shutil.which('python') or shutil.which('py'))
-        if not python:raise BuildError('Install Python and PyInstaller to build Python projects')
+        python=sys.executable if not getattr(sys,'frozen',False) else (find_tool('python') or 'python')
         cmd=[python,'-m','PyInstaller','--noconfirm','--clean','--onedir','--windowed','--name',name,str(path.relative_to(root))]
     elif profile=='tauri':
         if not (root/'src-tauri/tauri.conf.json').exists():raise BuildError('Tauri project not found')
-        if not shutil.which('npm'):raise BuildError('npm is missing')
-        cmd=['npm','run','tauri','build']
+        cmd=[find_tool('npm') or 'npm','run','tauri','build']
     elif profile=='electron':
         package=root/'package.json'
         if not package.exists():raise BuildError('package.json not found')
         import json
         scripts=json.loads(package.read_text(encoding='utf-8')).get('scripts',{})
         if 'dist' not in scripts:raise BuildError('package.json must define a reviewed dist script')
-        if not shutil.which('npm'):raise BuildError('npm is missing')
-        cmd=['npm','run','dist']
+        cmd=[find_tool('npm') or 'npm','run','dist']
     else:raise BuildError('Unknown build profile')
     token=uuid.uuid4().hex
     JOBS[token]={'id':token,'workspace':str(root),'profile':profile,'name':name,'command':cmd,'status':'awaiting_approval','log':'','created':time.time(),'exit_code':None,'artifacts':[]}
@@ -55,9 +53,75 @@ async def run_job(id,confirmed=False):
     j['status']='running';j['task']=asyncio.create_task(_execute(j))
     return public(id)
 
+async def _setup_python(command, log):
+    from api_routes.openhub_tools import ensure_build_tool, network_allowed, read_auto_tools
+    from core.processes import background_options
+    from core.paths import data_dir
+
+    python = command[0]
+    if python == 'python':
+        python = await asyncio.to_thread(ensure_build_tool, 'python', 'python/cpython')
+        if not python:
+            raise BuildError('Python is unavailable. Install it from OpenHub or enable automatic build tools.')
+        command[0] = python
+
+    async def run(args, timeout):
+        proc = await asyncio.create_subprocess_exec(*args, env=child_env(), stdout=asyncio.subprocess.PIPE,
+                                                    stderr=asyncio.subprocess.STDOUT, **background_options())
+        try:
+            output, _ = await asyncio.wait_for(proc.communicate(), timeout)
+        except (asyncio.CancelledError, asyncio.TimeoutError):
+            if proc.returncode is None:
+                proc.kill()
+            await proc.wait()
+            raise
+        return proc.returncode, output
+
+    status, _ = await run([python, '-I', '-m', 'PyInstaller', '--version'], 30)
+    if status == 0:
+        return None
+    if not read_auto_tools()['enabled'] or not network_allowed():
+        raise BuildError('PyInstaller is unavailable. Enable automatic build tools or install PyInstaller in the build interpreter.')
+    log('Preparing PyInstaller in a temporary BARQ build environment…')
+    env = tempfile.TemporaryDirectory(prefix='barq-python-build-', dir=data_dir())
+    try:
+        status, output = await run([python, '-I', '-m', 'venv', env.name], 90)
+        if status != 0:
+            raise BuildError('Could not create the Python build environment: '+output.decode(errors='replace')[-400:])
+        interpreter = str(Path(env.name) / 'Scripts' / 'python.exe')
+        version = 'pyinstaller==6.22.3'
+        status, output = await run([interpreter, '-m', 'pip', '--isolated', 'install', '--index-url',
+                                    'https://pypi.org/simple', '--only-binary=:all:', version], 240)
+        if status != 0:
+            raise BuildError('Could not prepare PyInstaller: '+output.decode(errors='replace')[-400:])
+        command[0] = interpreter
+        return env
+    except BaseException:
+        await asyncio.to_thread(env.cleanup)
+        raise
+
+
 async def _execute(j):
+    temporary_env = None
     try:
         root=Path(j['workspace'])
+        if j['profile'] in {'tauri','electron'} and j['command'][0] == 'npm':
+            from api_routes.openhub_tools import ensure_build_tool
+            j['log'] += '\nChecking Node.js/npm in OpenHub…\n'
+            npm = await asyncio.to_thread(ensure_build_tool, 'npm', 'nodejs/node')
+            if not npm:
+                raise BuildError('Node.js/npm is unavailable. Install it from OpenHub or enable automatic build tools.')
+            j['command'][0] = npm
+        if j['profile'] == 'python':
+            def log(message):
+                j['log'] += '\n' + message
+            temporary_env = await _setup_python(j['command'], log)
+        elif Path(j['command'][0]).suffix.lower() == '.cmd':
+            npm_root = Path(j['command'][0]).parent
+            cli = npm_root / 'node_modules' / 'npm' / 'bin' / 'npm-cli.js'
+            node = npm_root / 'node.exe'
+            if node.is_file() and cli.is_file():
+                j['command'] = [str(node), str(cli), *j['command'][1:]]
         def artifacts():
             files=[]
             for directory in (root/'dist',root/'src-tauri'/'target'/'release'/'bundle'):
@@ -91,6 +155,9 @@ async def _execute(j):
         j['status']='stopped';j['exit_code']=-1
     except Exception as exc:
         j['status']='failed';j['log']+='\n'+str(exc)[:500]
+    finally:
+        if temporary_env:
+            await asyncio.to_thread(temporary_env.cleanup)
 
 
 async def build_approved(workspace,profile,entry,name):

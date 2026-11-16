@@ -1,4 +1,4 @@
-import {useEffect,useRef} from 'react';
+import {useEffect,useRef,useState} from 'react';
 import {speechPlaybackLevel} from '../../lib/speechGlow';
 
 type Point=[number,number,number];
@@ -17,21 +17,23 @@ const sphere:Point[]=Array.from({length:404},(_,index)=>{
  return [ring*Math.cos(angle)*72,y*72,ring*Math.sin(angle)*72];
 });
 
-export function HologramCore({phase,level}:{phase:string;level:number}){
+export function HologramCore({phase,level,lightweight=false}:{phase:string;level:number;lightweight?:boolean}){
+ const [available,setAvailable]=useState(true);
  const canvas=useRef<HTMLCanvasElement>(null);
  const state=useRef({phase,level});
  const redrawStatic=useRef<()=>void>();
  useEffect(()=>{state.current={phase,level};redrawStatic.current?.();},[phase,level]);
  useEffect(()=>{
+  if(lightweight||!available)return;
   const surface=canvas.current;
   const ctx=surface?.getContext('2d');
-  if(!surface||!ctx)return;
+  if(!surface||!ctx){setAvailable(false);return;}
   const motion=window.matchMedia('(prefers-reduced-motion: reduce)');
-  let frame=0,width=0,height=0,scale=1,lastPaint=-Infinity;
+  let frame=0,width=0,height=0,scale=1,lastPaint=-Infinity,elapsed=0;
   const draw=(time:number)=>{
    if(!width||!height)return;
    const color=state.current.phase==='approval'?'255,183,102':
-    state.current.phase==='speaking'?'125,233,255':'80,205,255';
+    state.current.phase==='speaking'?'255,167,187':getComputedStyle(surface).getPropertyValue('--accent-rgb').trim().split(/\s+/).join(',')||'225,57,89';
    const active=['processing','executing','busy'].includes(state.current.phase);
    const voice=state.current.phase==='speaking'?speechPlaybackLevel()??0:
     state.current.phase==='hearing'?state.current.level:0;
@@ -59,6 +61,15 @@ export function HologramCore({phase,level}:{phase:string;level:number}){
    };
    ctx.lineWidth=1;
    ctx.strokeStyle=ink(.16);ellipse(0,0,130,130);
+   ctx.strokeStyle=ink(.23);
+   ctx.beginPath();ctx.arc(0,0,144,-.82,-.20);ctx.stroke();
+   ctx.beginPath();ctx.arc(0,0,144,2.32,2.94);ctx.stroke();
+   for(const side of [-1,1]){
+    ctx.strokeStyle=ink(.24);
+    ctx.beginPath();ctx.moveTo(side*143,-44);
+    ctx.lineTo(side*171,-72);ctx.lineTo(side*212,-72);ctx.stroke();
+    ctx.fillStyle=ink(.63);ctx.fillRect(side*212-1,-73,2,2);
+   }
    ctx.strokeStyle=ink(.07);ellipse(0,0,148,148);
    ctx.strokeStyle=ink(.22);ellipse(0,134,142,23);
    ctx.strokeStyle=ink(.13);ellipse(0,134,117,15);
@@ -73,7 +84,7 @@ export function HologramCore({phase,level}:{phase:string;level:number}){
    }
 
    for(const orbit of orbits){
-    const rotation=t*orbit.speed*(active?2.4:1);
+    const rotation=t*orbit.speed;
     const axis=orbit.axis+Math.sin(rotation*.35)*.22;
     const plane=(angle:number)=>{
      const x=Math.cos(angle)*orbit.radius;
@@ -95,7 +106,17 @@ export function HologramCore({phase,level}:{phase:string;level:number}){
     ctx.beginPath();ctx.arc(x,y,2.7,0,TAU);ctx.fill();
    }
 
-   const offset=t*(active?.55:.23);
+   const center=ctx.createRadialGradient(-8,-10,0,0,0,70);
+   center.addColorStop(0,ink(.33+response*.21));
+   center.addColorStop(.24,ink(.18));
+   center.addColorStop(1,ink(0));
+   ctx.fillStyle=center;
+   ctx.fillRect(-70,-70,140,140);
+   ctx.strokeStyle=ink(.50+response*.22);
+   ctx.lineWidth=1.15;
+   ellipse(0,0,41+response*7,41+response*7);
+
+   const offset=t*.23;
    const expansion=1+response*.21;
    for(const [x,y,z] of sphere){
     const depth=z*Math.cos(offset)-x*Math.sin(offset);
@@ -125,7 +146,10 @@ export function HologramCore({phase,level}:{phase:string;level:number}){
   };
   function animate(time:number){
    if(time-lastPaint>=1000/30){
-    draw(time);
+    const delta=Number.isFinite(lastPaint)?Math.min(time-lastPaint,100):0;
+    const work=['processing','executing','busy'].includes(state.current.phase);
+    elapsed+=delta*(work?2.4:1);
+    draw(elapsed);
     lastPaint=time;
    }
    frame=requestAnimationFrame(animate);
@@ -135,20 +159,22 @@ export function HologramCore({phase,level}:{phase:string;level:number}){
    width=bounds.width;height=bounds.height;scale=Math.min(window.devicePixelRatio||1,2);
    surface!.width=Math.max(1,Math.round(width*scale));
    surface!.height=Math.max(1,Math.round(height*scale));
-   draw(0);
+   draw(motion.matches?0:elapsed);
   }
   const observer=typeof ResizeObserver==='undefined'?null:new ResizeObserver(resize);
   const updateMotion=()=>{
    cancelAnimationFrame(frame);
    if(motion.matches)draw(0);
-   else frame=requestAnimationFrame(animate);
+   else if(!document.hidden)frame=requestAnimationFrame(animate);
   };
   redrawStatic.current=()=>{if(motion.matches)draw(0);};
   observer?.observe(surface);
   if(!observer)window.addEventListener('resize',resize);
   motion.addEventListener('change',updateMotion);
+  document.addEventListener('visibilitychange',updateMotion);
   resize();updateMotion();
-  return()=>{redrawStatic.current=undefined;cancelAnimationFrame(frame);observer?.disconnect();window.removeEventListener('resize',resize);motion.removeEventListener('change',updateMotion);};
- },[]);
+  return()=>{redrawStatic.current=undefined;cancelAnimationFrame(frame);observer?.disconnect();window.removeEventListener('resize',resize);motion.removeEventListener('change',updateMotion);document.removeEventListener('visibilitychange',updateMotion);};
+ },[lightweight,available]);
+ if(lightweight||!available)return <div className="barq-hologram-art barq-hologram-lite" data-phase={phase} aria-hidden="true"><span/></div>;
  return <canvas ref={canvas} className="barq-hologram-art" data-phase={phase} aria-hidden="true"/>;
 }

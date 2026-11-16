@@ -93,16 +93,21 @@ def test_crash_after_all_passed_summary_still_blocks_installer(tmp_path, monkeyp
     def crashing_run(*, command, root, **kwargs):
         calls.append(command)
         report = Path(next(x.split('=', 1)[1] for x in command if x.startswith('--junitxml=')))
-        _xml(report, 2)
-        (root / 'release/python-tests.log').write_text('2 passed in 1.20s\n', encoding='utf-8')
-        return 3221226255  # the actual Windows failure, even with "all passed"
+        _xml(report, 2 if len(calls) == 1 else 1)
+        (root / 'release/python-tests.log').write_text(
+            '2 passed in 1.20s\n' if len(calls) == 1 else '1 passed in 0.25s\n',
+            encoding='utf-8')
+        # A native crash AFTER pytest prints success still blocks the release,
+        # but independent later shards must run to reveal other regressions.
+        return 3221226255 if len(calls) == 1 else 0
 
     monkeypatch.setattr(runner, 'run', crashing_run)
     assert runner.run_sharded_suite(root=tmp_path, shard_size=2, require_timeout_plugin=False) != 0
-    assert len(calls) == 1  # Never continue after a native process crash
+    assert len(calls) == 2  # Run every independent shard for complete diagnostics.
     report = json.loads((tmp_path / 'release/python-tests-shards.json').read_text())
-    assert report['success'] is False
+    assert report['success'] is False and report['processed_shards'] == 2
     assert report['shards'][0]['exit_hex'] == '0xC000030F'
+    assert report['shards'][1]['exit_code'] == 0
     assert '0xC000030F' in (tmp_path / 'release/python-tests-failures.txt').read_text()
     assert not (tmp_path / 'release/python-tests.xml').exists()
 
@@ -129,3 +134,18 @@ def test_build_still_uses_python_test_gate_and_refuses_nonzero():
     assert 'run_sharded_suite()' in script
     assert "'--timeout=90'" in script
     assert 'python-tests-shards.json' in script
+
+def test_windows_diagnostic_prepares_frontend_build_tools_without_skipping_ui():
+    """An extracted ZIP has no node_modules; test-only runs need locked npm ci."""
+    root = Path(__file__).resolve().parents[1]
+    check = (root / 'scripts/CHECK_BARQ_TESTS_FIRST.ps1').read_text(encoding='utf-8')
+    assert "require.resolve('esbuild')" in check
+    assert "require.resolve('typescript')" in check
+    assert "require.resolve('vite')" in check
+    assert "scripts/verify-esbuild.cjs" in check
+    assert "'build_dependency_manager.py') --frontend" in check
+    assert check.index("build_dependency_manager.py") < check.index("-m scripts.run_python_build_tests")
+    assert "if ($LASTEXITCODE -ne 0)" in check
+    # An unavailable or broken frontend tool must block, not skip real UI smoke tests.
+    assert "Python UI tests were NOT skipped" in check
+

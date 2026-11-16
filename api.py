@@ -22,8 +22,6 @@ async def barq_lifespan(_app: FastAPI):
     yield
 
 app=FastAPI(title='BARQ', lifespan=barq_lifespan)
-from api_routes.listening_rooms import router as listening_rooms_router
-app.include_router(listening_rooms_router)
 from fastapi.responses import JSONResponse
 from urllib.parse import urlsplit
 from core.rate_limit import SlidingWindowLimiter
@@ -74,6 +72,18 @@ cloud_inspector=CloudInspector()
 engine=Engine()
 from api_routes.system import make_system_router
 app.include_router(make_system_router(engine))
+from api_routes.openhub import router as openhub_router
+app.include_router(openhub_router)
+from api_routes.resource_saver import router as resource_saver_router
+app.include_router(resource_saver_router)
+from api_routes.lively import router as lively_router
+app.include_router(lively_router)
+from api_routes.feature_command import router as feature_command_router
+app.include_router(feature_command_router)
+from api_routes.watch import router as watch_router
+app.include_router(watch_router)
+from api_routes.openhub_tools import router as openhub_tools_router
+app.include_router(openhub_tools_router)
 from api_routes.device_media import router as device_media_router
 app.include_router(device_media_router)
 

@@ -1,0 +1,119 @@
+Ollama	AI	ollama/ollama	Ollama.Ollama
+llama.cpp	AI	ggml-org/llama.cpp
+Open WebUI	AI	open-webui/open-webui
+OpenHands	AI	All-Hands-AI/OpenHands
+Open Interpreter	AI	OpenInterpreter/open-interpreter
+faster-whisper	AI	SYSTRAN/faster-whisper
+whisper.cpp	AI	ggml-org/whisper.cpp
+Silero VAD	AI	snakers4/silero-vad
+LangGraph	AI	langchain-ai/langgraph
+LangChain	AI	langchain-ai/langchain
+LiteLLM	AI	BerriAI/litellm
+vLLM	AI	vllm-project/vllm
+MLX	AI	ml-explore/mlx
+Transformers	AI	huggingface/transformers
+PyTorch	AI	pytorch/pytorch
+ComfyUI	AI	Comfy-Org/ComfyUI
+InvokeAI	AI	invoke-ai/InvokeAI
+ONNX Runtime	AI	microsoft/onnxruntime
+Piper	AI	OHF-Voice/piper1-gpl
+sherpa-onnx	AI	k2-fsa/sherpa-onnx
+Windows-MCP	Control	CursorTouch/Windows-MCP
+Browser Use	Control	browser-use/browser-use
+Playwright	Control	microsoft/playwright
+Selenium	Control	SeleniumHQ/selenium
+pywinauto	Control	pywinauto/pywinauto
+AutoHotkey	Control	AutoHotkey/AutoHotkey	AutoHotkey.AutoHotkey
+Robot Framework	Control	robotframework/robotframework
+TagUI	Control	aisingapore/TagUI
+PowerToys	Windows	microsoft/PowerToys	Microsoft.PowerToys
+Windows Terminal	Windows	microsoft/terminal	Microsoft.WindowsTerminal
+PowerShell	Windows	PowerShell/PowerShell	Microsoft.PowerShell
+Lively Wallpaper	Windows	rocksdanister/lively
+Flow Launcher	Windows	Flow-Launcher/Flow.Launcher	Flow-Launcher.Flow-Launcher
+EverythingToolbar	Windows	srwi/EverythingToolbar
+EarTrumpet	Windows	File-New-Project/EarTrumpet
+ExplorerPatcher	Windows	valinet/ExplorerPatcher
+Open-Shell	Windows	Open-Shell/Open-Shell-Menu
+TranslucentTB	Windows	TranslucentTB/TranslucentTB
+ShareX	Windows	ShareX/ShareX	ShareX.ShareX
+Git	Developer	git/git	Git.Git
+GitHub CLI	Developer	cli/cli	GitHub.cli
+Node.js	Developer	nodejs/node	OpenJS.NodeJS.LTS
+Python	Developer	python/cpython	Python.Python.3.11
+Rust	Developer	rust-lang/rust
+Tauri	Developer	tauri-apps/tauri
+Electron	Developer	electron/electron
+Vite	Developer	vitejs/vite
+React	Developer	facebook/react
+TypeScript	Developer	microsoft/TypeScript
+Neovim	Developer	neovim/neovim	Neovim.Neovim
+Notepad++	Developer	notepad-plus-plus/notepad-plus-plus	Notepad++.Notepad++
+Zed	Developer	zed-industries/zed
+ripgrep	Developer	BurntSushi/ripgrep	BurntSushi.ripgrep.MSVC
+fd	Developer	sharkdp/fd	sharkdp.fd
+uv	Developer	astral-sh/uv	astral-sh.uv
+Ruff	Developer	astral-sh/ruff
+FastAPI	Developer	fastapi/fastapi
+Uvicorn	Developer	encode/uvicorn
+Go	Developer	golang/go	GoLang.Go
+Deno	Developer	denoland/deno	DenoLand.Deno
+Bun	Developer	oven-sh/bun
+CMake	Developer	Kitware/CMake	Kitware.CMake
+Ninja	Developer	ninja-build/ninja	Ninja-build.Ninja
+AB Download Manager	Downloads	amir1376/ab-download-manager
+yt-dlp	Downloads	yt-dlp/yt-dlp	yt-dlp.yt-dlp
+aria2	Downloads	aria2/aria2
+qBittorrent	Downloads	qbittorrent/qBittorrent	qBittorrent.qBittorrent
+Transmission	Downloads	transmission/transmission
+Motrix	Downloads	agalwood/Motrix
+VLC	Multimedia	videolan/vlc	VideoLAN.VLC
+FFmpeg	Multimedia	FFmpeg/FFmpeg	Gyan.FFmpeg
+OBS Studio	Multimedia	obsproject/obs-studio	OBSProject.OBSStudio
+Audacity	Multimedia	audacity/audacity	Audacity.Audacity
+HandBrake	Multimedia	HandBrake/HandBrake	HandBrake.HandBrake
+mpv	Multimedia	mpv-player/mpv
+Kdenlive	Multimedia	KDE/kdenlive
+Shotcut	Multimedia	mltframework/shotcut
+LosslessCut	Multimedia	mifi/lossless-cut
+Jellyfin	Multimedia	jellyfin/jellyfin
+Kodi	Multimedia	xbmc/xbmc
+Blender	Design	blender/blender	BlenderFoundation.Blender
+FreeCAD	Design	FreeCAD/FreeCAD	FreeCAD.FreeCAD
+OpenSCAD	Design	openscad/openscad	OpenSCAD.OpenSCAD
+PrusaSlicer	Design	prusa3d/PrusaSlicer	Prusa3D.PrusaSlicer
+OrcaSlicer	Design	SoftFever/OrcaSlicer
+Bambu Studio	Design	bambulab/BambuStudio
+Cura	Design	Ultimaker/Cura
+Godot	Design	godotengine/godot	GodotEngine.GodotEngine
+Krita	Design	KDE/krita	KDE.Krita
+GIMP	Design	GNOME/gimp	GIMP.GIMP.3
+LocalSend	Networking	localsend/localsend	LocalSend.LocalSend
+Syncthing	Networking	syncthing/syncthing	Syncthing.Syncthing
+Wireshark	Networking	wireshark/wireshark	WiresharkFoundation.Wireshark
+curl	Networking	curl/curl
+rclone	Networking	rclone/rclone	Rclone.Rclone
+Caddy	Networking	caddyserver/caddy
+frp	Networking	fatedier/frp
+Headscale	Networking	juanfont/headscale
+KeePassXC	Security	keepassxreboot/keepassxc	KeePassXCTeam.KeePassXC
+Bitwarden	Security	bitwarden/clients	Bitwarden.Bitwarden
+Cryptomator	Security	cryptomator/cryptomator	Cryptomator.Cryptomator
+age	Security	FiloSottile/age
+YARA	Security	VirusTotal/yara
+ClamAV	Security	Cisco-Talos/clamav
+LibreHardwareMonitor	Monitoring	LibreHardwareMonitor/LibreHardwareMonitor
+PresentMon	Monitoring	GameTechDev/PresentMon
+Open Hardware Monitor	Monitoring	openhardwaremonitor/openhardwaremonitor
+btop	Monitoring	aristocratos/btop
+Grafana	Monitoring	grafana/grafana
+Prometheus	Monitoring	prometheus/prometheus
+Joplin	Productivity	laurent22/joplin	Joplin.Joplin
+Logseq	Productivity	logseq/logseq
+SumatraPDF	Productivity	sumatrapdfreader/sumatrapdf	Sumatrapdf.SumatraPDF
+Calibre	Productivity	kovidgoyal/calibre
+Zotero	Productivity	zotero/zotero
+NAPS2	Productivity	cyanfish/naps2
+PDFsam Basic	Productivity	torakiki/pdfsam
+LibreOffice	Productivity	LibreOffice/core	TheDocumentFoundation.LibreOffice
+fzf	Productivity	junegunn/fzf

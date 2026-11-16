@@ -46,8 +46,22 @@ def resolve_app(name: str) -> dict | None:
         _,apps=_apps_cached()
     matches=[p for p in apps if normalized_app(p.get('label',''))==canonical]
     if not matches:return None
-    # Multiple identical entries of the same target are okay; different targets
-    # must be resolved by the user rather than arbitrary first-match.
-    by_target={(e.get('appid') or e.get('path')):e for e in matches if e.get('appid') or e.get('path')}
-    if len(by_target)!=1:raise ValueError('Multiple installed applications match; specify exact app')
+    # Prefer a unique executable over Start Menu shortcut duplicates.
+    # Prefer one Windows-registered application identity over a raw .exe
+    # path; do not bypass the existing launcher risk policy.
+    appids = {str(e['appid']).casefold(): e for e in matches if e.get('appid')}
+    if len(appids) == 1:
+        return next(iter(appids.values()))
+    if len(appids) > 1:
+        raise ValueError('Multiple application identities match; specify exact app')
+    executables = {str(e['path']).casefold(): e for e in matches
+                   if e.get('path') and str(e['path']).lower().endswith('.exe')}
+    if len(executables) == 1:
+        return next(iter(executables.values()))
+    if len(executables) > 1:
+        raise ValueError('Multiple installed executables match; specify exact app')
+    by_target = {(e.get('appid') or e.get('path')): e for e in matches
+                 if e.get('appid') or e.get('path')}
+    if len(by_target) != 1:
+        raise ValueError('Multiple installed applications match; specify exact app')
     return next(iter(by_target.values()))

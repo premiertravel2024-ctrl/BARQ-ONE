@@ -8,13 +8,17 @@ $ReleaseUrl = 'https://github.com/LibreHardwareMonitor/LibreHardwareMonitor/rele
 $ExpectedSha256 = '086d9f1b5a99e643edc2cfaaac16051685b551e4c5ac0b32a57c58c0e529c001'
 $AppRoot = Split-Path -Parent $PSScriptRoot
 $Target = Join-Path $AppRoot 'hardware-monitor'
+if (-not $InstallOnly) { $Target = Join-Path $env:LOCALAPPDATA 'BARQ\toolkit\hardware-monitor' }
 $ReadScript = Join-Path $PSScriptRoot 'read_hardware_monitor.ps1'
 $Stage = Join-Path ([System.IO.Path]::GetTempPath()) ('barq-lhm-' + [guid]::NewGuid().ToString('N'))
 $ZipPath = Join-Path $Stage 'LibreHardwareMonitor.zip'
 $Cleanup = $false
 try {
-    $Bundled = Join-Path $Target ('bundled-' + $Version)
-    $Exe = Get-Item -LiteralPath (Join-Path $Bundled 'LibreHardwareMonitor.exe') -ErrorAction SilentlyContinue
+    $AppSensorBundle = Join-Path $AppRoot ('hardware-monitor\bundled-' + $Version)
+    $Exe = $null
+    if (-not $InstallOnly -and (Test-Path -LiteralPath (Join-Path $AppSensorBundle 'LibreHardwareMonitorLib.dll') -PathType Leaf)) {
+        $Exe = Get-Item -LiteralPath (Join-Path $AppSensorBundle 'LibreHardwareMonitor.exe') -ErrorAction SilentlyContinue
+    }
     if (-not $Exe) {
         $Exe = Get-ChildItem -LiteralPath $Target -Filter 'LibreHardwareMonitor.exe' -Recurse -File -ErrorAction SilentlyContinue | Select-Object -First 1
     }

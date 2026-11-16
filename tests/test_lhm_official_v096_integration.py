@@ -50,7 +50,7 @@ def test_invalid_sensor_values_are_never_fabricated(monkeypatch, tmp_path):
     monkeypatch.setattr(hw, '_query_local_library', lambda *a, **kw: None)
     monkeypatch.setattr(hw, '_start_installed_monitor', lambda *a: False)
     reading = hw.read_local_temperatures()
-    assert reading['cpu_c'] is None and reading['reason'] == 'sensor_provider_unavailable'
+    assert reading['cpu_c'] is None and reading['reason'] == 'sensor_library_missing'
 
 
 @pytest.mark.asyncio
@@ -78,10 +78,8 @@ def test_installer_pins_verified_official_release_and_includes_sensor_tasks():
         body = (ROOT / 'scripts' / name).read_text()
         assert 'Name: hardwaresensors;' in body
         if name=='installer.iss':
-            # Setup copies the built binaries and stores the pinned sensor bundle separately.
+            # Setup recursively copies the same binary directory as portable.
             assert 'Source: "{#BinaryDir}\\*"' in body
-            assert 'Excludes: "\\hardware-monitor,\\hardware-monitor\\*"' in body
-            assert 'DestDir: "{app}\\hardware-monitor\\bundled-v0.9.6"' in body
             assert 'Copy-Item -LiteralPath $monitorRoot' in (ROOT/'scripts/build_windows.ps1').read_text()
         else:
             assert 'Source: "..\\hardware-monitor\\*"' in body

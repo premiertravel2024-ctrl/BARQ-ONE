@@ -35,7 +35,7 @@ def test_missing_monitor_repairs_and_reads_in_the_same_request(monkeypatch):
     readings=iter([{'cpu_c':None,'reason':'monitor_not_installed'},
                    {'cpu_c':63.7,'cpu_sensor':'CPU Package'}])
     monkeypatch.setattr(hw,'snapshot',lambda **kw:next(readings))
-    monkeypatch.setattr(hw,'ensure_sensors_ready',lambda:'installed')
+    monkeypatch.setattr(hw,'auto_setup_sensors',lambda:'installed')
     assert '63.7' in windows_facts.answer('قيس درجة حرارة المعالج')
 
 
@@ -65,7 +65,7 @@ def test_failed_provider_never_fabricates_temperature(monkeypatch, tmp_path):
     monkeypatch.setattr(hw.time,'sleep',lambda _:None)
     monkeypatch.setattr(hw,'_query_lhm',lambda *a,**kw:None)
     reading=hw.read_local_temperatures()
-    assert reading['cpu_c'] is None and reading['reason']=='sensor_provider_unavailable'
+    assert reading['cpu_c'] is None and reading['reason']=='sensor_library_missing'
 
 
 def test_speech_playback_never_discards_queued_audio_on_normal_lag():

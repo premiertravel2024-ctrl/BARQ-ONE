@@ -1,13 +1,13 @@
 /* BARQ design tokens — dark by default, light theme remains fully supported. */
 :root,[data-theme='dark'] {
  color-scheme:dark;
- --bg-base:#100D14;--bg-surface:#18121D;--bg-elevated:#221925;--bg-input:#120E17;
+ --bg-base:#0e0d10;--bg-surface:#19161c;--bg-elevated:#242126;--bg-input:#121014;
  --base-rgb:16 13 20;--surface-rgb:24 18 29;--elevated-rgb:34 25 37;
- --border-color:#362A3A;--border-strong:#514054;
- --text-primary:#FCF3F8;--text-secondary:#BFB1C2;--text-muted:#BFB1C2;
- --accent-1:#AC3159;--accent-2:#F0779F;--accent-3:#AC3159;--accent-hover:#F0779F;
- --accent-rgb:218 79 124;--accent-glow:rgba(218,79,124,.075);--bubble:rgba(218,79,124,.075);
- --gradient-accent:linear-gradient(125deg,#a72d56,#7b274e);
+ --border-color:#ffffff13;--border-strong:#625767;
+ --text-primary:#f8f7f3;--text-secondary:#bcb5bd;--text-muted:#bcb5bd;
+ --accent-1:#ae2143;--accent-2:#ff728c;--accent-3:#8f1d39;--accent-hover:#ff8ca1;
+ --accent-rgb:225 57 89;--accent-glow:rgba(225,57,89,.075);--bubble:rgba(225,57,89,.075);
+ --gradient-accent:linear-gradient(125deg,#c7294e,#8f1d39);
  --success:#22C55E;--warning:#F59E0B;--danger:#EF4444;
  --success-rgb:34 197 94;--warning-rgb:245 158 11;--danger-rgb:239 68 68;
  --shadow-soft:0 1px 2px rgba(0,0,0,.22),0 8px 24px rgba(0,0,0,.17);

@@ -12,12 +12,15 @@ def code(relative):
     return (SRC/relative).read_text(encoding='utf-8')
 
 
-def test_chat_only_navigation_keeps_execution_services():
+def test_barq_one_navigation_keeps_execution_services():
     app = code('App.tsx')
     assert '<WorkspaceStudio' not in app
     assert '<Composer ' in app and '<ApprovalDialog ' in app
-    sidebar=code('components/layout/Sidebar.tsx')
-    assert "(['chat'] as const)" in sidebar
+    sidebar=code('components/layout/OperationsFrame.tsx')
+    assert '<OperationsRail ' in app
+    assert "sections.map(" in sidebar
+    assert "['chat'," in code('pages/BarqOne.tsx')
+    assert "['mission'," in code('pages/BarqOne.tsx')
     assert "(['chat','agent'] as const)" not in sidebar
     workspace = code('components/workspace/WorkspaceStudio.tsx')
     assert '<WorkspaceTools open inside' in workspace
@@ -70,7 +73,7 @@ def test_voice_readiness_and_local_offline_limitations_are_visible():
 def test_theme_branding_and_buttons():
     tokens=code('styles/tokens.css')
     styles=code('styles/global.css')
-    assert '#AC3159' in tokens and '#F0779F' in tokens
+    assert '#ae2143' in tokens and '#ff728c' in tokens
     assert "font-family:'GE SS Two'" in styles
     assert 'prefers-reduced-motion' in styles
     buttons=code('components/ui/Button.tsx')

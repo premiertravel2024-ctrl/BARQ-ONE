@@ -1,12 +1,13 @@
 import {AnimatePresence,motion,useReducedMotion} from 'framer-motion';
-import {MessageSquarePlus,MessagesSquare,PanelLeftClose,PanelLeftOpen,Search,MoreHorizontal,Pin,PinOff,Trash2,Pencil,Settings2,Sun,Moon,X,FlaskConical,Headphones} from 'lucide-react';
+import {MessageSquarePlus,PanelLeftClose,PanelLeftOpen,Search,MoreHorizontal,Pin,PinOff,Trash2,Pencil,Settings2,Sun,Moon,X,FlaskConical} from 'lucide-react';
 import {useEffect,useMemo,useRef,useState,type TouchEvent} from 'react';
 import {useApp,type Conversation} from '../../store';
 import {useT} from '../../i18n';
 import {Button} from '../ui/Button';import {IconButton} from '../ui/IconButton';import {Dropdown} from '../ui/Dropdown';
 import {motionTokens} from '../../lib/motion';
 import {BrandLockup} from '../ui/BrandMark';
-type Props={onSettings:()=>void;onSearch:()=>void;onDelete:(id:string)=>void;onPlayground:()=>void;onListening:()=>void;onNewChat:()=>void;onSelectChat:()=>void};
+import {sections,type OnePage} from '../../pages/BarqOne';
+type Props={onePage:OnePage;onOnePage:(page:OnePage)=>void;onSettings:()=>void;onSearch:()=>void;onDelete:(id:string)=>void;onPlayground:()=>void;onNewChat:()=>void;onSelectChat:()=>void};
 function groupChats(chats:Conversation[],lang:'ar'|'en'){
   const now=new Date();now.setHours(0,0,0,0);const day=86400000;
   const items=[{key:'pinned',label:lang==='ar'?'المثبتة':'Pinned',chats:[] as Conversation[]},
@@ -35,7 +36,7 @@ function ChatRow({chat,compact,onDelete,onSelectChat}:{chat:Conversation;compact
     {!editing&&<span className="sidebar-actions shrink-0"><Dropdown trigger={<IconButton label={t('more')} icon={<MoreHorizontal size={16}/>} size="sm" className="!min-w-8 !min-h-8"/>} items={menu}/></span>}
   </motion.div>
 }
-export function Sidebar({onSettings,onSearch,onDelete,onPlayground,onListening,onNewChat,onSelectChat}:Props){
+export function Sidebar({onePage,onOnePage,onSettings,onSearch,onDelete,onPlayground,onNewChat,onSelectChat}:Props){
  const collapsed=useApp(s=>s.sidebarCollapsed),open=useApp(s=>s.sidebarOpen),setOpen=useApp(s=>s.setSidebarOpen),setCollapsed=useApp(s=>s.setSidebarCollapsed),newChat=useApp(s=>s.newChat);
  const chats=useApp(s=>s.chats),language=useApp(s=>s.language),theme=useApp(s=>s.theme),toggleTheme=useApp(s=>s.toggleTheme);const t=useT();const reduced=useReducedMotion();
  const [loadingHistory,setLoadingHistory]=useState(true);useEffect(()=>{const ready=()=>setLoadingHistory(false);window.addEventListener('barq:conversations-hydrated',ready);const fallback=window.setTimeout(ready,6000);return()=>{window.removeEventListener('barq:conversations-hydrated',ready);window.clearTimeout(fallback)}},[]);
@@ -46,7 +47,7 @@ export function Sidebar({onSettings,onSearch,onDelete,onPlayground,onListening,o
  const renderBody=(compact:boolean,mobile=false)=><>
   <header data-compact={compact} className={`sidebar-brand-header flex w-full shrink-0 items-center gap-3 ${compact?'justify-center':'justify-between'}`}>
     {!compact&&<div role="img" aria-label="BARQ" className="sidebar-brand-lockup flex min-w-0 items-center justify-start">
-      <BrandLockup compact={compact}/>
+      <BrandLockup compact={compact}/><strong className="ms-1 self-start text-xs text-accent">ONE</strong>
     </div>}
     {!mobile&&<IconButton label={t('sidebar')} aria-expanded={!compact} icon={compact?<PanelLeftOpen size={18}/>:<PanelLeftClose size={18}/>} onClick={()=>setCollapsed(!collapsed)}/>}
   </header>
@@ -54,14 +55,13 @@ export function Sidebar({onSettings,onSearch,onDelete,onPlayground,onListening,o
     {compact?<IconButton label={t('newChat')} variant="primary" icon={<MessageSquarePlus size={19}/>} onClick={()=>{newChat();onNewChat()}} className="w-full"/>:
       <Button variant="primary" magnetic icon={<MessageSquarePlus size={17}/>} onClick={()=>{newChat();onNewChat()}} className="w-full justify-center">{t('newChat')}</Button>}
   </div>
-  <nav aria-label={language==='ar'?'مساحات العمل':'Workspaces'} className={`sidebar-workspaces shrink-0 px-3 pb-3 ${compact?'flex flex-col items-center gap-1':'space-y-1'}`}>
-    {(['chat'] as const).map(item=>{const label=language==='ar'?'المحادثة':'Chat';const icon=<MessagesSquare size={18}/>;const selected=true;
-      const choose=()=>{onSelectChat();if(mobile)setOpen(false)};
+  <nav aria-label={language==='ar'?'مساحات العمل':'Workspaces'} className={`sidebar-workspaces min-h-0 max-h-[46dvh] shrink-0 overflow-y-auto px-3 pb-3 ${compact?'flex flex-col items-center gap-1':'space-y-1'}`}>
+    {sections.map(([item,ar,en,Icon])=>{const label=language==='ar'?ar:en;const icon=<Icon size={17}/>;const selected=onePage===item;
+      const choose=()=>{onOnePage(item);if(mobile)setOpen(false)};
       return compact?<IconButton key={item} label={label} icon={icon} aria-current={selected?'page':undefined} className={selected?'!bg-accent/15 !text-accent':''} onClick={choose}/>:
-        <button key={item} type="button" aria-current={selected?'page':undefined} onClick={choose} className={`focus-ring flex min-h-11 w-full items-center gap-3 rounded-lg px-3 py-2 text-start text-sm transition-colors ${selected?'bg-accent/10 text-primary':'text-secondary hover:bg-elevated'}`}>{icon}<span>{label}</span></button>;
+        <button key={item} type="button" aria-current={selected?'page':undefined} onClick={choose} className={`focus-ring flex min-h-9 w-full items-center gap-3 rounded-lg px-3 py-1 text-start text-sm transition-colors ${selected?'bg-accent/10 text-primary':'text-secondary hover:bg-elevated'}`}>{icon}<span>{label}</span></button>;
     })}
   </nav>
-  <div className="w-full shrink-0 px-3 pb-3">{compact?<IconButton label="غرفة الاستماع" icon={<Headphones size={18}/>} onClick={onListening}/>:<button onClick={onListening} className="focus-ring flex min-h-11 w-full items-center gap-3 rounded-lg px-3 py-2 text-start text-sm text-secondary hover:bg-elevated"><Headphones size={18}/>غرفة الاستماع</button>}</div>
   {!compact&&<div className="w-full shrink-0 px-3 pb-3"><div className="relative"><Search className="pointer-events-none absolute start-3 top-1/2 -translate-y-1/2 text-muted" size={16}/><input aria-label={t('search')} className="ui-input !ps-10 !pe-16 text-sm" placeholder={t('search')} value={query} onChange={e=>setQuery(e.target.value)}/><button onClick={onSearch} className="absolute end-2 top-1/2 -translate-y-1/2 rounded-md border border-stroke px-1.5 text-[10px] text-muted focus-ring" title={language==='ar'?'فتح البحث السريع':'Open command search'}>{language==='ar'?'Ctrl K':'Ctrl K'}</button></div></div>}
  <nav aria-label={language==='ar'?'سجل المحادثات':'Chat history'} className={`min-h-0 flex-1 overflow-y-auto ${compact?'px-2':'px-3'}`}>
   {groups.length?groups.map(g=><section key={g.key} className="mb-4">{!compact&&<h3 className="mb-1.5 px-2 text-[11px] font-semibold uppercase tracking-[.08em] text-muted">{g.label}</h3>}<div className="flex flex-col gap-1"><AnimatePresence initial={false}>{g.chats.map(c=><ChatRow key={c.id} chat={c} compact={compact} onDelete={onDelete} onSelectChat={onSelectChat}/>)}</AnimatePresence></div></section>):loadingHistory&&!compact?<div role="status" aria-label="جاري تحميل المحادثات" className="space-y-3 px-2 py-4"><div className="shimmer h-9 rounded-lg"/><div className="shimmer h-9 rounded-lg"/><div className="shimmer h-9 rounded-lg"/></div>:!compact&&<p className="px-2 py-4 text-sm text-muted">{query?(language==='ar'?'لا توجد نتائج مطابقة':'No matching chats'):(language==='ar'?'ستظهر محادثاتك هنا.':'Your conversations will appear here.')}</p>}

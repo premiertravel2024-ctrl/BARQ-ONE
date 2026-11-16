@@ -1,0 +1,104 @@
+# One-shot BARQ local PC build. Runs ONLY on the user's explicitly
+# registered private Windows x64 runner, never on public GitHub runners.
+# No pull_request trigger: untrusted PR code must not run on a personal PC.
+name: BARQ ONE — build on my Windows PC
+
+on:
+  push:
+    branches:
+      - feature/barq-media-resource-suite
+    paths:
+      - .github/workflows/barq-local-windows.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: barq-local-windows-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  windows-local-release:
+    name: Compile and verify BARQ ONE on private Windows runner
+    if: github.repository == 'ashraftefa97-beep/BARQ-AI' && github.ref == 'refs/heads/feature/barq-media-resource-suite'
+    runs-on: [self-hosted, Windows, X64, barq-build-windows]
+    timeout-minutes: 180
+    defaults:
+      run:
+        shell: powershell
+    steps:
+      - name: Checkout trusted BARQ feature branch
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+          clean: true
+          fetch-depth: 1
+
+      - name: Show device and check toolchain without installing anything
+        run: |
+          Write-Host "Runner: $env:RUNNER_NAME"
+          Write-Host "Platform: $env:RUNNER_OS"
+          Write-Host "Repo: $env:GITHUB_REPOSITORY"
+          Write-Host "Commit: $env:GITHUB_SHA"
+          & powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\scripts\BUILD_BARQ_ON_WINDOWS.ps1 -PreflightOnly
+          if ($LASTEXITCODE -ne 0) { throw "Local Windows build preflight failed" }
+
+      - name: Build React, test Python and compile verified Windows EXE
+        run: |
+          & powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\scripts\BUILD_BARQ_ON_WINDOWS.ps1
+          if ($LASTEXITCODE -ne 0) { throw "BARQ ONE local build failed. Inspect release logs." }
+
+      - name: Verify installer, portable application and build evidence
+        run: |
+          $out="release"
+          $names=@(
+            "BARQ_Setup_2.40.0.exe",
+            "BARQ_Portable_2.40.0.zip",
+            "build-ok-v2.40.0.marker",
+            "installed-self-test.json",
+            "self-test.json",
+            "release-evidence.json"
+          )
+          foreach ($name in $names) {
+            $file=Join-Path $out $name
+            if (!(Test-Path -LiteralPath $file -PathType Leaf)) {
+              throw "Expected fresh verified artifact missing: $file"
+            }
+          }
+          $report=Get-Content (Join-Path $out "installed-self-test.json") -Raw | ConvertFrom-Json
+          if ($report.status -ne 'ok' -or $report.version -ne '2.40.0' -or !$report.frozen) {
+            throw 'Packaged installer failed local Windows self-test'
+          }
+          Get-FileHash -Algorithm SHA256 "release/BARQ_Setup_2.40.0.exe","release/BARQ_Portable_2.40.0.zip" |
+            Format-Table -AutoSize
+
+      - name: Save failed build diagnostics
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: BARQ-LOCAL-WINDOWS-FAILURE
+          path: |
+            release/*.log
+            release/*.xml
+            release/*-failures.txt
+            release/*self-test.json
+            release/BARQ_BUILD_FAILURE.txt
+            release/BARQ_DIAGNOSTICS.zip
+          if-no-files-found: warn
+          retention-days: 7
+
+      - name: Upload verified BARQ Windows installer
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: BARQ-ONE-2.40.0-WINDOWS-VERIFIED
+          path: |
+            release/BARQ_Setup_2.40.0.exe
+            release/BARQ_Portable_2.40.0.zip
+            release/build-ok-v2.40.0.marker
+            release/self-test.json
+            release/installed-self-test.json
+            release/release-evidence.json
+          if-no-files-found: error
+          retention-days: 14

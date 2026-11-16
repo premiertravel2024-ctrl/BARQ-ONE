@@ -13,6 +13,45 @@ let activeGenerationChat:string|null=null;
  */
 function openWorkspaceSafely():void{notifyUI('barq-open-workspace')}
 
+/**
+ * Only short, single-purpose CPU temperature requests take the local fast
+ * sensor path. Multi-part questions remain in the normal conversation flow
+ * so no second question is accidentally discarded.
+ */
+function isStandaloneCpuTemperatureRequest(text:string):boolean{
+ const normalized=text.normalize('NFKC').replace(/[أإآ]/g,'ا').trim().toLowerCase();
+ if(!normalized||normalized.length>180||/[\r\n;؛]/.test(normalized))return false;
+ if(!/(?:حرار|سخون|temperature|\btemp\b)/i.test(normalized))return false;
+ if(!/(?:معالج|بروسيسور|\bcpu\b|processor)/i.test(normalized))return false;
+ if((normalized.match(/[؟?]/g)||[]).length>1)return false;
+ // Further commands and second questions are not consumed by a one-sensor route.
+ if(/(?:\sو\s*(?:كمان|عايز|عاوز|قول|قولي|اشرح|ازاي|افتح|شغل|هات|و|هل|ايه|كم|قيس|اقرا|كام)|وبعدين|بعد كده|\b(?:and|then|also)\b)/i.test(normalized))return false;
+ if(/(?:كارت الشاشة|كرت الشاشة|\bgpu\b|الرام|\bram\b|\bfps\b)/i.test(normalized))return false;
+ return true;
+}
+
+type FeatureCommand={feature:'wallpapers'|'resources'|'watch';action:string};
+function exactDesktopFeatureCommand(text:string):FeatureCommand|null {
+ const normalized=text.normalize('NFKC').replace(/[أإآ]/g,'ا').replace(/ى/g,'ي')
+  .toLowerCase().trim().replace(/^يا\s*برق[\s،,]*/,'').replace(/[.!؟?]+$/,'').trim();
+ if(!normalized||normalized.length>90||/[\n\r;؛]/.test(normalized))return null;
+ const patterns:[RegExp,FeatureCommand][]=[
+  [/^(?:افتح|شغل|شغلي|شغللي|ابدأ|ابدء|open|start)\s+(?:الخلفيه الحيه|خلفيه حيه|lively|live wallpapers?)$/i,{feature:'wallpapers',action:'show'}],
+  [/^(?:شغل|استأنف|كمل|resume|play)\s+(?:الخلفيه|الخلفيه الحيه|wallpaper)$/i,{feature:'wallpapers',action:'play'}],
+  [/^(?:وقف|اوقف|اقفل|pause|stop)\s+(?:الخلفيه|الخلفيه الحيه|wallpaper)$/i,{feature:'wallpapers',action:'stop'}],
+  [/^(?:اختار|حط|set|choose)\s+(?:خلفيه عشوائيه|random wallpaper)$/i,{feature:'wallpapers',action:'random'}],
+  [/^(?:وريني|اعرض|شوف|show)\s+(?:العمليات|البرامج اللي شغاله|processes)$/i,{feature:'resources',action:'status'}],
+  [/^(?:رجع|استرجع|استعيد|restore)\s+(?:البرامج|كل البرامج|all|everything)$/i,{feature:'resources',action:'restore'}],
+  [/^(?:فعل|ابدأ|شغل|enable|start)\s+(?:وضع الالعاب|gaming mode)$/i,{feature:'resources',action:'gaming'}],
+  [/^(?:فعل|ابدأ|شغل|enable|start)\s+(?:وضع التركيز|focus mode)$/i,{feature:'resources',action:'focus'}],
+  [/^(?:فعل|ابدأ|شغل|enable|start)\s+(?:وضع توفير الموارد|وضع البطاريه|battery saver)$/i,{feature:'resources',action:'battery'}],
+  [/^(?:فعل|ابدأ|شغل|enable|start)\s+(?:وضع الافلام|movie mode)$/i,{feature:'resources',action:'movie'}],
+  [/^(?:ابدأ|افتح|شغل|start|open)\s+(?:غرفه مشاهده|watch room)$/i,{feature:'watch',action:'start'}],
+ ];
+ for(const [pattern,result] of patterns)if(pattern.test(normalized))return result;
+ return null;
+}
+
 export async function submitChat(text:string,attachments:UploadedAttachment[]=[]){
   const state=useApp.getState();if(state.streaming||(!text.trim()&&!attachments.length))return;
   const id=state.activeId||state.newChat();
@@ -34,6 +73,54 @@ export async function generate(id:string,retryCommandId?:string){
   current.setStreaming(true,assistantId);
   try{
   const last=messages.at(-1);
+  const featureAction=last?.role==='user'&&!last.attachments?.length?exactDesktopFeatureCommand(last.content):null;
+  if(featureAction){
+    try{
+      const response=await requestJSON<{status:string;message:string}>('/v1/features/command',{
+        method:'POST',signal,body:JSON.stringify(featureAction)});
+      if(signal.aborted)return;
+      current.addMessage(id,{id:uid(),role:'assistant',createdAt:Date.now(),model:'BARQ-AI/local',offline:true,content:response.message});
+    }catch(error){
+      if(signal.aborted)return;
+      const info=error instanceof Error?error.message:String(error);
+      current.addMessage(id,{id:uid(),role:'assistant',createdAt:Date.now(),model:'BARQ-AI/local',offline:true,
+        content:(current.language==='ar'?'الطلب محتاج صلاحية أو حصل خطأ في تنفيذ الميزة: ':'Feature requires authorization or failed: ')+info.slice(0,170)});
+    }
+    return;
+  }
+  if(last?.role==='user'&&!last.attachments?.length&&isStandaloneCpuTemperatureRequest(last.content)){
+    try{
+      const reading=await requestJSON<{cpu_c:number|null;cpu_sensor?:string|null;provider?:string|null;reason?:string|null}>('/v1/openhub/cpu-temperature',{signal});
+      if(signal.aborted)return;
+      const temperature=reading.cpu_c;
+      const valid=typeof temperature==='number'&&Number.isFinite(temperature)&&temperature>0&&temperature<125;
+      const ar=current.language==='ar';
+      const result=valid
+        ?(ar?`حرارة المعالج دلوقتي ${temperature.toFixed(1)} درجة مئوية، من ${reading.cpu_sensor||'حساس CPU'} عبر ${reading.provider||'LibreHardwareMonitor'}.`
+          :`CPU temperature is ${temperature.toFixed(1)} °C (${reading.cpu_sensor||'CPU sensor'}, ${reading.provider||'LibreHardwareMonitor'}).`)
+        :(ar?'مش لاقي قراءة مؤكدة لحرارة المعالج رغم إن الأداة ممكن تكون شغالة. افتح LibreHardwareMonitor ثم Options > Remote Web Server > Run مرة واحدة، وخليه شغال. برق هيقرأ CPU Package محليًا بدون WMI أو صلاحيات متكررة.'
+          :'CPU temperature is unavailable. In LibreHardwareMonitor, enable Options > Remote Web Server > Run once and leave it running; BARQ will read the live CPU Package locally.');
+      current.addMessage(id,{id:uid(),role:'assistant',createdAt:Date.now(),model:'BARQ-AI/local',offline:true,content:result});
+      return;
+    }catch(error){
+      if(signal.aborted)return;
+      current.addMessage(id,{id:uid(),role:'assistant',createdAt:Date.now(),model:'BARQ-AI/local',offline:true,
+        content:current.language==='ar'?'واجهة قراءة الحرارة المحلية مش متاحة في نسخة برق الشغالة. حدّث التطبيق، وبعدها جرّب تاني. مش هخمن درجة حرارة المعالج.'
+          :'The local sensor API is unavailable in this BARQ build. Update the app and retry; no temperature was guessed.'});
+      return;
+    }
+  }
+  if(last?.role==='user'&&!last.attachments?.length&&last.content.length<=420&&
+     /(?:ثبت|ثبّت|سطب|نزل|نزّل|حمل|حمّل|install|download)/i.test(last.content)){
+    try{
+      const tool=await requestJSON<{matched:boolean;status?:string;message?:string}>('/v1/openhub/command',{
+        method:'POST',signal,body:JSON.stringify({text:last.content})});
+      if(tool.matched){
+        current.addMessage(id,{id:uid(),role:'assistant',createdAt:Date.now(),model:'BARQ-AI/local',content:tool.message||''});
+        return;
+      }
+    }catch(error){if(!(error instanceof APIError)||error.status!==404)throw error;}
+  }
   const personalText=(last?.content||'').normalize('NFKC').replace(/[أإآ]/g,'ا').replace(/ى/g,'ي').replace(/[\u064b-\u065fـ]/g,'');
   if(last?.role==='user'&&!last.attachments?.length&&last.content.length<=500&&/(?:احفظ المفضل|احفظ المفضلة|افتكر المفضل|افتكر المفضلة|افتكر ان اسمي|افتكر إن اسمي|افتكر اسمي|احفظ اسمي|راقب اداء|وقف مراقبة اللعب|جهزني|وضع اللعب|روتين|المفضل|المحدد|الحافظة|اخر تغيير|آخر تغيير|رجع اللي|وقف كل|التنزيل|التنزيلات|فكرني|المهام وصلت|حالة المهام|متابعة المهام|تابع البناء|اقرا الاشعارات|مكتوب فيه|محتواه|جواه|محتوي الملفات|وقف الاغني|وقف الأغني|كمل الاغني|كمل الأغني|الاغني.*(?:بعدها|السابقة)|الأغني.*(?:بعدها|السابقة)|^التالي$)/i.test(personalText)){
    const result=await requestJSON<{matched:boolean;status?:string;message?:string}>('/v1/personal/command',{method:'POST',signal,body:JSON.stringify({text:last.content})});

@@ -10,7 +10,7 @@ $root = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path
 Set-Location $root
 # A previous installer never counts as evidence of a new successful build.
 # Clear old output for the SAME version before building, even on a failed rebuild.
-$version = '2.37.2'
+$version = '2.40.0'
 $oldSetup = Join-Path $root "release\BARQ_Setup_$version.exe"
 if (Test-Path -LiteralPath $oldSetup) { Remove-Item -LiteralPath $oldSetup -Force }
 $buildMarker = Join-Path $root "release\build-ok-v$version.marker"
@@ -107,6 +107,19 @@ Write-Host "Inno Setup detected: $compilerCheck" -ForegroundColor DarkGreen
 
 # Keep every dependency and build tool under a short path, even if the ZIP was
 # extracted into a long Downloads directory. No administrator or registry edit.
+# The native agent requires a WeSpeaker ONNX model that is intentionally not
+# committed to Git. Fetch and SHA-256 verify it BEFORE short-path staging,
+# otherwise the staged build fails after installing Python dependencies.
+# Also run this check in staged builds, so direct stage invocations fail closed.
+Write-Host "`n==> Ensuring verified speaker recognition model" -ForegroundColor Cyan
+& (Join-Path $PSScriptRoot 'ensure_speaker_model.ps1')
+$speakerPath = Join-Path $root 'models/speaker/wespeaker_en_voxceleb_resnet34_LM.onnx'
+$speakerSha = 'E9848563DA86F263117134DFD7AD63C92355B37DE492B55E325400C9D9C39012'
+if (-not (Test-Path -LiteralPath $speakerPath -PathType Leaf) -or
+    (Get-FileHash -Algorithm SHA256 -LiteralPath $speakerPath).Hash.ToUpperInvariant() -ne $speakerSha) {
+  throw 'Verified speaker model missing or corrupt; release blocked.'
+}
+
 if (-not $StagedBuild) {
   if ($UseBundledUI) {
     & py -3.11 (Join-Path $PSScriptRoot 'build_short_path.py') --source $root --bundled-ui
@@ -194,7 +207,6 @@ if ($UseBundledUI) {
     Invoke-Step 'Testing companion fast paths and speech glow' { npm run test:companion }
     Invoke-Step 'Testing local screen chat execution' { npm run test:screen }
     Invoke-Step 'Testing direct folder lookup and exact matching' { npm run test:folders }
-    Invoke-Step 'Testing voice capture and command handoff' { npm run test:voice }
     Invoke-Step 'Testing frontend dependency import guard' { npm run test:imports }
     Invoke-Step 'Testing frontend store, API and streaming' { npm run test:frontend }
     Invoke-Step 'Testing live voice audio crash protection' { node ../tests-js/live_voice_crash_regression.cjs }
@@ -202,6 +214,8 @@ if ($UseBundledUI) {
     Invoke-Step 'Testing approval dispatch and deferred continuation' { npm run test:approvals }
     Invoke-Step 'Testing workspace synchronization and draft protection' { npm run test:workspace }
     Invoke-Step 'Type-checking and building React UI' { npm run build }
+    # The capture regression checks the AudioWorklet emitted by Vite.
+    Invoke-Step 'Testing voice capture and command handoff' { npm run test:voice }
   } finally { Pop-Location }
 }
 if (-not (Test-Path 'frontend/public/audio/live-capture.js' -PathType Leaf)) { throw 'Live voice source AudioWorklet missing: frontend/public/audio/live-capture.js' }
@@ -212,19 +226,19 @@ if (-not (Test-Path 'web/react/index.html')) { throw 'React dist/index.html is m
 $assets = @(Get-ChildItem 'web/react/assets' -File -ErrorAction SilentlyContinue)
 if ($assets.Count -eq 0) { throw 'React assets are missing.' }
 # The last BARQ releases sometimes installed a stale pre-built UI. Fail closed:
-# a genuine v2.37.2 workspace requires its own freshly compiled React marker.
+# a genuine v2.40.0 workspace requires its own freshly compiled React marker.
 if (-not $UseBundledUI) {
-  $studioMarker = 'v2.37.2-build-gated-ui'
+  $studioMarker = 'v2.40.0-build-gated-ui'
   $fresh = @(Get-ChildItem 'web/react/assets' -Filter '*.js' -File | Where-Object {
       Select-String -LiteralPath $_.FullName -SimpleMatch -Pattern $studioMarker -Quiet
   })
-  if ($fresh.Count -eq 0) { throw 'Fresh React build did not contain the v2.37.2 workspace marker. Installer blocked to prevent installing outdated UI.' }
+  if ($fresh.Count -eq 0) { throw 'Fresh React build did not contain the v2.40.0 workspace marker. Installer blocked to prevent installing outdated UI.' }
   $wakeUi = @(Get-ChildItem 'web/react/assets' -Filter '*.js' -File | Where-Object {
       Select-String -LiteralPath $_.FullName -SimpleMatch -Pattern '/v1/voice/wake/pending' -Quiet
   })
   if ($wakeUi.Count -eq 0) { throw 'Fresh React build is missing the wake listener. Installer blocked to avoid a stale voice UI.' }
   # Check the ACTUAL compiled consent controls and their current runtime
-  # endpoints/events. The old v2.37.2-desktop-consent-tooltip-fix marker was
+  # endpoints/events. The old v2.40.0-desktop-consent-tooltip-fix marker was
   # removed in a prior UI refactor and caused a false build failure even when
   # `npm run build` succeeded. Keep the security check, not the obsolete token.
   & py -3.11 (Join-Path $PSScriptRoot 'verify_desktop_consent_bundle.py') --root $root

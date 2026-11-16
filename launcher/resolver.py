@@ -31,6 +31,82 @@ class LaunchResult:
     text_ar:str
     intent:dict|None=None
 
+def _app_identity(label: str, mapping: dict[str, list[str]]) -> str:
+    """Canonical app label independent of Windows display language.
+
+    For example, Chrome, Google Chrome and جوجل كروم are one app name;
+    vendor prefixes such as Microsoft Word also map to the same key.
+    Distinct actual executable paths are *never* collapsed by name alone.
+    """
+    from computer_control.tools.app_index import normalized_app
+    display = clean(label)
+    for canonical, variants in mapping.items():
+        key = clean(canonical)
+        names = {key, *(clean(form) for form in variants)}
+        if display in names or (
+            key and display.endswith(' ' + key)
+            and len(display.split()) <= 3
+        ):
+            return key
+    return normalized_app(label)
+
+
+def _collapse_app_representations(found: list[tuple[Candidate, Decision]],
+                                  aliases: dict[str, list[str]] | None = None) -> list[tuple[Candidate, Decision]]:
+    """Treat Start Menu shortcuts, registered AppIDs and the unique EXE as one app.
+
+    Only collapse labels representing the same known application. If two
+    distinct executable paths exist, preserve the ambiguity for user choice.
+    Retain the selected candidate's original policy decision and executable.
+    """
+    from computer_control.tools.app_index import normalized_app
+
+    grouped: dict[str, list[tuple[Candidate, Decision]]] = {}
+    others: list[tuple[Candidate, Decision]] = []
+    for item in found:
+        candidate, _ = item
+        if candidate.kind != 'app':
+            others.append(item)
+            continue
+        grouped.setdefault(_app_identity(candidate.label, aliases or {}), []).append(item)
+    for group in grouped.values():
+        if len(group) < 2:
+            others.extend(group)
+            continue
+        executables = {
+            obj.path_or_appid.casefold(): item
+            for item in group
+            for obj in (item[0],)
+            if obj.path_or_appid.lower().endswith('.exe')
+        }
+        # Different real executables, even of the same brand, must not be
+        # silently treated as interchangeable.
+        if len(executables) > 1:
+            others.extend(group)
+            continue
+        appids = {
+            obj.path_or_appid.casefold(): item
+            for item in group
+            for obj in (item[0],)
+            if obj.args.get('appid')
+        }
+        # AppIDs are OS-registered launch identities, unlike raw executable
+        # paths which appropriately require an explicit high-risk approval.
+        # Prefer a unique AppID when present; never bypass the policy gate.
+        if len(appids) > 1:
+            others.extend(group)
+            continue
+        selected = (next(iter(appids.values())) if len(appids) == 1
+                    else next(iter(executables.values())) if len(executables) == 1
+                    else None)
+        if selected is None:
+            others.extend(group)
+            continue
+        selected[0].score = max(item[0].score for item in group)
+        others.append(selected)
+    return others
+
+
 class Resolver:
     def __init__(self,index:Index|None=None,policy:Policy|None=None,app_source=None):
         self.index=index or Index();self.policy=policy or Policy();self.app_source=app_source or self.index.apps
@@ -96,8 +172,14 @@ class Resolver:
             for entry in self.app_source():
                 label=str(entry.get('label',''))
                 from difflib import SequenceMatcher
-                score=max(SequenceMatcher(None,target,clean(label)).ratio(),
-                    max((value for name,value in canon.items() if clean(name)==clean(label) or clean(name) in clean(label)),default=0))
+                # Exact Arabic/English alias refers to a canonical installed app.
+                # Compare its identity, not only the display-language string.
+                identity = _app_identity(label, aliases.get('apps') or {})
+                aliases_score = max((value for name, value in canon.items()
+                    if identity == clean(name)
+                    or clean(label) == clean(name)
+                    or clean(label).endswith(' ' + clean(name))), default=0)
+                score=max(SequenceMatcher(None,target,clean(label)).ratio(), aliases_score)
                 if score<.7:continue
                 appid=entry.get('appid');path=entry.get('path')
                 if appid:
@@ -106,7 +188,13 @@ class Resolver:
                     self._add(found,'app',label,appid,score,'open_app',args,source)
                 elif path and Path(path).is_file():
                     self._add(found,'app',label,str(path),score,'open_app',{'name':str(path)},source)
-        if direct is None and intent.target_kind in (None,'file','folder'):
+        # An exact installed-app match should not be made ambiguous by a
+        # similarly named document or folder in the general local index.
+        # Explicit "ملف" or "مجلد" requests still search those categories.
+        exact_app = any(obj.kind == 'app' and obj.score >= 0.999
+                        for obj, _ in found)
+        if (direct is None and intent.target_kind in (None,'file','folder')
+                and (intent.target_kind is not None or not exact_app)):
             if intent.target_kind in ('folder','file'):
                 extras=list(self.policy.allowed_folders)
                 if self.index.roots is None:
@@ -122,6 +210,7 @@ class Resolver:
                 label=row['label'];kind=row['kind'];path=row['path']
                 if not Path(path).exists() or (kind=='folder' and not Path(path).is_dir()):continue
                 self._add(found,kind,label,path,row['score'],'open_folder' if kind=='folder' else 'open_file',{'path':path},source)
+        found = _collapse_app_representations(found, aliases.get('apps') or {})
         found.sort(key=lambda item:-item[0].score)
         # Remove duplicate destinations without arbitrary selection on ties.
         unique=[];seen=set()

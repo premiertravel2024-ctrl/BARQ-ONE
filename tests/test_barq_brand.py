@@ -15,7 +15,7 @@ class BARQBrand(unittest.TestCase):
    self.assertTrue((ROOT/'frontend/public'/name).exists(),name)
    self.assertTrue((ROOT/'web'/name).exists(),name)
  def test_tokens(self):
-  for x in ('#100D14','#18121D','#221925','#120E17','#362A3A','#FCF3F8','#BFB1C2','#AC3159','#F0779F'):
+  for x in ('#0e0d10','#19161c','#242126','#121014','#ffffff13','#f8f7f3','#bcb5bd','#ae2143','#ff728c'):
    self.assertIn(x,read('frontend/src/styles/tokens.css'))
   for x in ('#0F1115','#13161B','#191D24','#111419','#2B313B','#F5F7FA','#A7AFBC','#E52235','#F23B4D'):
    self.assertIn(x,read('web/fonts/ui-refine.css'))

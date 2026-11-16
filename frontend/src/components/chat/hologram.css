@@ -6,18 +6,18 @@
   justify-content: safe center;
   overflow: auto;
   padding: 16px clamp(10px, 3vw, 28px);
-  color: #e7f7ff;
+  color: var(--text-primary);
 }
 .barq-hologram-console {
   display: grid;
   align-content: center;
   justify-items: center;
   width: min(100%, 920px);
-  gap: 12px;
-  padding: clamp(8px, 2vw, 20px);
-  border: 1px solid #20435a;
+  gap: 16px;
+  padding: clamp(8px, 1.5vw, 16px);
+  border: 1px solid var(--border-strong);
   border-radius: 24px;
-  background: #060f1b;
+  background: var(--bg-surface);
   box-shadow: var(--shadow-soft);
 }
 .barq-hologram-stage {
@@ -27,20 +27,22 @@
   width: 100%;
   overflow: hidden;
   isolation: isolate;
-  border: 1px solid #1a3548;
+  border: 1px solid var(--border-color);
   border-radius: 15px;
-  background: radial-gradient(ellipse at 50% 52%, #13344e, #0a1a2a 57%, #070f1a 94%);
+  background:
+    radial-gradient(ellipse at 50% 76%, #a3264852, transparent 44%),
+    radial-gradient(ellipse at 50% 44%, #371421 0%, #190f16 58%, #0d0b10 94%);
 }
 .barq-hologram-stage::before {
   content: '';
   position: absolute;
   z-index: -1;
   inset: 0;
-  opacity: .56;
+  opacity: .76;
   pointer-events: none;
-  background: linear-gradient(90deg, #58caf015 1px, transparent 1px),
-    linear-gradient(#58caf015 1px, transparent 1px);
-  background-size: 28px 28px;
+  background: linear-gradient(90deg, #ff728c15 1px, transparent 1px),
+    linear-gradient(#ff728c15 1px, transparent 1px);
+  background-size: 32px 32px;
   mask-image: radial-gradient(ellipse, #000 29%, transparent 85%);
 }
 .barq-hologram-header {
@@ -59,7 +61,7 @@
   display: flex;
   align-items: center;
   gap: 7px;
-  color: #a8e9ff;
+  color: var(--accent-2);
   font-size: .82rem;
 }
 .barq-hologram-header [role='status']::before {
@@ -72,7 +74,7 @@
 }
 .barq-hologram[data-phase='approval'] .barq-hologram-header [role='status'] { color: #ffc07d; }
 .barq-hologram[data-phase='hearing'] .barq-hologram-stage,
-.barq-hologram[data-phase='speaking'] .barq-hologram-stage { border-color: #36819f; }
+.barq-hologram[data-phase='speaking'] .barq-hologram-stage { border-color: var(--accent-1); }
 .barq-hologram-art {
   display: block;
   width: min(100%, 590px, 74dvh);
@@ -80,20 +82,42 @@
 }
 .barq-hologram-controls { display: grid; justify-items: center; gap: 8px; text-align: center; }
 .barq-hologram-controls button {
-  color: #dcf8ff;
-  border-color: #2c637e;
-  background: #13344b;
+  color: var(--text-primary);
+  border-color: var(--accent-1);
+  background: #491b2b;
 }
-.barq-hologram-controls button:hover { background: #1b4a64; }
+.barq-hologram-controls button:hover { background: #67253c; }
 .barq-hologram-caption {
   max-width: 60ch;
   max-height: min(13dvh, 94px);
   overflow: auto;
   overflow-wrap: anywhere;
-  color: #c5e5f4;
+  color: var(--text-secondary);
   font-size: .92rem;
 }
-.barq-hologram-timings { color: #acd5ec; font-size: .8rem; }
+.barq-hologram-timings { color: var(--text-secondary); font-size: .8rem; }
 .barq-hologram-timings summary { cursor: pointer; }
 
-.barq-hologram-progress { width: min(220px, 65vw); height: 5px; accent-color: #58caf0; }
+.barq-hologram-progress { width: min(220px, 65vw); height: 5px; accent-color: var(--accent-2); }
+
+@media (max-height: 700px) {
+  .barq-hologram { padding-block: 8px; }
+  .barq-hologram-art { width: min(100%, 60dvh, 500px); }
+}
+
+.barq-hologram-quality { display:flex;align-items:center;gap:6px;color:var(--text-secondary);font-size:.78rem; }
+.barq-hologram-lite { display:grid;place-items:center; }
+.barq-hologram-lite span {
+  width:34%;aspect-ratio:1;border-radius:50%;position:relative;
+  border:1px solid #ff728c82;
+  background:radial-gradient(circle at 36% 31%,#ffe6ed,#c7294e 18%,#691a35 45%,#170e16 72%);
+  box-shadow:0 0 35px #e1395978;
+}
+.barq-hologram-lite span::after {
+  content:'';position:absolute;inset:-20%;border:1px dashed #ff728c99;border-radius:50%;
+}
+.barq-hologram-lite:is([data-phase='hearing'],[data-phase='speaking'],[data-phase='executing']) span {
+  animation:barq-lite-pulse 1.2s ease-in-out infinite alternate;
+}
+@keyframes barq-lite-pulse { to { transform:scale(1.09); } }
+@media(prefers-reduced-motion:reduce){.barq-hologram-lite span{animation:none!important}}

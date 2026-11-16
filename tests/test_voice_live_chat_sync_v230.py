@@ -35,7 +35,7 @@ def test_live_chat_context_can_change_while_socket_is_open(monkeypatch):
     class Session:
         async def __aenter__(self):return self
         async def __aexit__(self,*args):pass
-        async def send_client_content(self,**kwargs):pass
+        async def send_client_content(self,**kwargs):self.turns = kwargs
         async def send_realtime_input(self,**kwargs):pass
         async def receive(self):
             await asyncio.Event().wait()
@@ -50,13 +50,16 @@ def test_live_chat_context_can_change_while_socket_is_open(monkeypatch):
         app=FastAPI();app.websocket('/live')(live.handle_live)
         with TestClient(app).websocket_connect('/live?mode=open') as ws:
             assert ws.receive_json()['type']=='ready'
-            ws.send_json({'type':'context','messages':[]})
+            ws.send_json({'type':'context',
+                          'messages':[{'role':'user','content':'x'*1200}]*12,
+                          'reference_messages':[{'role':'user','content':'x'*900}]*16})
             # Link arrives AFTER the session's first context snapshot.
             ws.send_json({'type':'chat_context','messages':[
                 {'role':'assistant','content':'https://github.com/unsafe/injected'},
                 {'role':'user','content':TRACKED}]})
             event=ws.receive_json()
             assert event=={'type':'chat_context_synced','url':URL,'chat_id':''}
+            assert len(session.turns['turns']) == 12
             # Remove typed link. Old links must not be reused across edits.
             ws.send_json({'type':'chat_context','messages':[{'role':'assistant','content':TRACKED}]})
             assert ws.receive_json()=={'type':'chat_context_synced','url':None,'chat_id':''}

@@ -1,0 +1,82 @@
+[
+  {
+    "name": "Ollama",
+    "repo": "ollama/ollama",
+    "category": "AI"
+  },
+  {
+    "name": "Open WebUI",
+    "repo": "open-webui/open-webui",
+    "category": "AI"
+  },
+  {
+    "name": "Windows-MCP",
+    "repo": "CursorTouch/Windows-MCP",
+    "category": "BARQ"
+  },
+  {
+    "name": "Open Interpreter",
+    "repo": "OpenInterpreter/open-interpreter",
+    "category": "BARQ"
+  },
+  {
+    "name": "OpenHands",
+    "repo": "OpenHands/OpenHands",
+    "category": "BARQ"
+  },
+  {
+    "name": "PowerToys",
+    "repo": "microsoft/PowerToys",
+    "category": "Windows"
+  },
+  {
+    "name": "Lively Wallpaper",
+    "repo": "rocksdanister/lively",
+    "category": "Design"
+  },
+  {
+    "name": "Blender",
+    "repo": "blender/blender",
+    "category": "Design"
+  },
+  {
+    "name": "LocalSend",
+    "repo": "localsend/localsend",
+    "category": "Windows"
+  },
+  {
+    "name": "LibreHardwareMonitor",
+    "repo": "LibreHardwareMonitor/LibreHardwareMonitor",
+    "category": "Windows"
+  },
+  {
+    "name": "yt-dlp",
+    "repo": "yt-dlp/yt-dlp",
+    "category": "Downloads"
+  },
+  {
+    "name": "AB Download Manager",
+    "repo": "amir1376/ab-download-manager",
+    "category": "Downloads"
+  },
+  {
+    "name": "faster-whisper",
+    "repo": "SYSTRAN/faster-whisper",
+    "category": "BARQ"
+  },
+  {
+    "name": "Silero VAD",
+    "repo": "snakers4/silero-vad",
+    "category": "BARQ"
+  },
+  {
+    "name": "Browser Use",
+    "repo": "browser-use/browser-use",
+    "category": "BARQ"
+  },
+  {
+    "name": "Tauri",
+    "repo": "tauri-apps/tauri",
+    "category": "Development"
+  }
+]

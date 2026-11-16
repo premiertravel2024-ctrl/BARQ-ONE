@@ -141,14 +141,16 @@ class BARQVoiceBrain:
         self.hub=hub if hub is not None else SearchHub()
 
     def is_direct_turn(self, spoken: str) -> bool:
-        from voice.intent import command_text, non_executable
+        from voice.intent import non_executable
         from launcher.nlu import parse
         if not spoken or non_executable(spoken):
             return False
+        from api_routes.openhub_tools import requested_tool
+        if requested_tool(spoken):return True
         route = action_route(spoken)
         if route == 'get_pc_system_facts':
             from core.windows_facts import is_temperature_request
-            return is_temperature_request(spoken)
+            return is_temperature_request(spoken) or classify_scope(spoken) == 'facts'
         if route == 'open_on_computer':
             parsed = parse(spoken)
             return bool(parsed and parsed.verb == 'open')
@@ -160,10 +162,9 @@ class BARQVoiceBrain:
         if route == 'search_hub':
             return classify_scope(spoken) in ('device', 'media')
         if route == 'control_windows_setting':
-            return command_text(spoken).split()[0] in {
-                'ظبط','اضبط','خلي','زود','علي','اعلي','ارفع','وطي','قلل','انقص','اخفض','set',
-            }
-        return route in ('device_search_then_open','followup','stop_computer_task','computer_task_status','coding_task_status','desktop_companion','start_coding_task') or self.media.matches(spoken)
+            from voice.intent import setting_request
+            return setting_request(spoken) is not None
+        return route in ('device_search_then_open','followup','stop_computer_task','computer_task_status','coding_task_status','desktop_companion','personal_assistant','read_current_screen','start_coding_task') or self.media.matches(spoken)
 
     async def _dispatch(self,name:str,args:dict,conversation_id:str)->dict:
         if self.dispatcher is None:
@@ -176,6 +177,13 @@ class BARQVoiceBrain:
         # _model_args intentionally ignored. All work is grounded in verified STT.
         spoken,error=recent_verified_user_speech(gate,now=now)
         if error:return _result('needs_clarification',error)
+        from api_routes.openhub_tools import CommandRequest, requested_tool, tool_command
+        if requested_tool(spoken):
+            if not computer_enabled:
+                return _result('permission_required','فعّل إذن أوامر الكمبيوتر الصوتية الأول.')
+            import asyncio
+            result = await asyncio.to_thread(tool_command, CommandRequest(text=spoken))
+            return _result(result['status'],result['message'])
         from services.personal_assistant import classify as personal_intent, execute as personal_command
         if personal_intent(spoken):
             if not computer_enabled and personal_intent(spoken)[0]!='emergency':return _result('permission_required','فعّل إذن الأوامر الصوتية على الكمبيوتر الأول.')

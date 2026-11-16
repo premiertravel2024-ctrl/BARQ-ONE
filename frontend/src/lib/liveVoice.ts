@@ -230,8 +230,15 @@ export class LiveVoice {
      if(!this.interrupted){this.clearAudio();this.speakerGuardUntil=0;this.resetSpeech();}
      this.turnActive=false;this.directAudioUntil=0;this.interruptedTurnPending=false;
     }
+    if(event.type==='input_text'&&(this.speechActive||this.awaitingReplyAt)){
+     this.interrupted=false;this.interruptedTurnPending=false;
+    }
     if(this.interrupted&&(event.type==='audio'||event.type==='output_text'))return;
-    if(event.type==='verified_output_text')this.directAudioUntil=Date.now()+9000;
+    if(event.type==='verified_output_text'){
+     this.directAudioUntil=Date.now()+9000;
+     this.awaitingReplyAt=0;
+     this.lastResponseAt=Date.now();
+    }
     if(event.type==='voice_warning')this.directAudioUntil=0;
     if(event.type==='audio_relay'){this.relaySeen=true;this.receive({type:'voice_phase',status:'audio_forwarded'});}
     if(event.type==='input_text'||event.type==='output_text'||event.type==='audio'||event.type==='turn_complete'){
@@ -322,6 +329,7 @@ export class LiveVoice {
   this.firstVoiceAt=0;
   this.speechEndedAt=undefined;
   this.receive({type:'voice_phase',status:'reply_timed_out'});
+  this.interrupted=false;
   if(waiting&&now-this.lastWarningAt>6000){
    this.lastWarningAt=now;
    this.receive({type:'voice_warning',message:this.relaySeen

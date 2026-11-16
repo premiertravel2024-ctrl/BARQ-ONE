@@ -1,4 +1,3 @@
-import {ListeningRoom} from './components/listening/ListeningRoom';
 import {stopSpeechPlayback} from './lib/speechGlow';
 import {useCallback,useEffect,useState} from 'react';
 import {Trash2} from 'lucide-react';
@@ -7,10 +6,11 @@ import {ComputerControlStatus} from './components/workspace/ComputerControlStatu
 import {startDataSync} from './lib/sync';
 import {deleteConversation, type RouterProvider} from './lib/backend';
 import {useApp} from './store';import {useT} from './i18n';
-import {Sidebar} from './components/layout/Sidebar';import {TopBar} from './components/layout/TopBar';import {RightPanel} from './components/layout/RightPanel';import {SettingsModal,shortcuts} from './components/layout/SettingsModal';
+import {RightPanel} from './components/layout/RightPanel';
+import {OperationsHeader,OperationsRail,ConversationHeader} from './components/layout/OperationsFrame';import {SettingsModal,shortcuts} from './components/layout/SettingsModal';
 import {EmptyState} from './components/chat/EmptyState';import {MessageList} from './components/chat/MessageList';import {BrainStatus} from './components/chat/BrainStatus';import {Composer} from './components/chat/Composer';
 import {HandsFreeVoice,isHandsFreeActive} from './components/chat/HandsFreeVoice';
-import {Hologram} from './components/chat/Hologram';
+import {BarqOne,type OnePage} from './pages/BarqOne';
 import {VoiceResultsStrip} from './components/chat/VoiceResultsStrip';
 import {Modal} from './components/ui/Modal';import {Button} from './components/ui/Button';import {ToastViewport} from './components/ui/Toast';import {LauncherPalette} from './components/launcher/LauncherPalette';import {CommandPalette} from './components/ui/CommandPalette';import {Playground} from './pages/Playground';
 // Permission snapshot is kept up to date while the app is alive. We start
@@ -37,11 +37,11 @@ function openConsentedVoiceSession(){
 }
 export default function App(){
  const theme=useApp(s=>s.theme),language=useApp(s=>s.language),id=useApp(s=>s.activeId),chat=useApp(s=>s.chats.find(c=>c.id===s.activeId)),newChat=useApp(s=>s.newChat),deleteChat=useApp(s=>s.deleteChat),setSidebarOpen=useApp(s=>s.setSidebarOpen),streaming=useApp(s=>s.streaming);
- const [hologram,setHologram]=useState(false);
+ const [onePage,setOnePage]=useState<OnePage>('center');
  const [providers,setProviders]=useState<RouterProvider[]>([]);
- const [settingsTab,setSettingsTab]=useState<'general'|'models'|'voice'|'workspace'|'performance'>('general');const [settings,setSettings]=useState(false),[palette,setPalette]=useState(false),[shortcutsOpen,setShortcutsOpen]=useState(false),[deleteId,setDeleteId]=useState<string|null>(null),[prefill,setPrefill]=useState('');
+ const [settingsTab,setSettingsTab]=useState<'general'|'models'|'voice'|'workspace'|'performance'|'assistant'>('general');const [settings,setSettings]=useState(false),[palette,setPalette]=useState(false),[shortcutsOpen,setShortcutsOpen]=useState(false),[deleteId,setDeleteId]=useState<string|null>(null),[prefill,setPrefill]=useState('');
  const [launcherOpen,setLauncherOpen]=useState(false),[launcherQuery,setLauncherQuery]=useState('');
- const [listening,setListening]=useState(Boolean(new URLSearchParams(window.location.search).get('room')));const [playground,setPlayground]=useState(window.location.pathname==='/playground');const t=useT();
+ const [playground,setPlayground]=useState(window.location.pathname==='/playground');const t=useT();
  useEffect(()=>startDataSync(setProviders),[]);
  useEffect(()=>{
   void refreshComputerVoiceConsent();
@@ -55,10 +55,10 @@ export default function App(){
   return()=>{window.removeEventListener('focus',onFocus);window.removeEventListener('barq-voice-computer-permission-updated',onConsent)};
  },[]);
  useEffect(()=>{
-  const show=()=>setPlayground(false);
+  const show=()=>{setPlayground(false);setOnePage('chat');};
   const route=(event:Event)=>{
    const text=(event as CustomEvent<{text?:string}>).detail?.text;
-   setPlayground(false);if(text?.trim())setPrefill(text);
+   setPlayground(false);setOnePage('chat');if(text?.trim())setPrefill(text);
   };
   window.addEventListener('barq-open-workspace',show);
   const openModels=()=>{setSettingsTab('models');setSettings(true)};
@@ -79,7 +79,7 @@ export default function App(){
     const event=await res.json() as {sequence:number;wake:boolean;computer_enabled?:boolean};
     if(!alive)return;
     sequence=Math.max(sequence,event.sequence);
-    if(event.wake&&!isHandsFreeActive()){setSettings(false);setPlayground(false);window.dispatchEvent(new CustomEvent('barq-handsfree-start',{detail:{computerEnabled:!!event.computer_enabled}}))}
+    if(event.wake&&!isHandsFreeActive()){setSettings(false);setPlayground(false);setOnePage('voice');window.dispatchEvent(new CustomEvent('barq-handsfree-start',{detail:{computerEnabled:!!event.computer_enabled}}))}
    }catch{/* Local server may be restarting. */}finally{fetching=false}
   };
   const nativeWake=()=>{void check()};window.addEventListener('barq-native-wake',nativeWake);
@@ -91,8 +91,6 @@ export default function App(){
   const poll=async()=>{if(busy)return;busy=true;try{const response=await fetch('/v1/personal/notifications');if(response.ok){const data=await response.json() as {items:Array<{id:string;text:string}>};if(alive){for(const note of data.items)useApp.getState().toast('info','برق',note.text);if(data.items.length)await fetch('/v1/personal/notifications/ack',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({ids:data.items.map(n=>n.id)})});}}}catch{}finally{busy=false}};
   const timer=window.setInterval(()=>void poll(),3000);return()=>{alive=false;window.clearInterval(timer)};
  },[]);
- const openListening=useCallback(()=>{setPlayground(false);setListening(true)},[]);
- const closeListening=useCallback(()=>setListening(false),[]);
  const openPlayground=useCallback(()=>{history.pushState({},'', '/playground');setPlayground(true)},[]);
  const closePlayground=useCallback(()=>{history.pushState({},'','/');setPlayground(false)},[]);
  useEffect(()=>{const pop=()=>setPlayground(window.location.pathname==='/playground');window.addEventListener('popstate',pop);return()=>window.removeEventListener('popstate',pop)},[]);
@@ -102,27 +100,37 @@ export default function App(){
   if(e.ctrlKey&&e.altKey&&e.key.toLowerCase()==='b'){e.preventDefault();setSettings(false);if(isHandsFreeActive())window.dispatchEvent(new Event('barq-handsfree-stop'));else openConsentedVoiceSession();return}
   if((e.ctrlKey||e.metaKey)&&e.code==='Space'){e.preventDefault();setLauncherQuery('');setLauncherOpen(v=>!v)}
   if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='k'){e.preventDefault();setPalette(v=>!v)}
-  if((e.ctrlKey||e.metaKey)&&e.shiftKey&&e.key.toLowerCase()==='o'){e.preventDefault();newChat();setHologram(false);setSidebarOpen(false)}
+  if((e.ctrlKey||e.metaKey)&&e.shiftKey&&e.key.toLowerCase()==='o'){e.preventDefault();newChat();setOnePage('chat');setSidebarOpen(false)}
   if((e.ctrlKey||e.metaKey)&&e.key==='/'){e.preventDefault();setShortcutsOpen(true)}
   if(e.key==='Escape'){setLauncherOpen(false);setPalette(false);setSidebarOpen(false)}
  };window.addEventListener('keydown',key);return()=>window.removeEventListener('keydown',key)},[newChat,setSidebarOpen]);
  const confirmDelete=useCallback(()=>{if(deleteId&&!streaming){const target=deleteId;void deleteConversation(target).then(()=>{deleteChat(target);setDeleteId(null)}).catch(error=>useApp.getState().toast('error','Could not delete chat',error instanceof Error?error.message:'API unavailable'))}},[deleteId,streaming,deleteChat]);
- return <div data-release-marker="v2.37.2-build-gated-ui" className="barq-app-shell flex h-[100dvh] min-h-0 w-full overflow-hidden bg-base text-primary" dir={language==='ar'?'rtl':'ltr'}>
-  <div className={playground||listening?'hidden':'contents'}>
-   <Sidebar onNewChat={()=>{setPlayground(false);setHologram(false)}} onSelectChat={()=>{setPlayground(false);setHologram(false)}} onSettings={()=>{setSettingsTab('general');setSettings(true)}} onSearch={()=>setPalette(true)} onDelete={setDeleteId} onPlayground={openPlayground} onListening={openListening}/>
-   <main className="barq-main-stage flex min-w-0 flex-1 flex-col" aria-label={language==='ar'?'محادثة المساعد':'Assistant conversation'}>
-    <>
-      <TopBar onShortcuts={()=>setShortcutsOpen(true)} onDelete={setDeleteId} onModels={()=>{setSettingsTab('models');setSettings(true)}} onHologram={()=>setHologram(value=>!value)} hologram={hologram} providers={providers}/>
+ const navigateOne=(page:OnePage)=>{
+  if(page==='settings'){setSettingsTab('general');setSettings(false);}
+  setOnePage(page);setPlayground(false);
+ };
+ return <div data-release-marker="v2.40.0-build-gated-ui" className="ops-shell" dir={language==='ar'?'rtl':'ltr'}>
+  <OperationsHeader page={onePage} navigate={navigateOne} search={()=>setPalette(true)} settings={()=>navigateOne('settings')}/>
+  <div className={playground?'hidden':'ops-body'} dir="ltr">
+   <OperationsRail page={onePage} navigate={navigateOne} newChat={()=>{newChat();navigateOne('chat')}} onDelete={setDeleteId} onPlayground={openPlayground}/>
+   <main className="ops-stage" dir={language==='ar'?'rtl':'ltr'} aria-label={language==='ar'?'مساحة التطبيق':'Application workspace'}>
+    {onePage==='settings'?<SettingsModal embedded open initialTab={settingsTab} onWorkspace={()=>navigateOne('chat')} onClose={()=>navigateOne('center')}/>
+    :onePage!=='chat'?<>
+      <BarqOne page={onePage} providers={providers} onVoice={openConsentedVoiceSession} onNavigate={navigateOne}
+       onModels={()=>{setSettingsTab('models');setSettings(true)}} onAssistantSettings={()=>{setSettingsTab('assistant');setSettings(true)}}
+       onQuick={command=>{navigateOne('chat');setPrefill(command)}}/>
+      <VoiceResultsStrip/>
+    </>:<>
+      <ConversationHeader onDelete={()=>{if(id)setDeleteId(id)}} onVoice={()=>navigateOne('voice')} onNew={()=>{newChat();navigateOne('chat')}}/>
       <BrainStatus/>
-      {hologram?<Hologram onStart={openConsentedVoiceSession}/>:chat&&chat.messages.length?<MessageList key={id} id={id!}/>:<EmptyState onSuggestion={setPrefill} onHologram={()=>setHologram(true)}/>}
+      {chat&&chat.messages.length?<MessageList key={id} id={id!}/>:<EmptyState onSuggestion={setPrefill} onHologram={()=>navigateOne('voice')}/>}
       <VoiceResultsStrip/>
       <Composer prefill={prefill} onPrefillUsed={()=>setPrefill('')}/>
-    </>
+    </>}
    </main>
-   <RightPanel/>
+   {onePage==='chat'&&<RightPanel/>}
   </div>
-  {listening&&<main className="min-w-0 flex-1"><ListeningRoom onBack={closeListening}/></main>}
-  {playground&&!listening&&<main className="min-w-0 flex-1"><Playground onBack={closePlayground}/></main>}
+  {playground&&<main className="min-w-0 flex-1"><Playground onBack={closePlayground}/></main>}
   <ComputerControlStatus/>
   <HandsFreeVoice/>
   <ToastViewport/>

@@ -73,6 +73,17 @@ export function Message({message,chatId}:{message:MessageType;chatId:string}){
    }catch(error){toast('error',language==='ar'?'لم يبدأ التحكم بالكمبيوتر':'Computer task was not started',error instanceof Error?error.message:'Unknown error')}
    finally{setAgentBusy(false)}
  }
+ async function stopComputerTask(){
+   const task=message.agentTask;
+   if(task?.kind!=='computer'||agentBusy)return;
+   setAgentBusy(true);
+   try{
+     await requestJSON('/v1/computer/stop',{method:'POST'});
+     update(chatId,message.id,{agentTask:{...task,status:'cancelled',summary:language==='ar'?'أوقفت تنفيذ المهمة على الكمبيوتر.':'Stopped computer task.'}});
+   }catch(error){
+     toast('error',language==='ar'?'تعذّر إيقاف التنفيذ':'Could not stop the task',error instanceof Error?error.message:'Unknown error');
+   }finally{setAgentBusy(false)}
+ }
  async function chooseWorkspaceAndPrepare(){
    const task=message.agentTask;
    if(!task||task.kind!=='coding'||agentBusy)return;
@@ -150,6 +161,8 @@ export function Message({message,chatId}:{message:MessageType;chatId:string}){
         {message.agentTask.savedEdit&&<Button size="sm" variant="primary" disabled={agentBusy||taskBusy} icon={<RefreshCcw size={15}/>} onClick={()=>void saveTaskEdit()}>{language==='ar'?'كمّل بعد حفظ الملف':'Resume after saved edit'}</Button>}
         {message.agentTask.kind==='coding'&&message.agentTask.status==='paused'&&message.agentTask.retryId&&<Button size="sm" variant="primary" disabled={agentBusy||taskBusy} icon={<RefreshCcw size={15}/>} onClick={()=>void retryTaskPlan()}>{language==='ar'?'حاول تاني وكمل من آخر خطوة':'Retry from last completed step'}</Button>}
         {message.agentTask.kind==='coding'&&message.agentTask.status==='workspace_needed'&&<Button size="sm" variant="primary" disabled={agentBusy||taskBusy} icon={<FolderOpen size={15}/>} onClick={()=>void chooseWorkspaceAndPrepare()}>{language==='ar'?'اختيار المجلد وبدء المهمة':'Choose folder and prepare task'}</Button>}
+        {message.agentTask.kind==='computer'&&message.agentTask.status==='running'&&
+          <Button size="sm" variant="danger" disabled={agentBusy} onClick={()=>void stopComputerTask()}>{language==='ar'?'إيقاف التنفيذ':'Stop execution'}</Button>}
         {message.agentTask.kind==='computer'&&message.agentTask.status==='workspace_needed'&&<Button size="sm" variant="primary" disabled={agentBusy||taskBusy} icon={<Play size={15}/>} onClick={()=>void startComputerTask()}>{language==='ar'?'ابدأ بعد الموافقة':'Start task'}</Button>}
         {(message.agentTask.kind==='coding'||message.agentTask.kind==='computer')&&<Button size="sm" variant="secondary" icon={message.agentTask.kind==='computer'?<Monitor size={15}/>:<FolderOpen size={15}/>} onClick={openTask}>{message.agentTask.kind==='computer'?(language==='ar'?'فتح التحكم في الكمبيوتر':'Open Computer Control'):(language==='ar'?'فتح مساحة البرمجة':'Open Coding Workspace')}</Button>}
       </section>}

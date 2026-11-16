@@ -108,6 +108,20 @@ def run_build(source, base, runner=None, *, bundled_ui=False):
                                       or log.name.startswith('installer-smoke')
                                       or log.name == 'BARQ_BUILD_FAILURE.txt'):
                     shutil.copy2(log, destination / log.name)
+            # Preserve each failed pytest shard trace and JUnit XML next to
+            # the original source, so diagnoses never depend on a random
+            # staged AppData path that will be difficult to locate.
+            shard_source = stage / 'release' / 'python-test-shards'
+            shard_target = destination / 'python-test-shards'
+            # Remove stale diagnostic shards from a previous unrelated build.
+            if shard_target.is_dir():
+                shutil.rmtree(shard_target)
+            if shard_source.is_dir():
+                shard_target.mkdir(parents=True, exist_ok=True)
+                for detail in shard_source.iterdir():
+                    if (detail.is_file() and detail.name.startswith('shard-')
+                            and detail.suffix in ('.log', '.xml')):
+                        shutil.copy2(detail, shard_target / detail.name)
             # A user should not have to dig through a temporary AppData folder
             # or send one screenshot for each independent failure.
             with zipfile.ZipFile(destination / 'BARQ_DIAGNOSTICS.zip', 'w',
@@ -119,6 +133,10 @@ def run_build(source, base, runner=None, *, bundled_ui=False):
                                                  or diagnostic.name.startswith('dependency-')
                                                  or diagnostic.name == 'windows-build.log'):
                         archive.write(diagnostic, arcname=diagnostic.name)
+                if shard_target.is_dir():
+                    for detail in sorted(shard_target.iterdir()):
+                        if detail.is_file() and detail.suffix in ('.log', '.xml'):
+                            archive.write(detail, arcname='python-test-shards/'+detail.name)
         (destination/'BARQ_BUILD_FAILURE.txt').write_text(
             f'BARQ update build failed (exit {result.returncode}).\n'
             f'Full temporary build folder: {stage}\n'
@@ -151,6 +169,14 @@ def run_build(source, base, runner=None, *, bundled_ui=False):
     shutil.copy2(marker,destination/marker_name)
     print(f'Windows Setup: {destination/setup_name}',flush=True)
     print(f'Portable app ZIP: {destination / f"BARQ_Portable_{version}.zip"}',flush=True)
+    # Reclaim the one freshly-created staging directory after successful
+    # artifact verification. Never remove failed stages or unrelated folders.
+    if stage.parent == base and stage.name.startswith('b') and stage.is_dir():
+        try:
+            shutil.rmtree(stage)
+            print('[BARQ BUILD] Reclaimed successful temporary staging folder',flush=True)
+        except OSError as exc:
+            print(f'[BARQ BUILD] Warning: temporary stage cleanup failed: {type(exc).__name__}',flush=True)
     return destination/setup_name
 
 

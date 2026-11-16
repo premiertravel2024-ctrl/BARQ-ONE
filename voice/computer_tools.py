@@ -23,6 +23,18 @@ LIVE_COMPUTER_TOOLS = [{
             },
         },
         {
+            'name':'barq_feature_command',
+            'description':('Use for explicit voice controls of BARQ Live Wallpapers and Resource Saver: '
+                           'شغل خلفية حية, وقف الخلفية, اختر خلفية عشوائية, فعّل وضع توفير الموارد, '
+                           'استرجع البرامج, or start a watch room. Resource Saver modes ONLY preview '
+                           'a plan; pausing requires a separate on-screen approval. Watch Together '
+                           'must not claim an active room until signaling and stream are verified.'),
+            'parameters':{'type':'OBJECT','properties':{
+                'feature':{'type':'STRING','description':'wallpapers | resources | watch'},
+                'action':{'type':'STRING','description':'wallpapers: show/play/pause/stop/random; resources: status/restore/gaming/focus/battery/movie; watch: start/close'},
+            },'required':['feature','action']},
+        },
+        {
             'name': 'open_on_computer',
             'description': ('PREFERRED for simple explicit requests to open ONE installed application, '
                             'file, folder or website right now. BARQ searches its local app/file '
@@ -106,6 +118,7 @@ LIVE_CONTROL_INSTRUCTION = (
     'If the user asks for a movie FROM THEIR DEVICE, call find_local_movies and recommend only titles in the returned inventory, noting that quality/size are not movie ratings. '
     'For questions about THIS device hardware (including CPU and GPU temperature, performance, fan speed) or Windows, call get_pc_system_facts. Never invent temperature numbers or confuse local sensor readings with outdoor weather. '
     'For requested exact Windows volume or brightness changes or opening Settings pages call control_windows_setting. '
+    'For explicit Lively Wallpaper and Resource Saver requests use barq_feature_command; never automatically pause processes without visible approval. '
     'When explicitly asked to open Google search on this PC use open_google_search; it opens search, not reads results. '
     'For requests to stop computer actions call stop_computer_task. '
     'Use current_work_status for programming progress; use computer_task_status for a Windows desktop task. If asked كمل or تابع on the active programming task, use continue_current_work, never invent progress. '
@@ -128,7 +141,7 @@ def enabled_on_platform(opted_in: bool) -> bool:
 
 async def dispatch_computer_tool(name: str, args: object, conversation_id: str = '', manager_instance=None) -> dict:
     """Receive a model function call, but delegate EVERY side effect to Manager."""
-    if name not in {'read_current_screen','start_computer_task', 'open_on_computer', 'computer_task_status', 'stop_computer_task','get_pc_system_facts','control_windows_setting','open_google_search','find_local_movies','search_device_files'}:
+    if name not in {'read_current_screen','start_computer_task', 'open_on_computer', 'computer_task_status', 'stop_computer_task','get_pc_system_facts','control_windows_setting','open_google_search','find_local_movies','search_device_files','barq_feature_command'}:
         return {'status': 'denied', 'message': 'الأداة دي مش مدعومة.'}
     if sys.platform != 'win32' and manager_instance is None:
         return {'status': 'unsupported', 'message': 'التحكم في الجهاز متاح على Windows فقط.'}
@@ -139,6 +152,19 @@ async def dispatch_computer_tool(name: str, args: object, conversation_id: str =
         m = manager_instance if manager_instance is not None else manager()
         if name in ('start_computer_task','open_on_computer','open_google_search','control_windows_setting') and not getattr(getattr(m,'policy',None),'enabled',True):
             return {'status':'disabled','message':'فعّل تفاعل برق مع الكمبيوتر من الإعدادات الأول.'}
+        if name == 'barq_feature_command':
+            if not getattr(getattr(m,'policy',None),'enabled',False):
+                return {'status':'disabled','message':'فعّل تحكم برق في الكمبيوتر الأول.'}
+            feature=args.get('feature')
+            action=args.get('action')
+            if not isinstance(feature,str) or not isinstance(action,str):
+                return {'status':'denied','message':'حدد الميزة والأمر المطلوب.'}
+            from api_routes.feature_command import run_command
+            import asyncio
+            try:
+                return await asyncio.to_thread(run_command,feature,action)
+            except (ValueError,PermissionError) as exc:
+                return {'status':'denied','message':str(exc)[:180]}
         if name == 'read_current_screen':
             if not getattr(m.policy,'enabled',False):return {'status':'disabled','message':'فعّل إذن التحكم في الكمبيوتر لقراءة الشاشة.'}
             from computer_control.safety.policy import Decision

@@ -1,0 +1,38 @@
+name: BARQ runner availability diagnosis
+
+on:
+  push:
+    branches:
+      - feature/barq-media-resource-suite
+    paths:
+      - .github/workflows/runner-diagnostic.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: barq-runner-diagnosis-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  ubuntu-runner:
+    name: Check GitHub Linux runner allocation
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - name: Confirm shell can execute
+        run: |
+          echo "Linux GitHub-hosted runner allocated successfully"
+          echo "OS: $RUNNER_OS"
+
+  windows-runner:
+    name: Check GitHub Windows runner allocation
+    runs-on: windows-latest
+    timeout-minutes: 2
+    steps:
+      - name: Confirm PowerShell can execute
+        shell: pwsh
+        run: |
+          Write-Host "Windows GitHub-hosted runner allocated successfully"
+          Write-Host "OS: $env:RUNNER_OS"

@@ -20,7 +20,7 @@ type TaskAnnouncement={chatId:string;sessionToken:symbol;text:string;step?:numbe
 type LaunchApproval={candidate_id:string;approval_token:string;label:string};
 type VoicePhase='idle'|'connecting'|'listening'|'hearing'|'processing'|'executing';
 type VoiceTimings={executionMs?:number;audioMs?:number};
-let voiceState={active:false,phase:'idle' as VoicePhase,caption:'',inputLevel:0,speakerBlocked:false,timings:{} as VoiceTimings,task:null as DesktopTask|null};
+let voiceState={active:false,phase:'idle' as VoicePhase,caption:'',inputLevel:0,speakerBlocked:false,micBlocked:false,trace:'' as string,transcribed:false,result:'' as string,timings:{} as VoiceTimings,task:null as DesktopTask|null};
 export function isHandsFreeActive(){return voiceState.active;}
 export function getHandsFreeState(){return voiceState;}
 function updateVoiceState(patch:Partial<typeof voiceState>){
@@ -45,7 +45,7 @@ export function HandsFreeVoice(){
  const live=useRef<LiveVoice|LocalVoice|null>(null);
  const session=useRef<symbol|null>(null);
  const linkedChat=useRef<string|null>(null);
- const transcriptParts=useRef({input:'',output:''});
+ const transcriptParts=useRef({input:'',output:'',verified:false});
  const trackedTasks=useRef(new Map<string,{chatId:string;sessionToken:symbol;startedAt:number;announcedStep?:number}>());
  const resultSpeech=useRef<TaskAnnouncement[]>([]);
  const chatSaves=useRef(new Map<string,Promise<void>>());
@@ -69,9 +69,10 @@ export function HandsFreeVoice(){
  };
  const flushTranscript=(includeOutput=true)=>{
   const parts=transcriptParts.current;
-  transcriptParts.current={input:'',output:''};
+  transcriptParts.current={input:'',output:'',verified:false};
   const receipt=desktopReceipt.current;desktopReceipt.current=null;
   const chatId=linkedChat.current;
+  includeOutput=includeOutput||parts.verified;
   if(!chatId||!useApp.getState().chats.some(c=>c.id===chatId))return;
   const state=useApp.getState();
   if(parts.input.trim())state.addMessage(chatId,{id:crypto.randomUUID(),role:'user',content:parts.input,createdAt:Date.now(),model:'BARQ-AI/voice'});
@@ -94,7 +95,7 @@ export function HandsFreeVoice(){
   flushTranscript(false);
   setActive(false);setComputerReady(false);setTask(null);setLaunchApproval(null);
 
-  updateVoiceState({active:false,phase:'idle',speakerBlocked:false,task:null});
+  updateVoiceState({active:false,phase:'idle',speakerBlocked:false,micBlocked:false,task:null});
  },[]);
  const inform=(title:string,detail?:string)=>useApp.getState().toast('info',title,detail);
  const warn=(title:string,detail?:string)=>useApp.getState().toast('error',title,detail);
@@ -105,8 +106,8 @@ export function HandsFreeVoice(){
    session.current=token;
    const allowComputer=!!(event as CustomEvent<StartOptions>).detail?.computerEnabled;
    lastVoiceActivity.current=Date.now();setActive(true);
-   transcriptParts.current={input:'',output:''};setComputerReady(false);setTask(null);setLaunchApproval(null);
-   updateVoiceState({active:true,phase:'connecting',caption:'',inputLevel:0,speakerBlocked:false,timings:{},task:null});
+   transcriptParts.current={input:'',output:'',verified:false};setComputerReady(false);setTask(null);setLaunchApproval(null);
+   updateVoiceState({active:true,phase:'connecting',caption:'',inputLevel:0,speakerBlocked:false,micBlocked:false,trace:'' as string,transcribed:false,result:'' as string,timings:{},task:null});
    const onEvent=(message:VoiceEvent)=>{
     if(session.current!==token)return;
     if(message.type==='ready'||message.type==='turn_complete'||message.type==='interrupt'||
@@ -114,9 +115,9 @@ export function HandsFreeVoice(){
      updateVoiceState({phase:'listening'});
     }
     if(message.type==='voice_phase'){
-     if(message.status==='user_speaking')updateVoiceState({phase:'hearing',timings:{},caption:''});
+     if(message.status==='user_speaking')updateVoiceState({phase:'hearing',timings:{},caption:'',transcribed:false,result:'',trace:'capture'});
      if(message.status==='utterance_finalized'&&voiceState.phase==='hearing')updateVoiceState({phase:'processing'});
-     if(message.status==='execution_started')updateVoiceState({phase:'executing'});
+     if(message.status==='execution_started')updateVoiceState({phase:'executing',trace:'execute'});
      if(message.status==='manual_interrupt'||message.status==='spoken_interrupt'){
       resultSpeech.current=[];updateVoiceState({phase:'listening'});
      }
@@ -132,6 +133,7 @@ export function HandsFreeVoice(){
     if(message.type==='voice_phase'&&message.status==='speaker_ready')updateVoiceState({speakerBlocked:false});
     if(message.type==='speaker_blocked')updateVoiceState({speakerBlocked:true});
     if(message.type==='voice_warning'&&voiceState.phase==='processing')updateVoiceState({phase:'listening'});
+    if(message.type==='barq_task')updateVoiceState({result:message.status||'',trace:'result'});
     if((message.type==='barq_task'&&message.spoken_ar)||message.type==='verified_output_text'){
      updateVoiceState({caption:message.spoken_ar||message.text||''});
     }
@@ -147,7 +149,7 @@ export function HandsFreeVoice(){
      if(handledRequests.current.size>100)handledRequests.current.delete(handledRequests.current.values().next().value!);
      // Keep this command once as a normal direct user turn. The chat engine
      // performs classification and the standard server approval flow.
-     transcriptParts.current={input:'',output:''};
+     transcriptParts.current={input:'',output:'',verified:false};
      state.selectChat(target);
      void submitChat(message.text).catch(e=>warn('تعذّر بدء المهمة',String(e)));
     }
@@ -156,7 +158,7 @@ export function HandsFreeVoice(){
      const target=state.chats.find(c=>c.id===linkedChat.current);
      const task=[...(target?.messages||[])].reverse().find(m=>m.agentTask?.kind==='coding')?.agentTask;
      if(target&&task?.taskId===message.task_id&&!state.streaming){
-      transcriptParts.current={input:'',output:''};state.selectChat(target.id);
+      transcriptParts.current={input:'',output:'',verified:false};state.selectChat(target.id);
       void submitChat('كمل').catch(e=>warn('تعذّر استكمال المهمة',String(e)));
      }
     }
@@ -213,8 +215,15 @@ export function HandsFreeVoice(){
      if(allowComputer&&!message.computer_enabled)inform('التحكم في Windows غير مفعّل','فعّله من إعدادات التحكم في الكمبيوتر.');
     }
     if(['input_text','output_text','audio','turn_complete'].includes(message.type))lastVoiceActivity.current=Date.now();
-    if(message.type==='input_text')transcriptParts.current.input=mergeLiveTranscript(transcriptParts.current.input,message.text||'');
-    if(message.type==='verified_output_text')transcriptParts.current.output=message.text||'';
+    if(message.type==='input_text'){
+     transcriptParts.current.input=mergeLiveTranscript(transcriptParts.current.input,message.text||'');
+     updateVoiceState({transcribed:!!transcriptParts.current.input.trim()});
+    }
+    if(message.type==='verified_output_text'){
+     transcriptParts.current.output=message.text||'';
+     transcriptParts.current.verified=true;
+     flushTranscript();
+    }
     if(message.type==='output_text'){
      transcriptParts.current.output=mergeLiveTranscript(transcriptParts.current.output,message.text||'');
      updateVoiceState({caption:transcriptParts.current.output});
@@ -224,9 +233,11 @@ export function HandsFreeVoice(){
     if(message.type==='launch_approval'&&message.candidate_id&&message.approval_token)
      setLaunchApproval({candidate_id:message.candidate_id,approval_token:message.approval_token,label:message.label||'برنامج'});
     if(message.type==='speaker_blocked')warn('صوت برق محجوب','راجع صلاحيات الصوت في إعدادات التطبيق.');
-    if(message.type==='mic_activation_required')warn('الميكروفون محتاج تفعيل','ابدأ المكالمة من زر الصوت في الشات.');
+    if(message.type==='mic_activation_required')updateVoiceState({micBlocked:true});
+    if(message.type==='voice_phase'&&message.status==='mic_streaming')updateVoiceState({micBlocked:false});
     if(message.type==='voice_warning')warn('تنبيه الصوت',message.message||'تأخير في الرد');
     if(message.type==='error'||message.type==='closed'){
+     updateVoiceState({trace:'error',caption:message.message||''});
      if(message.type==='error')warn('انتهت المكالمة الصوتية',message.message||'تعذّر استمرار الاتصال');
      stop();
     }
@@ -258,6 +269,9 @@ export function HandsFreeVoice(){
   };
   const onUnlock=()=>{
    const voice=live.current;
+   if(voice instanceof LiveVoice&&voiceState.micBlocked){
+    void voice.unlockMicrophone().then(ok=>{if(ok&&live.current===voice)updateVoiceState({micBlocked:false});});
+   }
    if(voice)void voice.unlockSpeaker().then(ok=>{
     if(!ok&&live.current===voice)warn('السماعة محتاجة تفعيل','راجع جهاز إخراج الصوت وحاول تاني.');
    });

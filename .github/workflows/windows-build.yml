@@ -7,6 +7,12 @@ on:
   pull_request:
 permissions:
   contents: read
+# Every PR synchronize event previously started three heavy jobs, often
+# building the same branch dozens of times. Keep only the latest revision.
+# Never cancel pushes to main or release tags.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 jobs:
   frontend-validation:
     name: React strict build gate
@@ -133,7 +139,7 @@ jobs:
       - name: Verify EXACT outputs from THIS run
         shell: pwsh
         run: |
-          $releaseVersion = '2.37.2'
+          $releaseVersion = '2.40.0'
           $prefix = "release/BARQ_Setup_$releaseVersion.exe"
           if (!(Test-Path $prefix)) { throw 'Missing freshly built installer' }
           if (!(Test-Path "release/BARQ_Portable_$releaseVersion.zip")) { throw 'Missing portable ZIP' }
@@ -153,7 +159,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: BARQ-v2.37.2-Windows-diagnostics
+          name: BARQ-v2.40.0-Windows-diagnostics
           path: |
             release/*.log
             release/*.xml
@@ -166,21 +172,21 @@ jobs:
         id: upload-windows
         uses: actions/upload-artifact@v4
         with:
-          name: BARQ-v2.37.2-verified-Windows-x64
+          name: BARQ-v2.40.0-verified-Windows-x64
           path: |
-            release/BARQ_Setup_2.37.2.exe
-            release/BARQ_Portable_2.37.2.zip
+            release/BARQ_Setup_2.40.0.exe
+            release/BARQ_Portable_2.40.0.zip
             release/self-test.json
             release/installed-self-test.json
             release/release-evidence.json
-            release/build-ok-v2.37.2.marker
+            release/build-ok-v2.40.0.marker
             release/UI_BUILD_MODE.txt
           if-no-files-found: error
           retention-days: 30
       - name: Download the published Windows artifact
         uses: actions/download-artifact@v4
         with:
-          name: BARQ-v2.37.2-verified-Windows-x64
+          name: BARQ-v2.40.0-verified-Windows-x64
           path: ${{ runner.temp }}/barq-published-artifact
       - name: Verify the installer in the published artifact
         shell: pwsh
@@ -188,7 +194,7 @@ jobs:
           ARTIFACT_URL: ${{ steps.upload-windows.outputs.artifact-url }}
         run: |
           $folder = Join-Path $env:RUNNER_TEMP 'barq-published-artifact'
-          $filename = 'BARQ_Setup_2.37.2.exe'
+          $filename = 'BARQ_Setup_2.40.0.exe'
           $installer = Get-Item -LiteralPath (Join-Path $folder $filename)
           $evidence = Get-Content -LiteralPath (Join-Path $folder 'release-evidence.json') -Raw | ConvertFrom-Json
           $hash = (Get-FileHash -LiteralPath $installer.FullName -Algorithm SHA256).Hash.ToLowerInvariant()

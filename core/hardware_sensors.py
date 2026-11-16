@@ -10,6 +10,8 @@ escalation. Values unavailable from sensors are never guessed.
 from __future__ import annotations
 
 import json
+import re
+import urllib.request
 import math
 import os
 import sys
@@ -57,9 +59,18 @@ def _monitor_executable() -> Path | None:
     # The live source checkout can differ from the bundled PyInstaller resource.
     # Keep lookup restricted to BARQ's own trusted installation/source folders.
     roots.append(Path(__file__).resolve().parents[1])
+    # Discover independently installed official LibreHardwareMonitor in
+    # conventional vendor directories, not arbitrary user-supplied paths.
+    if sys.platform == 'win32':
+        for key in ('ProgramFiles', 'ProgramFiles(x86)', 'LOCALAPPDATA'):
+            base = os.environ.get(key)
+            if base:
+                roots.extend((Path(base) / 'LibreHardwareMonitor',
+                              Path(base) / 'Programs' / 'LibreHardwareMonitor'))
+
     seen: set[str] = set()
     for root in roots:
-        folder = root / 'hardware-monitor'
+        folder = root if root.name.casefold() == 'librehardwaremonitor' else root / 'hardware-monitor'
         if str(folder).casefold() in seen:
             continue
         seen.add(str(folder).casefold())
@@ -80,6 +91,62 @@ def _monitor_executable() -> Path | None:
                 if child.is_file():
                     return child
         except (OSError, PermissionError):
+            continue
+    return _running_monitor_executable()
+
+
+def _monitor_gui_running() -> bool:
+    """Detect the official monitor by process name without requiring its path.
+
+    The GUI may be elevated while BARQ is not. Windows then denies reading
+    the process executable path even though its sensor window is visible.
+    Avoid claiming the app is uninstalled or starting duplicate installers.
+    """
+    if sys.platform != 'win32':
+        return False
+    try:
+        import psutil
+    except ImportError:
+        return False
+    try:
+        for process in psutil.process_iter(['name']):
+            try:
+                if str(process.info.get('name') or '').casefold() == 'librehardwaremonitor.exe':
+                    return True
+            except (OSError, PermissionError, psutil.Error):
+                continue
+    except (OSError, PermissionError, psutil.Error):
+        return False
+    return False
+
+
+def _running_monitor_executable() -> Path | None:
+    """Use only the OS-reported path of an already running LHM instance.
+
+    This supports users who extract the portable official application to a
+    custom directory. The exact named process and adjacent official DLL are
+    required; we never recursively scan personal files or run an arbitrary
+    model-provided path.
+    """
+    if sys.platform != 'win32':
+        return None
+    try:
+        import psutil
+    except ImportError:
+        return None
+    for process in psutil.process_iter(['name', 'exe']):
+        try:
+            if str(process.info.get('name') or '').casefold() != 'librehardwaremonitor.exe':
+                continue
+            raw = process.info.get('exe')
+            if not raw:
+                continue
+            executable = Path(raw)
+            if (executable.name.casefold() == 'librehardwaremonitor.exe'
+                    and executable.is_file()
+                    and (executable.parent / 'LibreHardwareMonitorLib.dll').is_file()):
+                return executable
+        except (OSError, PermissionError, psutil.Error):
             continue
     return None
 
@@ -145,7 +212,7 @@ def _start_sensor_setup() -> str:
         with diagnostic.open('ab') as stream:
             _auto_setup_process=subprocess.Popen(
                 [powershell,'-NoProfile','-NonInteractive','-ExecutionPolicy','Bypass',
-                 '-File',str(script),'-InstallOnly'],stdin=subprocess.DEVNULL,
+                 '-File',str(script)],stdin=subprocess.DEVNULL,
                 stdout=stream,stderr=subprocess.STDOUT,
                 creationflags=getattr(subprocess,'CREATE_NO_WINDOW',0),close_fds=True)
         return 'started'
@@ -169,7 +236,7 @@ def ensure_sensors_ready(timeout: float = 170) -> str:
         return 'timeout'
     except OSError:
         return 'unavailable'
-    return 'installed' if exit_code==0 and _monitor_executable() else 'unavailable'
+    return 'installed' if exit_code in (0,3) and _monitor_executable() else 'unavailable'
 
 def _query_lhm(executable: str, *, timeout: float = 2) -> str | None:
     return _run([executable, '-NoProfile', '-NonInteractive', '-Command', _LHM_WMI_COMMAND],
@@ -224,15 +291,23 @@ def _sensor_kind(sensor: dict) -> str | None:
     path = ' '.join(str(sensor.get(p) or '') for p in ('Identifier','Parent')).lower()
     # Do not treat the motherboard's CPU-adjacent thermal zone as CPU package
     # when the label doesn't say CPU; prioritise identified processor sensors.
+    # Hardware identifiers are more reliable than names. GPU Package must
+    # NEVER be mistaken for CPU Package; motherboard "CPU socket" temperature
+    # is not the on-die CPU sensor requested by the user.
     if any(x in path for x in ('/intelcpu/', '/amdcpu/', '/cpu/', '\\cpu\\')):
         return 'cpu'
-    if ('cpu' in name or 'package' in name or 'tctl/tdie' in name or 'ccd' in name):
-        return 'cpu'
-    if any(x in path for x in ('/nvidiagpu/', '/atigpu/', '/intelgpu/', '/gpu/')):
+    if any(x in path for x in ('/nvidiagpu/', '/atigpu/', '/intelgpu/', '/gpu/',
+                                '/gpu-nvidia/', '/gpu-amd/', '/gpu-intel/')):
         return 'gpu'
+    if any(x in path for x in ('/hdd/', '/storage/')):
+        return 'storage'
+    if any(x in path for x in ('/lpc/', '/motherboard/', '/mainboard/', '/superio/')):
+        return None
     if 'gpu' in name or 'hot spot' in name:
         return 'gpu'
-    if any(x in path for x in ('/hdd/', '/storage/')) or 'ssd' in name or 'nvme' in name:
+    if ('cpu' in name or 'tctl/tdie' in name or 'ccd' in name):
+        return 'cpu'
+    if 'ssd' in name or 'nvme' in name:
         return 'storage'
     return None
 
@@ -286,6 +361,96 @@ def _collect_temperatures(records: list[dict]) -> dict:
     return result
 
 
+
+# Read LHM's own live sensor feed before starting PowerShell or a second
+# privileged hardware reader. 127.0.0.1 and a fixed path/port are intentional:
+# no untrusted URLs, proxies, LAN probing or remote sensor commands.
+_LHM_HTTP_URL = 'http://127.0.0.1:8085/data.json'
+_http_lock = threading.Lock()
+_http_reading: dict | None = None
+_http_reading_at = 0.0
+
+
+def _http_temperature(value: Any) -> float | None:
+    """LHM HTTP RawValue is numeric in some versions, '64.0 °C' in others."""
+    if isinstance(value, (float, int)):
+        return _valid_temperature(value)
+    if not isinstance(value, str):
+        return None
+    matched = re.fullmatch(r'\s*([+-]?\d+(?:[.,]\d+)?)\s*(?:°\s*C|C)?\s*',
+                           value, flags=re.I)
+    if not matched:
+        return None
+    return _valid_temperature(matched.group(1).replace(',', '.'))
+
+
+def _parse_http_sensor_tree(tree: object) -> list[dict]:
+    """Extract only temperature sensors from LHM's authenticated JSON shape."""
+    if not isinstance(tree, dict) or not isinstance(tree.get('Children'), list) or not tree.get('Version'):
+        return []
+    records: list[dict] = []
+    visited = 0
+
+    def walk(node: object, hardware_id: str = '', depth: int = 0) -> None:
+        nonlocal visited
+        if not isinstance(node, dict) or depth > 12 or visited > 2048:
+            return
+        visited += 1
+        parent = str(node.get('HardwareId') or hardware_id)[:160]
+        if str(node.get('Type') or '').casefold() == 'temperature':
+            identifier = str(node.get('SensorId') or '')[:180]
+            value = _http_temperature(node.get('RawValue'))
+            if value is None:
+                value = _http_temperature(node.get('Value'))
+            if identifier and value is not None:
+                records.append({
+                    'Name': str(node.get('Text') or '')[:100],
+                    'Identifier': identifier,
+                    'Parent': parent,
+                    'SensorType': 'Temperature',
+                    'Value': value,
+                })
+        children = node.get('Children')
+        if isinstance(children, list):
+            for child in children[:128]:
+                walk(child, parent, depth + 1)
+    walk(tree)
+    return records
+
+
+def _read_local_http() -> dict | None:
+    """Fast read-only localhost snapshot when LHM Remote Web Server is enabled.
+
+    Caches only a successful recent sample to keep repeated chat/monitor polls
+    from spawning PowerShell. A failed request never fabricates sensor values.
+    """
+    global _http_reading, _http_reading_at
+    with _http_lock:
+        if _http_reading and time.monotonic() - _http_reading_at < 1.5:
+            return dict(_http_reading)
+    try:
+        opener = urllib.request.build_opener(urllib.request.ProxyHandler({}))
+        request = urllib.request.Request(_LHM_HTTP_URL, headers={'Accept': 'application/json'})
+        with opener.open(request, timeout=0.45) as response:
+            if response.status != 200:
+                return None
+            payload = response.read(524289)
+            if len(payload) > 524288:
+                return None
+        records = _parse_http_sensor_tree(json.loads(payload))
+    except (OSError, ValueError, TypeError, UnicodeError):
+        return None
+    measured = _collect_temperatures(records)
+    if measured['cpu_c'] is None and measured['gpu_c'] is None and measured['storage_c'] is None:
+        return None
+    measured['provider'] = 'LibreHardwareMonitor (local HTTP)'
+    measured['measured_at'] = time.time()
+    with _http_lock:
+        _http_reading = dict(measured)
+        _http_reading_at = time.monotonic()
+    return measured
+
+
 def read_local_temperatures() -> dict:
     """Read real sensor values. If WMI omits CPU, retry the direct .NET DLL."""
     result: dict[str, Any] = {'provider': None, 'cpu_c': None, 'gpu_c': None,
@@ -293,6 +458,12 @@ def read_local_temperatures() -> dict:
     if not _is_windows():
         result['reason'] = 'windows_only'
         return result
+    # The live LHM HTTP feed works even when PowerShell / WMI is blocked.
+    # Attempt it FIRST, before looking up or spawning any other process.
+    live_http = _read_local_http()
+    if live_http and live_http.get('cpu_c') is not None:
+        return {**result, **live_http}
+
     powershell = shutil.which('powershell.exe') or shutil.which('powershell')
     if not powershell:
         result['reason'] = 'powershell_unavailable'
@@ -307,11 +478,18 @@ def read_local_temperatures() -> dict:
         return result
 
     monitor = _monitor_executable()
+    local_failure = None
     if monitor is not None:
+        if not any(candidate.is_file() for candidate in (
+                monitor.parent / 'LibreHardwareMonitorLib.dll',
+                monitor.parent / 'LibreHardwareMonitor' / 'LibreHardwareMonitorLib.dll')):
+            local_failure = 'sensor_library_missing'
         # Some LHM versions expose GPU sensors through WMI but not CPU.
         # Still try the bundled, signed-off-by-user local DLL in that case.
-        direct = _collect_temperatures(_decode_temperature_records(
-            _query_local_library(powershell, monitor)))
+        direct_output = _query_local_library(powershell, monitor)
+        if direct_output is None and local_failure is None:
+            local_failure = 'sensor_library_unavailable'
+        direct = _collect_temperatures(_decode_temperature_records(direct_output))
         for field in ('cpu_c', 'gpu_c', 'storage_c', 'cpu_sensor'):
             if result[field] is None and direct[field] is not None:
                 result[field] = direct[field]
@@ -320,7 +498,14 @@ def read_local_temperatures() -> dict:
             return result
         # If the app exposes only WMI sensors after launching, retry briefly.
         if not any(result[key] is not None for key in ('cpu_c', 'gpu_c', 'storage_c')):
-            if _start_installed_monitor(monitor):
+            # Never launch a second instance when the user already opened the
+            # standalone portable monitor (possibly as Administrator).
+            already_running = _running_monitor_executable()
+            if already_running is None or already_running != monitor:
+                launched = _start_installed_monitor(monitor)
+            else:
+                launched = False
+            if launched:
                 result['launched_local_provider'] = True
                 for _ in range(3):
                     time.sleep(0.45)
@@ -334,14 +519,23 @@ def read_local_temperatures() -> dict:
                         if result[field] is None:
                             result[field] = retry[field]
         result['installed_path'] = str(monitor.parent)
+    # A live HTTP server can provide GPU/storage even if no CPU sensor was
+    # exported; never re-label that reading as CPU temperature.
+    if live_http:
+        for field in ('gpu_c', 'storage_c'):
+            if result.get(field) is None and live_http.get(field) is not None:
+                result[field] = live_http[field]
     if any(result[k] is not None for k in ('cpu_c', 'gpu_c', 'storage_c')):
         result['provider'] = 'LibreHardwareMonitor (local WMI/.NET)'
         if result['cpu_c'] is None:
             result['reason'] = 'no_matching_sensors'
     elif monitor is None:
-        result['reason'] = 'sensor_provider_unavailable' if wmi_broken else 'monitor_not_installed'
+        # Seeing the elevated GUI does not imply its WMI namespace is present.
+        # Do not attempt another install when the user already has it running.
+        running = _monitor_gui_running()
+        result['reason'] = 'sensor_provider_unavailable' if running or wmi_broken else 'monitor_not_installed'
     else:
-        result['reason'] = 'sensor_provider_unavailable'
+        result['reason'] = local_failure or 'sensor_provider_unavailable'
     return result
 
 
@@ -377,7 +571,7 @@ def read_nvidia_gpu() -> dict:
 def snapshot(include_gpu: bool = True) -> dict:
     """On-demand sensor summary: never invent a CPU reading from an ACPI zone."""
     temperatures=read_local_temperatures()
-    nvidia=read_nvidia_gpu() if include_gpu and temperatures.get('gpu_c') is None else {}
+    nvidia=read_nvidia_gpu() if include_gpu else {}
     if temperatures.get('gpu_c') is None and nvidia.get('gpu_c') is not None:
         temperatures['gpu_c']=nvidia['gpu_c']
         temperatures['gpu_source']='NVIDIA driver'

@@ -1,0 +1,208 @@
+"""Lively Wallpaper adapter; no copied wallpaper engine and no auto-install.
+
+All actions are from a fixed allowlist. The user must enable BARQ Computer
+Control and explicitly initiate the operation. Lively remains a separate app.
+"""
+from __future__ import annotations
+
+import json
+import os
+from pathlib import Path
+import subprocess
+import sys
+
+from fastapi import APIRouter, HTTPException
+from fastapi.responses import FileResponse
+from pydantic import BaseModel, Field
+
+from core.desktop_capabilities import lively_executable, windows_version
+
+router=APIRouter(prefix="/v1/wallpapers",tags=["wallpapers"])
+
+
+def _consent():
+    from computer_control.api import load_policy
+    if sys.platform!="win32":
+        raise HTTPException(501,"Windows only")
+    if not load_policy().enabled:
+        raise HTTPException(403,"Enable Computer Control first")
+
+
+def _library_folder() -> Path | None:
+    root=os.environ.get("LOCALAPPDATA")
+    if not root:
+        return None
+    candidates=(
+        Path(root)/"Lively Wallpaper"/"Library"/"wallpapers",
+        Path(root)/"Lively Wallpaper"/"Library"/"wallpaper",
+    )
+    return next((path for path in candidates if path.is_dir()),None)
+
+
+def items() -> list[dict]:
+    root=_library_folder()
+    if not root:
+        return []
+    entries=[]
+    for folder in sorted(root.iterdir(),key=lambda p:p.name.lower())[:200]:
+        try:
+            if not folder.is_dir() or folder.is_symlink():
+                continue
+            path=folder/"LivelyInfo.json"
+            if not path.is_file() or path.stat().st_size>32768:
+                continue
+            data=json.loads(path.read_text(encoding="utf-8-sig"))
+            if not isinstance(data,dict):
+                continue
+            title=str(data.get("Title") or folder.name)[:100]
+            preview=None
+            for name in ("thumbnail.jpg","thumbnail.png","preview.jpg"):
+                target=folder/name
+                if target.is_file() and not target.is_symlink():
+                    preview=name
+                    break
+            entries.append({"id":folder.name,"title":title,
+                            "type":str(data.get("Type") or "wallpaper"),
+                            "preview_available":bool(preview)})
+        except (OSError,ValueError,PermissionError):
+            continue
+    return entries
+
+
+def _wallpaper(id: str) -> Path:
+    if not id or len(id)>100 or "/" in id or "\\" in id or id in (".",".."):
+        raise HTTPException(400,"Invalid wallpaper id")
+    root=_library_folder()
+    if not root:
+        raise HTTPException(404,"Lively library not found")
+    target=root/id
+    if target.is_symlink() or not (target/"LivelyInfo.json").is_file():
+        raise HTTPException(404,"Wallpaper is not in installed Lively library")
+    try:
+        if not target.resolve().is_relative_to(root.resolve()):
+            raise HTTPException(403,"Wallpaper outside allowed library")
+    except OSError:
+        raise HTTPException(404,"Wallpaper missing")
+    return target
+
+
+def _run(args: list[str]) -> dict:
+    _consent()
+    exe=lively_executable()
+    if not exe:
+        raise HTTPException(404,"Lively Wallpaper not installed. Download only from the official release.")
+    if not windows_version()["supported"]:
+        raise HTTPException(501,"Windows version unsupported")
+    try:
+        res=subprocess.run([str(exe),*args],capture_output=True,text=True,timeout=9,
+                           creationflags=getattr(subprocess,"CREATE_NO_WINDOW",0))
+    except (OSError,subprocess.TimeoutExpired):
+        raise HTTPException(503,"Lively command timed out or could not start")
+    if res.returncode:
+        raise HTTPException(502,"Lively rejected command")
+    # A successful CLI exit only confirms command delivery, not wallpaper
+    # playback. Do not claim a visually verified wallpaper.
+    return {"status":"command_sent","verified":False}
+
+
+class Action(BaseModel):
+    action: str=Field(pattern="^(play|pause|stop|show|volume|apply|random)$")
+    wallpaper_id: str|None=None
+    volume: int|None=Field(default=None,ge=0,le=100)
+
+
+@router.get("/status")
+def wallpaper_status():
+    from core.desktop_capabilities import status
+    try:
+        import psutil
+    except ImportError:
+        psutil=None
+    data=status()
+    processes=[]
+    try:
+        for process in (psutil.process_iter(["pid","name","memory_info","cpu_times"]) if psutil else []):
+            name=str(process.info.get("name") or "").lower()
+            if name in ("lively.exe","livelywpf.exe","livelycefstream.exe","livelympv.exe","livelyvlc.exe"):
+                mem=process.info.get("memory_info")
+                processes.append({"pid":process.pid,"name":name,
+                                  "ram_mb":round(mem.rss/1048576,1) if mem else None,
+                                  "cpu_percent":None})
+    except (OSError,PermissionError):
+        pass
+    return {"capabilities":data["windows"],"lively":data["lively"],
+            "library":items(),"processes":processes,
+            "autopause":"Configure fullscreen and battery rules in Lively Settings"}
+
+
+@router.get("/preview/{wallpaper_id}")
+def wallpaper_preview(wallpaper_id:str):
+    _consent()
+    folder=_wallpaper(wallpaper_id)
+    for name in ("thumbnail.jpg","thumbnail.png","preview.jpg"):
+        target=folder/name
+        if target.is_file() and not target.is_symlink():
+            return FileResponse(target,media_type="image/png" if name.endswith(".png") else "image/jpeg")
+    raise HTTPException(404,"Preview unavailable")
+
+
+@router.post("/pick-local")
+def pick_local_wallpaper():
+    """Import ONLY a media file selected through the native Windows picker.
+
+    A model, API client or browser cannot provide an arbitrary filesystem path.
+    File content is never uploaded, copied or sent to a cloud service.
+    """
+    _consent()
+    try:
+        from tkinter import Tk, filedialog
+        root=Tk()
+        root.withdraw()
+        root.attributes("-topmost",True)
+        try:
+            chosen=filedialog.askopenfilename(
+                parent=root,title="BARQ — اختر خلفية فيديو أو GIF",
+                filetypes=[
+                    ("Video and animated images","*.mp4 *.webm *.avi *.mov *.gif"),
+                    ("Video","*.mp4 *.webm *.avi *.mov"),
+                    ("GIF","*.gif"),
+                ])
+        finally:
+            root.destroy()
+    except (ImportError, OSError,RuntimeError) as exc:
+        raise HTTPException(503,"Windows file picker unavailable") from exc
+    if not chosen:
+        return {"status":"cancelled","verified":False}
+    path=Path(chosen)
+    if path.suffix.lower() not in {".mp4",".webm",".avi",".mov",".gif"}:
+        raise HTTPException(400,"Unsupported media type")
+    try:
+        if not path.is_file() or path.is_symlink() or path.stat().st_size<=0:
+            raise HTTPException(400,"Selected media file is not accessible")
+    except (OSError,PermissionError) as exc:
+        raise HTTPException(400,"Selected media file cannot be read") from exc
+    # Official Lively CLI imports media files from outside the library.
+    return _run(["setwp","--file",str(path)])
+
+
+@router.post("/action")
+def wallpaper_action(request:Action):
+    if request.action=="show":
+        return _run(["app","--showApp","true"])
+    if request.action in ("play","pause"):
+        return _run(["app","--play","true" if request.action=="play" else "false"])
+    if request.action=="stop":
+        return _run(["closewp","--monitor","-1"])
+    if request.action=="volume":
+        if request.volume is None:
+            raise HTTPException(400,"Volume required")
+        return _run(["app","--volume",str(request.volume)])
+    if request.action=="random":
+        if windows_version()["family"]=="legacy":
+            raise HTTPException(501,"Random CLI was introduced after the legacy Lively release")
+        return _run(["setwp","--file","random"])
+    if request.action=="apply":
+        if not request.wallpaper_id:
+            raise HTTPException(400,"Choose a wallpaper")
+        return _run(["setwp","--file",str(_wallpaper(request.wallpaper_id))])
+    raise HTTPException(400,"Unknown action")
