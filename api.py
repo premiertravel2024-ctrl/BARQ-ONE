@@ -19,7 +19,12 @@ async def barq_lifespan(_app: FastAPI):
     restart_consented_file_index()
     from services.personal_api import bind_loop
     await bind_loop()
-    yield
+    from services.automation_alarms import start as start_alarm_service, stop as stop_alarm_service
+    start_alarm_service()
+    try:
+        yield
+    finally:
+        stop_alarm_service()
 
 app=FastAPI(title='BARQ', lifespan=barq_lifespan)
 from fastapi.responses import JSONResponse
@@ -82,6 +87,8 @@ from api_routes.feature_command import router as feature_command_router
 app.include_router(feature_command_router)
 from api_routes.watch import router as watch_router
 app.include_router(watch_router)
+from api_routes.automation import router as automation_router
+app.include_router(automation_router)
 from api_routes.openhub_tools import router as openhub_tools_router
 app.include_router(openhub_tools_router)
 from api_routes.device_media import router as device_media_router
