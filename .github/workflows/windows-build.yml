@@ -45,6 +45,9 @@ jobs:
         run: npm run test:imports
       - name: Verify real lucide-react exports and compile React
         run: npm run build
+      - name: Verify the built audio worklet
+        working-directory: .
+        run: cmp frontend/public/audio/live-capture.js web/react/audio/live-capture.js
       - name: Chat coordination smoke test
         run: npm run test:chat
       - name: Approval and continuation behavior
