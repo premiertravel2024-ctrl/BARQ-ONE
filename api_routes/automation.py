@@ -47,8 +47,8 @@ def _weather(city: dict) -> dict:
     query = urlencode({
         "latitude": city["lat"], "longitude":city["lon"],
         "current":"temperature_2m,relative_humidity_2m,apparent_temperature,weather_code,wind_speed_10m",
-        "daily":"temperature_2m_max,temperature_2m_min",
-        "forecast_days":1,
+        "daily":"temperature_2m_max,temperature_2m_min,weather_code",
+        "forecast_days":7,
         "timezone":city["timezone"],
     })
     data = _get_json("https://api.open-meteo.com/v1/forecast?" + query)
@@ -62,6 +62,12 @@ def _weather(city: dict) -> dict:
         "weather_code": int(current["weather_code"]),
         "high": round(float(daily["temperature_2m_max"][0])),
         "low": round(float(daily["temperature_2m_min"][0])),
+        "forecast":[
+            {"date":day,"high":round(float(high)),"low":round(float(low)),
+             "code":int((daily.get("weather_code") or [0]*len(daily.get("time",[])))[index])}
+            for index,(day,high,low) in enumerate(zip(daily.get("time",[]),
+                daily["temperature_2m_max"],daily["temperature_2m_min"]))
+        ],
         "source":"Open-Meteo",
     }
 

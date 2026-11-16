@@ -38,3 +38,33 @@
 
 .ba-attribution a{color:#ffc5d7;text-decoration:underline;text-underline-offset:3px}
 .ba-attribution a:hover{color:#fff}
+
+
+/* Hyperactive-inspired: clear weather metrics and scan-friendly forecast */
+.barq-automation{--ba-accent:#fa638d;--ba-border:#463648;gap:16px}
+.barq-automation .ba-card{background:linear-gradient(145deg,#211b28,#17151f);border-color:var(--ba-border);border-radius:20px;box-shadow:0 15px 38px #00000015}
+.ba-hero{min-height:165px;background:radial-gradient(circle at 8% 10%,#7832516b,transparent 38%),linear-gradient(110deg,#2a1b2c,#11151b 74%);border-color:#694355;border-radius:21px;padding:clamp(20px,3vw,33px)}
+.ba-hero h2{font-weight:900;font-size:clamp(1.35rem,2.8vw,2rem)}
+.ba-weather{background:radial-gradient(circle at 70% 15%,#69324d85,transparent 55%),linear-gradient(120deg,#2d2031,#191620)!important;min-height:260px}
+.ba-weather .ba-temp{min-height:130px}
+.ba-temp strong{font-size:clamp(3.1rem,7vw,5.9rem);letter-spacing:-4px}
+.ba-temp svg{filter:drop-shadow(0 0 18px #ffb47d6b)}
+.ba-prayer-next{background:radial-gradient(circle at 20% 20%,#5b36536b,transparent 60%),linear-gradient(145deg,#30213a,#181622)!important}
+.ba-countdown{font-variant-numeric:tabular-nums;letter-spacing:2px}
+.ba-forecast{padding:19px 20px}
+.ba-forecast-strip{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:9px;overflow-x:auto;padding-block:3px}
+.ba-forecast-day{min-width:86px;display:flex;align-items:center;flex-direction:column;gap:8px;padding:17px 8px 13px;border:1px solid #3f3242;border-radius:14px;background:#181721}
+.ba-forecast-day.ba-forecast-today{border-color:#d26a89;background:#3a2436}
+.ba-forecast-day small{color:#ccbacd;font-size:.76rem}
+.ba-forecast-day svg{color:#ffc5a0}
+.ba-forecast-day strong{font-size:1.25rem;line-height:1}
+.ba-forecast-day span{font-size:.78rem;color:#ada0b2}
+.ba-forecast-bar{width:18px;display:block;background:linear-gradient(#fa7897,#8e375f);border-radius:99px;margin-top:1px}
+.ba-prayer-list{grid-template-columns:repeat(auto-fit,minmax(120px,1fr))}
+.ba-prayer-item{display:grid;gap:10px;text-align:center;align-content:center;min-height:74px}
+.ba-prayer-item strong{font-size:1.07rem}
+.ba-location select{border-color:#8e516a;background:#2d2031}
+.ba-card:focus-within{border-color:#a95675}
+@media(max-width:800px){.ba-forecast-strip{display:flex;scroll-snap-type:x mandatory}.ba-forecast-day{flex:0 0 92px;scroll-snap-align:start}.ba-summary-grid{gap:10px}}
+@media(max-width:500px){.ba-forecast{padding:12px}.ba-forecast-day{flex-basis:80px;padding:13px 5px}.ba-hero{min-height:125px}.ba-prayer-list{grid-template-columns:repeat(2,minmax(0,1fr))}.ba-temp strong{font-size:3.3rem}}
+@media(prefers-reduced-motion:reduce){.barq-automation *{scroll-behavior:auto!important}}

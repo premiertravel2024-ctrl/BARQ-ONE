@@ -8,6 +8,7 @@ type City = 'riyadh'|'jeddah'|'makkah'|'madinah'|'dammam'|'cairo';
 type Weather = {
  temperature:number; feels_like:number;humidity:number;wind_kmh:number;
  weather_code:number;high:number;low:number;source:string;
+ forecast?:Array<{date:string;high:number;low:number;code:number}>;
 };
 type Prayer = {key:string;label:string;time:string;at:string};
 type Overview = {city:City;city_label:string;timezone:string;updated_at:string;
@@ -131,6 +132,21 @@ export function AutomationDashboard(){
      </>:<div className="ba-empty">{loading?(ar?'بنجيب مواعيد الصلاة...':'Loading prayer times...'):(ar?'مواعيد الصلاة مش متاحة حاليًا.':'Prayer schedule unavailable.')}</div>}
    </section>
   </div>
+  <section className="ba-card ba-forecast" aria-label={ar?'توقعات الطقس للأيام الجاية':'7-day weather outlook'}>
+   <div className="ba-section-head"><div><CloudSun size={18}/><h3>{ar?'توقعات الأسبوع':'7-day forecast'}</h3></div>
+    <span>{ar?'البيانات من Open-Meteo':'Source: Open-Meteo'}</span></div>
+   {weather?.forecast?.length?
+    <div className="ba-forecast-strip">{weather.forecast.map((day,index)=>{
+     const DateLabel=new Date(day.date+'T12:00:00');
+     const dayName=DateLabel.toLocaleDateString(ar?'ar-SA':'en-US',{weekday:'short'});
+     const Icon=day.code===0?Sun:day.code>=51?CloudRain:CloudSun;
+     return <div className={'ba-forecast-day'+(index===0?' ba-forecast-today':'')} key={day.date}>
+      <small>{index===0?(ar?'النهارده':'Today'):dayName}</small><Icon size={27}/>
+      <strong dir="ltr">{day.high}°</strong><span dir="ltr">{day.low}°</span>
+      <i className="ba-forecast-bar" style={{height:Math.max(5,Math.min(22,(day.high-day.low)*1.6))+'px'}}/>
+     </div>;
+    })}</div>:<p className="ba-muted">{loading?(ar?'بنجيب توقعات الأسبوع...':'Loading forecast...'):(ar?'مفيش توقعات متاحة.':'Forecast unavailable.')}</p>}
+  </section>
   <div className="ba-lower-grid">
    <section className="ba-card">
     <div className="ba-section-head"><div><CalendarDays size={18}/><h3>{ar?'مواقيت الصلاة اليوم':'Today’s prayer times'}</h3></div><span>{ar?'طريقة أم القرى للسعودية':'Local calculation method'}</span></div>
