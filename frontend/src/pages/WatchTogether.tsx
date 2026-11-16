@@ -122,7 +122,7 @@ export function WatchTogether({mode = 'video'}: {mode?: Mode}) {
   }
 
   return <div className={'barq-media barq-watch-room'+(music?' barq-music-app':'')} dir={ar ? 'rtl' : 'ltr'}>
-    <header className={'barq-watch-hero'+(music?' barq-music-hero':'')}>
+    {(music || current || guest) && <header className={'barq-watch-hero'+(music?' barq-music-hero':'')}>
       <div className="barq-watch-hero-mark"><Icon size={22} aria-hidden="true"/></div>
       <div className="barq-watch-hero-copy">
         <span>BARQ ONE · {music ? 'MUSIC ROOM' : 'WATCH ROOM'}</span>
@@ -130,8 +130,8 @@ export function WatchTogether({mode = 'video'}: {mode?: Mode}) {
         <p>{music?(ar?'موسيقاك المفضلة، وجلسة استماع خاصة مع صاحبك. من ملفك أو مشغّل Spotify وأنغامي الرسمي.':'Your music, your listening lounge. Share local audio or an official Spotify/Anghami player.'):(ar?'شوف الأفلام والمسلسلات والأنمي، وشارك ملف فيديو من جهازك في غرفة خاصة.':'Explore films, series and anime. Watch your own video together privately.')}</p>
       </div>
       {music?<div className="bma-vinyl" aria-hidden="true"><div className="bma-vinyl-center"><Headphones size={28}/></div><div className="bma-bars"><i/><i/><i/><i/><i/><i/><i/></div></div>:<div className="barq-watch-live-label">{ar ? 'جلسة خاصة' : 'Private session'}</div>}
-    </header>
-    {!music && <CinemaDiscovery ar={ar} roomActive={Boolean(current||guest)} onRoom={() => {
+    </header>}
+    {!music && !current && !guest && <CinemaDiscovery ar={ar} roomActive={false} onRoom={() => {
       if(current||guest) document.querySelector('.barq-watch-player')?.scrollIntoView({behavior:'smooth',block:'start'});
       else start(false);
     }}/>}
