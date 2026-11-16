@@ -14,19 +14,19 @@ function namespace(Clazz){
     get(id){
       if(!instances.has(id)){
         const data = new Map();
-        const context = {
+        const context = {sockets:[],
           storage:{
             async get(key){return data.get(key);},
             async put(key,value){data.set(key,value);},
             async setAlarm(_timestamp){},
             async deleteAll(){data.clear();}
           },
-          getWebSockets(){return [];},
-          getTags(){return [];},
+          getWebSockets(){return context.sockets;},
+          getTags(socket){return [socket.role];},
           acceptWebSocket(){},
         };
         const actor = new Clazz(context);
-        instances.set(id,{fetch(request,init){return actor.fetch(typeof request==="string"?new Request(request,init):request);}});
+        instances.set(id,{actor,context,fetch(request,init){return actor.fetch(typeof request==="string"?new Request(request,init):request);}});
       }
       return instances.get(id);
     }
@@ -81,16 +81,25 @@ test('limit errors distinguish actual rate limits from broken storage',async()=>
   assert.equal((await noBindings.json()).code,'BINDING_MISSING');
 });
 
-test('guest chat survives compatibility between text and value fields',async()=>{
+test('guest chat and legacy value both reach host with text',async()=>{
  const e=env();
- const create=await worker.fetch(new Request('https://barq.example/api/rooms',{
- method:'POST',headers:{'Content-Type':'application/json','CF-Connecting-IP':'192.0.2.41'},body:'{"mode":"music"}'
+ const created=await worker.fetch(new Request('https://barq.example/api/rooms',{
+  method:'POST',headers:{'Content-Type':'application/json','CF-Connecting-IP':'192.0.2.41'},
+  body:JSON.stringify({mode:'music'})
  }),e);
- assert.equal(create.status,201);
- const payload=await create.json();
- const obj=e.ROOMS.get(payload.room_id);
- // Inject hibernated sockets at the actor level using captured context:
- assert.ok(source.includes('data.text??data.value??""'));
- assert.ok(source.includes('type:"chat"'));
- assert.equal('Guest text round-trip'.slice(0,500),'Guest text round-trip');
+ assert.equal(created.status,201);
+ const id=(await created.json()).room_id;
+ const session=e.ROOMS.get(id);
+ const received=[];
+ const host={role:'host',send(text){received.push(JSON.parse(text))}};
+ const guest={role:'guest',send(){}};
+ session.context.sockets.push(host,guest);
+ await session.actor.webSocketMessage(guest,JSON.stringify({type:'chat',text:'أهلًا يا مضيف'}));
+ await session.actor.webSocketMessage(guest,JSON.stringify({type:'chat',value:'رسالة قديمة'}));
+ await session.actor.webSocketMessage(guest,JSON.stringify({type:'reaction',text:'👏'}));
+ assert.deepEqual(received,[
+  {type:'chat',role:'guest',text:'أهلًا يا مضيف'},
+  {type:'chat',role:'guest',text:'رسالة قديمة'},
+  {type:'reaction',text:'👏'},
+ ]);
 });

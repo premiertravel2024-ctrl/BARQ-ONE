@@ -125,10 +125,10 @@ export function WatchTogether({mode = 'video'}: {mode?: Mode}) {
       <div className="barq-watch-hero-mark"><Icon size={22} aria-hidden="true"/></div>
       <div className="barq-watch-hero-copy">
         <span>BARQ ONE · {music ? 'MUSIC ROOM' : 'WATCH ROOM'}</span>
-        <h2>{music ? (ar ? 'اسمعوا مع بعض' : 'Listen together') : (ar ? 'اتفرجوا مع بعض' : 'Watch together')}</h2>
+        <h2>{music ? (ar ? 'اسمعوا مع بعض' : 'Listen together') : (ar ? 'سينما برق' : 'BARQ Cinema')}</h2>
         <p>{ar ? 'شارك الوسائط والدردشة في غرفة خاصة. ملفاتك بتفضل على جهازك.' : 'Share media and chat in a private room. Your files stay local.'}</p>
       </div>
-      <div className="barq-watch-live-label">{ar ? 'جلسة مشتركة' : 'Shared session'}</div>
+      <div className="barq-watch-live-label">{ar ? 'جلسة خاصة' : 'Private session'}</div>
     </header>
     {error && <p className="barq-media-error" role="alert">{error}</p>}
     {!room && !guest && <div className="barq-room-entry">
@@ -166,8 +166,9 @@ export function WatchTogether({mode = 'video'}: {mode?: Mode}) {
         })}><XCircle size={16}/>{ar ? 'إنهاء الغرفة' : 'End room'}</button>
       </section>
       {inviteCode && <section className="barq-room-share">
-        <label>{ar ? 'كود الدخول من برنامج برق' : 'Join code for the BARQ app'}<input readOnly dir="ltr" value={inviteCode} onFocus={e => e.target.select()}/></label>
-        <button onClick={() => void copy(inviteCode)}><Copy size={16}/>{copied ? (ar ? 'اتنسخ' : 'Copied') : (ar ? 'نسخ الكود' : 'Copy code')}</button>
+        <div className="barq-room-share-summary"><strong>{ar ? 'دعوة الغرفة' : 'Room invite'}</strong><small>{ar ? 'ابعت الكود لصاحبك، أو افتح رابط المتصفح.' : 'Send the invite to your friend, or open the browser link.'}</small></div>
+        <button onClick={() => void copy(inviteCode)}><Copy size={16}/>{copied ? (ar ? 'اتنسخ' : 'Copied') : (ar ? 'نسخ كود الدعوة' : 'Copy invite code')}</button>
+        <details className="barq-room-share-expand"><summary>{ar ? 'إظهار الكود' : 'Show invite code'}</summary><input readOnly dir="ltr" value={inviteCode} onFocus={e => e.target.select()}/></details>
         <a href={current.guest_url + '#' + current.room_code} target="_blank" rel="noreferrer"><ExternalLink size={16}/>{ar ? 'رابط للمتصفح' : 'Browser link'}</a>
         <button onClick={() => void copy(current.guest_url + '#' + current.room_code)} aria-label={ar ? 'نسخ رابط المتصفح' : 'Copy browser link'}><Copy size={16}/></button>
       </section>}
@@ -175,7 +176,7 @@ export function WatchTogether({mode = 'video'}: {mode?: Mode}) {
     {(guest || current) && <section className="barq-room-frame barq-watch-player">
       <div className="barq-watch-player-top">
         <div><Icon size={17}/><strong>{music ? (ar ? 'مشغّل الموسيقى' : 'Music player') : (ar ? 'مشغّل المشاهدة' : 'Video player')}</strong></div>
-        <span>{ar ? 'اضغط «ملء الشاشة» داخل المشغّل للتكبير على شاشتك' : 'Use Fullscreen in the player to expand on your display'}</span>
+        {!music && <span>{ar ? 'ملء الشاشة من داخل المشغّل' : 'Fullscreen inside player'}</span>}
         {guest && <button onClick={() => setGuest('')}><XCircle size={16}/>{ar ? 'مغادرة الغرفة' : 'Leave room'}</button>}
       </div>
       <iframe title={ar ? 'مشغّل الغرفة' : 'Room player'} src={guest || current?.host_url} allow="autoplay; encrypted-media; fullscreen; picture-in-picture" allowFullScreen referrerPolicy="no-referrer"/>

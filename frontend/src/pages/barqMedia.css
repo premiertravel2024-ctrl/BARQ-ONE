@@ -80,3 +80,31 @@
 .barq-watch-player iframe{height:min(800px,84vh);min-height:510px}
 @media(max-width:800px){.barq-watch-hero{padding:12px}.barq-watch-live-label{display:none}.barq-watch-choose-panel{padding:17px}.barq-watch-player iframe{height:660px;min-height:440px}}
 @media(max-width:570px){.barq-watch-player iframe{height:740px}.barq-watch-player-top>span{width:100%}.barq-watch-hero-copy h2{font-size:1rem}}
+
+/* Shared room visual trim + safe mobile overflow */
+.barq-room-share{gap:10px;align-items:center}
+.barq-room-share-summary{display:flex;flex-direction:column;gap:3px;flex:1 1 200px}
+.barq-room-share-summary strong{font-size:.87rem}
+.barq-room-share-summary small{font-size:.7rem;color:#b5a0b2;line-height:1.5}
+.barq-room-share-expand{width:100%;flex:1 1 100%;font-size:.73rem;color:#cfadbd}
+.barq-room-share-expand summary{cursor:pointer;padding:5px 0}
+.barq-room-share-expand input{margin-top:7px;max-width:100%;font-size:.71rem}
+.barq-watch-player-top{padding:8px 12px}
+.barq-watch-hero{padding:14px 17px}
+.barq-watch-player iframe{max-width:100%}
+@media(max-width:700px){
+ .barq-room-share{padding:11px}
+ .barq-room-share>button,.barq-room-share>a{min-height:42px}
+ .barq-watch-controls{gap:7px;padding:9px}
+ .barq-watch-controls button{min-height:41px}
+ .barq-watch-player iframe{height:800px;min-height:640px}
+ .barq-watch-hero-copy p{display:none}
+ .barq-watch-hero-mark{width:39px;height:39px;min-width:39px}
+ .barq-room-share-summary{flex:1 1 100%}
+}
+@media(max-width:440px){
+ .barq-watch-hero{padding:11px;gap:9px}
+ .barq-watch-hero-copy h2{font-size:.96rem}
+ .barq-room-share>button,.barq-room-share>a{flex:1 1 auto}
+ .barq-watch-player-top>span{display:none}
+}

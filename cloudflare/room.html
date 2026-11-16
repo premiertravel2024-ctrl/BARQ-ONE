@@ -88,8 +88,56 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid 
 @media(max-width:1050px){.grid{grid-template-columns:minmax(0,1fr) minmax(220px,280px)}.source-options{grid-template-columns:1fr}}
 @media(max-width:700px){main{padding:10px}.grid{grid-template-columns:1fr}.room-chat{position:static}#messages{height:235px}.source-options{grid-template-columns:1fr}#linkForm{flex-wrap:wrap}#linkForm button{width:100%}.room-head-note{display:none}.player{min-height:190px}.room-music .player{min-height:230px}}
 
+
+/* Compact embedded cinema/music layout and touch-first phone experience */
+.room-embedded .room-head{display:none}
+.room-embedded main{padding:clamp(9px,1.2vw,17px)}
+.room-embedded .grid{margin-top:0}
+.room-embedded .panel{background:transparent;border-color:#3e2d3c}
+.chat-empty{font-size:.76rem;color:#ab94a7;padding:19px 7px;text-align:center}
+#messages{overscroll-behavior:contain;scrollbar-color:#694052 #16121b}
+#officialMusic iframe{width:100%;min-width:0;max-width:100%;height:205px;border-radius:12px}
+#officialMusic[hidden]{display:none}
+.source-options{align-items:stretch}
+.room-chat{align-self:start}
+@media(max-width:800px){
+ .room-head{gap:8px;padding:13px}
+ .grid{grid-template-columns:1fr;gap:11px}
+ .room-media-panel{order:1}
+ .room-chat{order:2}
+ .player{min-height:170px}
+ .player video{max-height:65dvh}
+ .room-music .player{min-height:190px;padding:75px 10px 15px}
+ .room-music .player:before{width:54px;height:54px;left:calc(50% - 27px)}
+ #messages{height:210px}
+ .chat-compose{position:relative}
+ .chat-compose #chatText{min-height:44px;flex:1}
+ .chat-compose #send{min-height:44px}
+ .file-picker{min-height:65px}
+ #musicService{flex-direction:column}
+ #musicService input,#musicService button{width:100%;min-height:43px}
+ #localWrap>.row label{width:auto}
+ .player-screen-actions button{min-height:44px;padding:8px 12px}
+}
+@media(max-width:450px){
+ main{padding:8px}
+ .panel{padding:12px;border-radius:13px}
+ .room-eyebrow{font-size:.61rem}
+ .source-options{gap:8px}
+ .file-picker{flex-wrap:wrap}
+ .source-options #linkForm{flex-wrap:wrap}
+ .source-options #linkForm button{width:100%;min-height:43px}
+ #localWrap>.row{gap:9px}
+ #localWrap>.row>label:last-child{flex-basis:100%}
+ .player-screen-actions{top:6px;left:6px;gap:5px}
+ .player-screen-actions button{font-size:.68rem}
+ .chat-heading h2{font-size:.88rem}
+ .msg{padding:8px}
+ #messages{height:190px}
+}
+
 </style></head>
-<body><main><header class="room-head"><div><span class="room-eyebrow">BARQ ONE · SHARED ROOM</span><h1 id="roomTitle">غرفة المشاهدة</h1><p class="room-head-note">شاركوا اللحظة، والملفات تفضل على جهاز صاحب الغرفة.</p></div><div id="status" class="status" role="status" aria-live="polite">جاري الاتصال...</div></header>
+<body><main><header class="room-head"><div><span class="room-eyebrow">BARQ ONE · SHARED ROOM</span><h1 id="roomTitle">سينما برق</h1><p class="room-head-note">شاركوا اللحظة، والملفات تفضل على جهاز صاحب الغرفة.</p></div><div id="status" class="status" role="status" aria-live="polite">جاري الاتصال...</div></header>
 <div id="joinPanel" class="panel" hidden><p>ادخل كود الغرفة اللي بعتهولك صاحبها</p><div class="row"><input id="code" maxlength="6" inputmode="numeric" placeholder="Room code"><button id="join">دخول</button></div></div>
 <div class="grid">
 <section class="panel room-media-panel">
@@ -108,7 +156,7 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid 
  <section id="officialMusic" hidden class="row"></section>
  <p class="sub" id="mediaNote" role="status"></p>
 </section>
-<aside class="panel room-chat"><div class="chat-heading"><h2>الدردشة</h2><span>لحظية ومؤقتة</span></div><div id="messages" aria-live="polite"></div><div class="row chat-compose"><input id="chatText" maxlength="500" placeholder="اكتب رسالة..." aria-label="Chat message"><button id="send">إرسال</button></div><p class="sub" id="typing"></p><div id="emoji"><button class="emoji" data-emoji="❤️">❤️</button><button class="emoji" data-emoji="🔥">🔥</button><button class="emoji" data-emoji="😂">😂</button><button class="emoji" data-emoji="👏">👏</button></div><p class="sub">الدردشة مؤقتة ومش بتتسجل على الهارد.</p></aside>
+<aside class="panel room-chat"><div class="chat-heading"><h2>الدردشة</h2><span>لحظية ومؤقتة</span></div><div id="messages" aria-live="polite"><p class="chat-empty" id="chatEmpty">مفيش رسايل لسه. ابدأوا كلامكم هنا ✨</p></div><div class="row chat-compose"><input id="chatText" maxlength="500" placeholder="اكتب رسالة..." aria-label="Chat message"><button id="send">إرسال</button></div><p class="sub" id="typing"></p><div id="emoji"><button class="emoji" data-emoji="❤️">❤️</button><button class="emoji" data-emoji="🔥">🔥</button><button class="emoji" data-emoji="😂">😂</button><button class="emoji" data-emoji="👏">👏</button></div><p class="sub">الدردشة مؤقتة ومش بتتسجل على الهارد.</p></aside>
 </div></main>
 <script>
 (function(){
@@ -155,6 +203,7 @@ fitButton.onclick=function(){
 var status=document.getElementById('status');
 var host=role==='host';
 var paired=params.get('paired')==='1';
+if(paired)document.body.classList.add('room-embedded');
 var turnServers=[],officialTrack=null;
 var nearby=params.get('lan')==='1'||/^http:\/\/(?:10\.|172\.|192\.168\.|100\.)/.test(location.origin);
 document.getElementById('localWrap').hidden=!host;
@@ -170,7 +219,7 @@ function send(type,value){if(socket&&socket.readyState===WebSocket.OPEN){
  socket.send(JSON.stringify(data));
  return true;
 }return false;}
-function addMessage(who,text){var box=document.getElementById('messages');var row=document.createElement('div');row.className='msg';var meta=document.createElement('small');meta.textContent=who+' · '+new Date().toLocaleTimeString();var span=document.createElement('span');span.textContent=text;row.append(meta,span);box.appendChild(row);if(box.childElementCount>150)box.firstElementChild.remove();box.scrollTop=box.scrollHeight;}
+function addMessage(who,text){var box=document.getElementById('messages');var empty=document.getElementById('chatEmpty');if(empty)empty.remove();var row=document.createElement('div');row.className='msg';var meta=document.createElement('small');meta.textContent=who+' · '+new Date().toLocaleTimeString();var span=document.createElement('span');span.textContent=text;row.append(meta,span);box.appendChild(row);if(box.childElementCount>150)box.firstElementChild.remove();box.scrollTop=box.scrollHeight;}
 function connect(code){
  var proto=location.protocol==='https:'?'wss:':'ws:';
  var url=paired?proto+'//'+location.host+'/join-signal/'+encodeURIComponent(roomId):proto+'//'+location.host+'/signal/'+encodeURIComponent(roomId)+'?role='+role+'&token='+encodeURIComponent(token)+'&code='+encodeURIComponent(code||'');
