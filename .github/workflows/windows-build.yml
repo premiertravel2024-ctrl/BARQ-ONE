@@ -1,0 +1,175 @@
+name: BARQ — verified frontend and Windows installer
+on:
+  workflow_dispatch:
+  push:
+    branches: ['main']
+    tags: ['v*']
+  pull_request:
+permissions:
+  contents: read
+jobs:
+  frontend-validation:
+    name: React strict build gate
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+      - name: Verify cross-file release metadata before installing dependencies
+        working-directory: .
+        run: python3 scripts/verify_release_consistency.py
+      - name: Validate source archive completeness and local React imports
+        working-directory: .
+        run: python3 scripts/verify_source_integrity.py
+      - name: Validate native installer dependencies in workflow
+        working-directory: .
+        run: python3 scripts/verify_ci_dependencies.py
+      - name: Install EXACT locked dependencies
+        run: npm ci --no-audit --no-fund
+      - name: Run frontend backend-adapter behavior tests
+        run: npm run test:frontend
+      - name: Verify audio recovery under simulated desktop conditions
+        working-directory: .
+        run: |
+          node tests-js/live_voice_roundtrip.cjs
+          node tests-js/live_voice_crash_regression.cjs
+          node tests-js/voice_task_handoff.cjs
+      - name: Test the import checker
+        run: npm run test:imports
+      - name: Verify real lucide-react exports and compile React
+        run: npm run build
+      - name: Chat coordination smoke test
+        run: npm run test:chat
+      - name: Approval and continuation behavior
+        run: npm run test:approvals
+      - name: Test workspace synchronization
+        working-directory: frontend
+        run: npm run test:workspace
+      - name: Upload freshly compiled React build
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: BARQ-React-build-diagnostics
+          path: web/react
+          if-no-files-found: error
+          retention-days: 7
+  windows-early-regressions:
+    name: Fast Windows file-sharing and cleanup verification
+    runs-on: windows-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          architecture: x64
+      - name: Install isolated test prerequisites
+        run: python -m pip install 'pytest>=8,<10'
+      - name: Check consent-gated local content search on Windows
+        run: python -m pytest -q tests/test_content_index_optin.py tests/test_device_index_first_search_recovery.py
+      - name: Exercise SQLite cleanup under real Windows sharing rules
+        run: python -m pytest -v tests/test_v2182_sqlite_lifecycle.py -k "selftest_cleanup"
+      - name: Validate GitHub ZIP names using actual Windows path semantics
+        run: python -m pytest -q tests/test_github_repository_import_v230.py -k "zip_rejects or zip_symlink"
+  windows-x64:
+    name: Native Windows installer verification
+    needs: [frontend-validation, windows-early-regressions]
+    runs-on: windows-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          architecture: x64
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+      - name: Fetch and verify the speaker recognition model
+        shell: pwsh
+        run: |
+          $model = 'models/speaker/wespeaker_en_voxceleb_resnet34_LM.onnx'
+          $expected = 'e9848563da86f263117134dfd7ad63c92355b37de492b55e325400c9d9c39012'
+          if (!(Test-Path $model)) {
+            $sources = @(
+              'https://github.com/k2-fsa/sherpa-onnx/releases/download/speaker-recongition-models/wespeaker_en_voxceleb_resnet34_LM.onnx',
+              'https://huggingface.co/anujpatel863/Separate/resolve/c9b28337a09ccbf537f811a12ef2ee79b521c881/wespeaker_en_voxceleb_resnet34_LM.onnx'
+            )
+            foreach ($source in $sources) {
+              curl.exe --fail --silent --show-error --location --retry 2 --max-time 120 --output "$model.download" $source
+              if ($LASTEXITCODE -eq 0 -and (Get-FileHash "$model.download" -Algorithm SHA256).Hash -eq $expected) {
+                Move-Item "$model.download" $model
+                break
+              }
+              Remove-Item "$model.download" -ErrorAction SilentlyContinue
+            }
+          }
+          if (!(Test-Path $model) -or (Get-FileHash $model -Algorithm SHA256).Hash -ne $expected) {
+            throw 'Speaker model is missing or its SHA-256 does not match'
+          }
+      - name: Install Inno Setup
+        shell: pwsh
+        run: choco install innosetup -y --no-progress
+      - name: Check Windows policy regression and protected staging paths
+        shell: pwsh
+        run: |
+          py -3.11 -m pip install -r requirements-test.txt
+          py -3.11 -m pytest -q tests/test_computer_control_cognition_v230.py -k "anchored_ui_safety_and_approval or staged_appdata_working_directory_stays_protected"
+      - name: Build React, run tests, package Windows EXE and perform binary self-test
+        shell: pwsh
+        run: ./scripts/build_windows.ps1
+      - name: Verify EXACT outputs from THIS run
+        shell: pwsh
+        run: |
+          $releaseVersion = '2.37.2'
+          $prefix = "release/BARQ_Setup_$releaseVersion.exe"
+          if (!(Test-Path $prefix)) { throw 'Missing freshly built installer' }
+          if (!(Test-Path "release/BARQ_Portable_$releaseVersion.zip")) { throw 'Missing portable ZIP' }
+          $marker = "release/build-ok-v$releaseVersion.marker"
+          if (!(Test-Path $marker)) { throw 'Missing verified build marker' }
+          if (-not ((Get-Content $marker -Raw) -match 'fresh-react')) { throw 'Stale or recovery UI blocked' }
+          $report = Get-Content 'release/self-test.json' -Raw | ConvertFrom-Json
+          $installed = Get-Content 'release/installed-self-test.json' -Raw | ConvertFrom-Json
+          if ($installed.status -ne 'ok' -or $installed.version -ne $releaseVersion -or -not $installed.frozen) { throw 'Installed application smoke failed' }
+          $evidence = Get-Content 'release/release-evidence.json' -Raw | ConvertFrom-Json
+          foreach ($file in @($prefix, "release/BARQ_Portable_$releaseVersion.zip")) {
+            $expected = $evidence.sha256.PSObject.Properties[$file].Value
+            if ((Get-FileHash -Algorithm SHA256 $file).Hash.ToLowerInvariant() -ne $expected) { throw "Artifact checksum mismatch: $file" }
+          }
+          if ($report.status -ne 'ok' -or $report.ui -ne 'react' -or $report.frozen -ne $true) { throw 'Packaged executable smoke test failed' }
+      - name: Upload build diagnostics even on failure
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: BARQ-v2.37.2-Windows-diagnostics
+          path: |
+            release/*.log
+            release/*.xml
+            release/python-tests-failures.txt
+            release/*self-test.json
+            release/release-evidence.json
+          if-no-files-found: warn
+          retention-days: 30
+      - name: Upload installer, portable app, and evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: BARQ-v2.37.2-verified-Windows-x64
+          path: |
+            release/BARQ_Setup_2.37.2.exe
+            release/BARQ_Portable_2.37.2.zip
+            release/self-test.json
+            release/installed-self-test.json
+            release/release-evidence.json
+            release/build-ok-v2.37.2.marker
+            release/UI_BUILD_MODE.txt
+          if-no-files-found: error
+          retention-days: 30
