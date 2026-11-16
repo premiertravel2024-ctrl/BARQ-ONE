@@ -35,10 +35,12 @@ button{cursor:pointer}button:hover{border-color:#ff6888}button:disabled{opacity:
    <label><span id="fileLabel">فيديو من جهازك</span><input id="file" type="file" accept="video/*,.mp4,.webm,.mov"></label>
    <form class="row" id="linkForm"><input id="linkMedia" type="url" placeholder="https://…" aria-label="رابط ملف الوسائط" required><button>تشغيل من رابط</button></form>
   </div>
+  <form class="row" id="musicService" hidden><input id="musicServiceUrl" type="url" required placeholder="رابط أغنية أو ألبوم" aria-label="رابط Spotify أو أنغامي"><button>مشاركة من Spotify أو أنغامي</button></form>
   <div class="row"><label id="videoQuality">الجودة <select id="quality"><option value="auto">تلقائي</option><option value="high">عالية</option><option value="medium">متوسطة</option><option value="low">منخفضة</option></select></label><label id="subtitlePicker">ترجمة SRT/VTT <input id="subFile" type="file" accept=".srt,.vtt,text/vtt"></label><label><input id="guestControls" type="checkbox"> السماح للضيف بالتحكم في التشغيل</label></div>
  </div>
  <div class="player"><video id="video" controls playsinline></video><div id="captions" class="captions" dir="auto" aria-live="off"></div></div>
  <div class="row" id="guestWrap" hidden><button id="resumePlayback">تشغيل الوسائط</button><button id="pauseRequest">اطلب إيقاف مؤقت</button><button id="seekRequest">اطلب تقديم 30 ثانية</button></div>
+ <section id="officialMusic" hidden class="row"></section>
  <p class="sub" id="mediaNote" role="status"></p>
 </section>
 <aside class="panel"><h2>الدردشة</h2><div id="messages" aria-live="polite"></div><div class="row"><input id="chatText" maxlength="500" placeholder="اكتب رسالة..." aria-label="Chat message"><button id="send">إرسال</button></div><p class="sub" id="typing"></p><div id="emoji"><button class="emoji" data-emoji="❤️">❤️</button><button class="emoji" data-emoji="🔥">🔥</button><button class="emoji" data-emoji="😂">😂</button><button class="emoji" data-emoji="👏">👏</button></div><p class="sub">الدردشة مؤقتة ومش بتتسجل على الهارد.</p></aside>
@@ -66,8 +68,10 @@ var captionEl=document.getElementById('captions'),cues=[],lastCaption='';
 var status=document.getElementById('status');
 var host=role==='host';
 var paired=params.get('paired')==='1';
+var turnServers=[],officialTrack=null;
 var nearby=params.get('lan')==='1'||/^http:\/\/(?:10\.|172\.|192\.168\.|100\.)/.test(location.origin);
 document.getElementById('localWrap').hidden=!host;
+document.getElementById('musicService').hidden=!host||!music;
 document.getElementById('guestWrap').hidden=host;
 document.getElementById('joinPanel').hidden=host||paired;
 if(!host){video.controls=false;status.textContent='ادخل كود الغرفة';}
@@ -83,8 +87,9 @@ function connect(code){
  socket.onclose=function(){connected=false;guestPresent=false;note('اتصال الغرفة اتقطع');if(!host&&!paired)document.getElementById('joinPanel').hidden=false;if(peer){peer.close();peer=null;}};
  socket.onmessage=async function(event){
   var packet;try{packet=JSON.parse(event.data);}catch(e){return;}
-  if(packet.type==='ready'){note(host?'مستني الضيف يدخل':'مستني صاحب الغرفة يشغّل ملف');}
+  if(packet.type==='ready'){turnServers=Array.isArray(packet.ice_servers)?packet.ice_servers:[];if(music&&packet.track)showTrack(packet.track);note(host?'مستني الضيف يدخل':'مستني صاحب الغرفة يشغّل ملف');}
   if(packet.type==='peer-joined'){guestPresent=true;nearby=packet.connection==='lan';note('الشخص التاني اتصل');if(host&&localStream)queueRTC(makeOffer);}
+  if(packet.type==='track'&&music&&!host)showTrack(packet.value);
   if(packet.type==='peer-left'){guestPresent=false;pendingIce=[];note('الشخص التاني خرج');if(peer){peer.close();peer=null;}}
   if(packet.type==='chat'){addMessage(packet.role==='host'?'صاحب الغرفة':'الضيف',packet.text||'');}
   if(packet.type==='typing'){document.getElementById('typing').textContent=packet.text?'الشخص التاني بيكتب...':'';}
@@ -102,10 +107,10 @@ function queueRTC(operation){rtcQueue=rtcQueue.then(operation).catch(function(){
 async function drainIce(){while(pendingIce.length){try{await peer.addIceCandidate(pendingIce.shift());}catch(e){}}}
 function makePeer(){
  if(peer)return peer;
- peer=new RTCPeerConnection({iceServers:nearby?[]:[{urls:'stun:stun.l.google.com:19302'}]});
+ peer=new RTCPeerConnection({iceServers:nearby?[]:turnServers.length?turnServers:[{urls:'stun:stun.l.google.com:19302'}]});
  peer.onicecandidate=function(e){if(e.candidate)send('ice',e.candidate.toJSON());};
  peer.onconnectionstatechange=function(){if(!peer)return;
-  if(peer.connectionState==='failed')note('فشل اتصال WebRTC المباشر. جرّب شبكة أخرى أو VPN آمن؛ المشروع لا يحتوي على TURN relay.');
+  if(peer.connectionState==='failed')note(turnServers.length?'تعذّر توصيل الوسائط بخادم الترحيل.':'الاتصال المباشر للوسائط فشل. الغرفة دي محتاجة خادم ترحيل علشان تشتغل بين الشبكتين.');
   else note('WebRTC: '+peer.connectionState);
  };
  peer.ontrack=function(event){if(!host){video.srcObject=event.streams[0];video.play().catch(function(){note('اضغط تشغيل في المتصفح للسماح بالصوت');});}};
@@ -144,6 +149,56 @@ function updateSubtitle(){
  lastCaption=caption;captionEl.textContent=caption;
  if(host)send('subtitle',caption);
 }
+function providerLink(track){
+ if(!track)return null;
+ if(track.provider==='spotify'&&/^(track|album|playlist)$/.test(track.kind)&&/^[A-Za-z0-9]{22}$/.test(track.id))
+  return {name:'Spotify',url:'https://open.spotify.com/'+track.kind+'/'+track.id,
+          embed:'https://open.spotify.com/embed/'+track.kind+'/'+track.id};
+ if(track.provider==='anghami'&&/^(song|album|playlist|artist)$/.test(track.kind)&&/^[0-9]{1,15}$/.test(track.id))
+  return {name:'أنغامي',url:'https://play.anghami.com/'+track.kind+'/'+track.id};
+ return null;
+}
+function showTrack(track){
+ var panel=document.getElementById('officialMusic');
+ panel.replaceChildren();
+ var provider=providerLink(track);
+ panel.hidden=!provider;
+ video.hidden=!!provider;
+ if(!provider)return;
+ if(peer){peer.close();peer=null;}
+ video.pause();video.srcObject=null;
+ if(provider.embed){
+  var frame=document.createElement('iframe');
+  frame.src=provider.embed;
+  frame.title=provider.name;
+  frame.style.cssText='width:100%;height:160px;border:0';
+  frame.allow='autoplay; encrypted-media; fullscreen; picture-in-picture';
+  panel.append(frame);
+ }
+ var link=document.createElement('a');
+ link.href=provider.url;link.target='_blank';link.rel='noopener noreferrer';
+ link.textContent='تشغيل في '+provider.name;
+ panel.append(link);
+}
+if(host&&music){
+ document.getElementById('musicService').onsubmit=function(event){
+  event.preventDefault();
+  try{
+   if(!connected)throw Error();
+   var url=new URL(document.getElementById('musicServiceUrl').value);
+   if(url.protocol!=='https:'||url.username||url.password||url.port)throw Error();
+   var parts=url.pathname.split('/').filter(Boolean);
+   if(parts[0]==='embed')parts.shift();
+   var track={provider:url.hostname==='open.spotify.com'?'spotify':url.hostname==='play.anghami.com'?'anghami':'',kind:parts[0],id:parts[1]};
+   if(parts.length!==2||!providerLink(track))throw Error();
+   loadVersion++;
+   if(localStream){localStream.getTracks().forEach(function(t){t.stop();});localStream=null;}
+   if(blobUrl){URL.revokeObjectURL(blobUrl);blobUrl=null;}
+   officialTrack=track;showTrack(track);video.removeAttribute('src');video.load();
+   send('track',track);
+  }catch(e){note('اتصل بالغرفة وحط رابط أصلي من Spotify أو أنغامي.');}
+ };
+}
 if(host){
  connect('');
  document.getElementById('subFile').addEventListener('change',async function(e){
@@ -157,6 +212,7 @@ if(host){
  video.addEventListener('seeked',updateSubtitle);
  async function loadMedia(source,external){
   var version=++loadVersion;
+  if(officialTrack){officialTrack=null;showTrack(null);send('track',null);}
   if(peer){peer.close();peer=null;}
   if(localStream){localStream.getTracks().forEach(function(track){track.stop();});localStream=null;}
   if(blobUrl){URL.revokeObjectURL(blobUrl);blobUrl=null;}

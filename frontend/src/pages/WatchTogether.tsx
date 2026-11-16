@@ -99,8 +99,8 @@ export function WatchTogether({mode = 'video'}: {mode?: Mode}) {
 
   function confirmInternetInvite() {
     return window.confirm(ar
-      ? 'برق هيجهّز رابط مؤقت للغرفة على الإنترنت عبر Cloudflare. أي حد معاه الدعوة يقدر يطلب الدخول. تكمّل؟'
-      : 'BARQ will use Cloudflare to create a temporary room link. Anyone with the invite can try to join. Continue?');
+      ? 'برق هيجهّز دعوة للغرفة عبر الإنترنت. أي حد معاه الدعوة يقدر يطلب الدخول. تكمّل؟'
+      : 'BARQ will create an internet room invite. Anyone with the invite can try to join. Continue?');
   }
 
   function publishRoom(active: Room) {
@@ -165,7 +165,7 @@ export function WatchTogether({mode = 'video'}: {mode?: Mode}) {
     </>}
     {(guest || current) && <section className="barq-room-frame">
       {guest && <div className="barq-media-toolbar"><button onClick={() => setGuest('')}><XCircle size={16}/>{ar ? 'مغادرة الغرفة' : 'Leave room'}</button></div>}
-      <iframe title={ar ? 'مشغّل الغرفة' : 'Room player'} src={guest || current?.host_url} allow="autoplay" referrerPolicy="no-referrer"/>
+      <iframe title={ar ? 'مشغّل الغرفة' : 'Room player'} src={guest || current?.host_url} allow="autoplay; encrypted-media" referrerPolicy="no-referrer"/>
     </section>}
   </div>;
 }

@@ -15,7 +15,7 @@ import sys
 import tempfile
 from pathlib import Path
 from urllib.error import URLError
-from urllib.request import urlopen
+from urllib.request import HTTPRedirectHandler, Request as HttpRequest, build_opener, urlopen
 import re
 import socket
 import shutil
@@ -59,6 +59,9 @@ class Room:
     closed:bool=False
     failed_auths:int=0
     locked_until:float=0.0
+    managed:dict|None=None
+    socket_loop:asyncio.AbstractEventLoop|None=None
+    track:dict|None=None
 
 
 def _find(room_id:str) -> Room|None:
@@ -117,6 +120,13 @@ def _room_details(room: Room) -> dict:
     local=f"http://127.0.0.1:{PORT}/r/{room.id}"
     remote=(_public_base if _tunnel_process is not None and _tunnel_process.poll() is None and _public_base else None)
     nearby=f"http://{_lan_binding[0]}:{_lan_binding[1]}/r/{room.id}" if room.lan and _lan_binding else None
+    if room.managed:
+        managed=room.managed
+        return {"room_id":room.id,"mode":room.mode,"host_url":managed["player"],
+                "guest_url":managed["guest_url"],"room_code":managed["code"],
+                "lan":room.lan,"public":True,"managed":True,"status":"created",
+                "host_connected":managed.get("host_connected",False),
+                "guest_connected":managed.get("guest_connected",False)}
     return {"room_id":room.id,"mode":room.mode,
             "host_url":local+"?role=host&token="+room.host_token+"&mode="+room.mode,
             "guest_url":(remote+"/r/"+room.id if remote else nearby or local)+"?role=guest&token="+room.guest_token+"&mode="+room.mode,
@@ -141,11 +151,15 @@ def create_room(*,mode: str="video",lan: bool=False) -> dict:
                       guest_token=secrets.token_urlsafe(32),
                       code=str(secrets.randbelow(900000)+100000),
                       created=time.monotonic(),mode=mode,lan=lan)
-            room.timer=threading.Timer(7200,close_room,args=(room.id,))
-            room.timer.daemon=True
-            _rooms[room.id]=room
-            room.timer.start()
+            _register_room(room)
             return _room_details(room)
+
+
+def _register_room(room: Room):
+    room.timer=threading.Timer(7200,close_room,args=(room.id,))
+    room.timer.daemon=True
+    _rooms[room.id]=room
+    room.timer.start()
 
 
 def active_room() -> dict | None:
@@ -153,6 +167,66 @@ def active_room() -> dict | None:
     with _lock:
         room=next((room for room in _rooms.values() if not room.closed),None)
         return _room_details(room) if room else None
+
+
+def _managed_origin() -> str:
+    origin=os.environ.get("BARQ_WATCH_RELAY_URL","").strip().rstrip("/")
+    if origin and not re.fullmatch(r"https://[A-Za-z0-9.-]+(?::[0-9]{1,5})?",origin):
+        raise RuntimeError("عنوان خادم الغرف لازم يكون HTTPS.")
+    return origin
+
+
+class _NoRedirect(HTTPRedirectHandler):
+    def redirect_request(self, req, fp, code, msg, headers, newurl):
+        return None
+
+
+def _relay_request(origin: str,path: str,token: str,*,method: str,data=None):
+    request=HttpRequest(origin+path,method=method,
+        headers={"Authorization":"Bearer "+token,"Content-Type":"application/json"},
+        data=json.dumps(data).encode() if data is not None else None)
+    with build_opener(_NoRedirect()).open(request,timeout=8) as result:
+        return json.loads(result.read(16384))
+
+
+def _publish_managed(room: Room,origin: str) -> dict:
+    token=os.environ.get("BARQ_WATCH_RELAY_TOKEN","").strip()
+    if not token:
+        raise RuntimeError("خادم الغرف الثابت محتاج مفتاح إنشاء الغرف.")
+    with _tunnel_setup_lock:
+        with _lock:
+            if _rooms.get(room.id) is not room:
+                raise RuntimeError("الغرفة اتقفلت.")
+            if room.managed:
+                return _room_details(room)
+        try:
+            reply=_relay_request(origin,"/api/rooms",token,method="POST",data={"mode":room.mode})
+            room_id=reply["room_id"]
+            host_token=reply["host_token"]
+            guest_token=reply["guest_token"]
+            code=reply["code"]
+            for value,pattern in ((room_id,r"[A-Za-z0-9_-]{16}"),(host_token,r"[A-Za-z0-9_-]{43}"),
+                                  (guest_token,r"[A-Za-z0-9_-]{43}"),(code,r"[0-9]{6}")):
+                if not re.fullmatch(pattern,value):
+                    raise ValueError("Invalid relay response")
+        except (OSError,KeyError,ValueError,TypeError) as exc:
+            raise RuntimeError("خادم الغرف الثابت لم يرد أو رفض إنشاء الغرفة.") from exc
+        key=secrets.token_urlsafe(24)
+        guest_query=urlencode({"role":"guest","token":guest_token,"mode":room.mode})
+        host_query=urlencode({"role":"host","token":host_token})
+        with _lock:
+            if _rooms.get(room.id) is room:
+                _guest_invites[key]=("wss://"+urlsplit(origin).netloc+"/signal/"+room_id+"?"+host_query,
+                                     room.mode,time.monotonic()+7200)
+                room.managed={"key":key,"origin":origin,"id":room_id,"token":host_token,"code":code,
+                              "player":f"http://127.0.0.1:{PORT}/guest/{key}?role=host&mode={room.mode}&paired=1",
+                              "guest_url":origin+"/r/"+room_id+"?"+guest_query}
+                return _room_details(room)
+        try:
+            _relay_request(origin,"/api/rooms/"+room_id,host_token,method="DELETE")
+        except OSError:
+            pass
+        raise RuntimeError("الغرفة اتقفلت.")
 
 
 _CLOUDFLARED_VERSION="2026.11.0"
@@ -208,7 +282,7 @@ def _tunnel_binary() -> str:
 
 def _reachable_guest_page(base: str,room: Room,process) -> bool:
     url=base+"/r/"+room.id+"?role=guest&token="+room.guest_token+"&mode="+room.mode
-    deadline=time.monotonic()+20
+    deadline=time.monotonic()+60
     while time.monotonic()<deadline and process.poll() is None and not room.closed:
         try:
             with urlopen(url,timeout=4) as response:
@@ -230,6 +304,9 @@ def enable_test_tunnel(room_id:str, *, confirmed:bool) -> dict:
     room=_find(room_id)
     if room is None:
         raise ValueError("Room is closed")
+    origin=_managed_origin()
+    if origin:
+        return _publish_managed(room,origin)
     with _lock:
         if _tunnel_process and _tunnel_process.poll() is None and _public_base:
             return _room_details(room)
@@ -237,7 +314,7 @@ def enable_test_tunnel(room_id:str, *, confirmed:bool) -> dict:
     if _find(room_id) is not room:
         raise RuntimeError("Room closed while setting up the internet invite")
     proc=subprocess.Popen(
-        [exe,"tunnel","--no-autoupdate","--url",f"http://127.0.0.1:{PORT}"],
+        [exe,"tunnel","--no-autoupdate","--protocol","http2","--url",f"http://127.0.0.1:{PORT}"],
         stdout=subprocess.DEVNULL,stderr=subprocess.PIPE,
         creationflags=getattr(subprocess,"CREATE_NO_WINDOW",0),
     )
@@ -258,7 +335,7 @@ def enable_test_tunnel(room_id:str, *, confirmed:bool) -> dict:
     if not url_holder or not _reachable_guest_page(url_holder[0],room,proc):
         if proc.poll() is None:
             proc.terminate()
-        raise RuntimeError("تعذّر فتح رابط الغرفة من الإنترنت. جرّب تاني أو استخدم نفس الشبكة.")
+        raise RuntimeError("خدمة الرابط التجريبي لم تفتح اتصالاً عامًا. الرابط الثابت يحتاج خادم غرف مضبوط.")
     with _lock:
         if _tunnel_process and _tunnel_process.poll() is None:
             proc.terminate()
@@ -282,6 +359,14 @@ def close_room(room_id:str) -> bool:
         room.closed=True
         if room.timer:
             room.timer.cancel()
+        managed=room.managed
+        if managed:
+            _guest_invites.pop(managed["key"],None)
+    if managed:
+        try:
+            _relay_request(managed["origin"],"/api/rooms/"+managed["id"],managed["token"],method="DELETE")
+        except OSError:
+            pass
     global _tunnel_process,_public_base
     with _lock:
         if not _rooms:
@@ -289,11 +374,12 @@ def close_room(room_id:str) -> bool:
                 _tunnel_process.terminate()
             _tunnel_process=None
             _public_base=None
-    if _loop:
+    loop=room.socket_loop
+    if loop and loop.is_running():
         for ws in (room.guest,room.host):
             if ws:
                 try:
-                    asyncio.run_coroutine_threadsafe(ws.close(code=1001),_loop)
+                    asyncio.run_coroutine_threadsafe(ws.close(code=1001),loop)
                 except RuntimeError:
                     pass
     return True
@@ -401,7 +487,7 @@ def room_page(request: Request,room_id:str,role:str="",token:str=""):
 def _page_headers():
     return {"Cache-Control":"no-store","Referrer-Policy":"no-referrer",
             "Content-Security-Policy":("default-src 'self'; img-src 'self' data: blob:; "
-              "media-src blob: https:; connect-src 'self' ws: wss:; "
+              "media-src blob: https:; frame-src https://open.spotify.com https://play.anghami.com; connect-src 'self' ws: wss:; "
               "style-src 'unsafe-inline'; script-src 'unsafe-inline'")}
 
 
@@ -414,7 +500,8 @@ def join_invite(guest_url: str, code: str) -> str:
     authority=url.hostname or ""
     local_network=url.scheme=="http" and _private_ipv4(authority) and port is not None and port>=1024
     internet=(url.scheme=="https" and port in (None,443)
-              and re.fullmatch(r"[a-z0-9-]+[.]trycloudflare[.]com",authority))
+              and (re.fullmatch(r"[a-z0-9-]+[.]trycloudflare[.]com",authority)
+                   or "https://"+url.netloc==_managed_origin()))
     params=parse_qs(url.query)
     token=params.get("token",[""])[0]
     mode=params.get("mode",["video"])[0]
@@ -432,7 +519,9 @@ def join_invite(guest_url: str, code: str) -> str:
             _ensure_server()
         with _lock:
             key=secrets.token_urlsafe(24)
-            _guest_invites.clear()
+            host_keys={room.managed["key"] for room in _rooms.values() if room.managed}
+            for old in _guest_invites.keys()-host_keys:
+                _guest_invites.pop(old,None)
             _guest_invites[key]=(signal_url,mode,time.monotonic()+7200)
     return f"http://127.0.0.1:{PORT}/guest/{key}?role=guest&mode={mode}&paired=1"
 
@@ -478,6 +567,18 @@ async def join_signal(ws: WebSocket,key: str):
             async def downstream():
                 async for message in remote:
                     if isinstance(message,str):
+                        with _lock:
+                            managed=next((r.managed for r in _rooms.values()
+                                          if r.managed and r.managed["key"]==key),None)
+                            if managed:
+                                try:
+                                    kind=json.loads(message).get("type")
+                                except (ValueError,AttributeError):
+                                    kind=None
+                                if kind=="ready":
+                                    managed["host_connected"]=True
+                                elif kind in ("peer-joined","peer-left"):
+                                    managed["guest_connected"]=kind=="peer-joined"
                         await ws.send_text(message)
 
             tasks={asyncio.create_task(upstream()),asyncio.create_task(downstream())}
@@ -504,8 +605,27 @@ def _local_host(connection) -> bool:
     return host in ("127.0.0.1","localhost","testserver") and peer in ("127.0.0.1","::1","testclient")
 
 
+def _music_track(value):
+    if not isinstance(value,dict):
+        raise ValueError("Invalid music link")
+    provider=value.get("provider")
+    kind=value.get("kind")
+    identifier=value.get("id")
+    if not isinstance(identifier,str):
+        raise ValueError("Invalid music identifier")
+    if provider=="spotify" and kind in ("track","album","playlist") and re.fullmatch(r"[A-Za-z0-9]{22}",identifier):
+        return {"provider":provider,"kind":kind,"id":identifier}
+    if provider=="anghami" and kind in ("song","album","playlist","artist") and re.fullmatch(r"[0-9]{1,15}",identifier):
+        return {"provider":provider,"kind":kind,"id":identifier}
+    raise ValueError("Unsupported music link")
+
+
 @app.websocket("/signal/{room_id}")
 async def signal(ws:WebSocket,room_id:str):
+    await signal_session(ws,room_id)
+
+
+async def signal_session(ws:WebSocket,room_id:str,*,hosted=False,ice_servers=None):
     room=_find(room_id)
     role=ws.query_params.get("role","")
     token=ws.query_params.get("token","")
@@ -513,7 +633,7 @@ async def signal(ws:WebSocket,room_id:str):
     if not room or role not in ("host","guest"):
         await ws.close(code=1008);return
     expected=room.host_token if role=="host" else room.guest_token
-    if (role=="host" and not _local_host(ws)) or not secrets.compare_digest(token.encode(),expected.encode()):
+    if (role=="host" and not hosted and not _local_host(ws)) or not secrets.compare_digest(token.encode(),expected.encode()):
         await ws.close(code=1008);return
     if role=="guest":
         with _lock:
@@ -536,6 +656,7 @@ async def signal(ws:WebSocket,room_id:str):
     with _lock:
         occupied=room.closed or (room.host if role=="host" else room.guest) is not None
         if not occupied:
+            room.socket_loop=asyncio.get_running_loop()
             if role=="host": room.host=ws
             else: room.guest=ws
     if occupied:
@@ -544,15 +665,20 @@ async def signal(ws:WebSocket,room_id:str):
     last=0.;count=0
     try:
         await ws.accept()
-        await ws.send_json({"type":"ready","role":role})
+        ready={"type":"ready","role":role}
+        if hosted:
+            ready["ice_servers"]=ice_servers
+        if room.track:
+            ready["track"]=room.track
+        await ws.send_json(ready)
         other=room.guest if role=="host" else room.host
         if other:
             guest=ws if role=="guest" else other
             host_header=guest.headers.get("host","").split(":",1)[0]
-            connection="lan" if _private_ipv4(host_header) else "internet"
+            connection="lan" if not hosted and _private_ipv4(host_header) else "internet"
             await other.send_json({"type":"peer-joined","role":role,"connection":connection})
             await ws.send_json({"type":"peer-joined","role":"guest" if role=="host" else "host","connection":connection})
-        allowed_host={"offer","ice","chat","typing","reaction","sync","settings","subtitle"}
+        allowed_host={"offer","ice","chat","typing","reaction","sync","settings","subtitle","track"}
         allowed_guest={"answer","ice","chat","typing","reaction","request-pause","request-seek"}
         while not room.closed:
             text=await ws.receive_text()
@@ -575,6 +701,15 @@ async def signal(ws:WebSocket,room_id:str):
             if kind in ("chat","reaction","typing"):
                 content=str(payload.get("text") or "")[:500]
                 payload={"type":kind,"text":content,"role":role}
+            elif kind=="track":
+                try:
+                    track=_music_track(payload.get("value")) if payload.get("value") is not None else None
+                except ValueError:
+                    continue
+                if room.mode!="music":
+                    continue
+                room.track=track
+                payload={"type":"track","value":track}
             elif kind=="subtitle":
                 cue=payload.get("value")
                 if not isinstance(cue,str):

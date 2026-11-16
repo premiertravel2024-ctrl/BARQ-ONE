@@ -202,3 +202,46 @@ def test_windows_internet_tunnel_download_is_verified_before_use(monkeypatch, tm
     assert watch._tunnel_binary() == executable
     assert len(calls) == 2
     assert all(url.startswith("https://github.com/cloudflare/cloudflared/releases/download/") for url in calls)
+
+
+def test_hosted_music_relay_authenticates_and_shares_provider_reference(monkeypatch):
+    import base64
+    import hmac
+    from services import watch_relay, watch_together as watch
+
+    key = "host-key-" * 5
+    secret = "turn-key-" * 5
+    monkeypatch.setenv("BARQ_RELAY_CREATE_TOKEN", key)
+    monkeypatch.setenv("BARQ_TURN_SECRET", secret)
+    monkeypatch.setenv("BARQ_TURN_URLS", "turns:turn.example.com:5349?transport=tcp")
+    with TestClient(watch_relay.app) as client:
+        assert client.get("/health").status_code == 200
+        assert client.post("/api/rooms", json={"mode": "music"}).status_code == 401
+        response = client.post("/api/rooms", json={"mode": "music"}, headers={"Authorization": "Bearer " + key})
+        assert response.status_code == 201
+        room = response.json()
+        rid = room["room_id"]
+        host_path = f'/signal/{rid}?role=host&token={room["host_token"]}'
+        guest_path = f'/signal/{rid}?role=guest&token={room["guest_token"]}&code={room["code"]}'
+        track = {"provider": "spotify", "kind": "track", "id": "0Lr4kGOYn9l83EjuK6cZFQ"}
+        try:
+            assert client.get(f"/r/{rid}?role=host&token={room['host_token']}").status_code == 404
+            assert client.delete(f"/api/rooms/{rid}").status_code == 403
+            with client.websocket_connect(host_path, headers={"Host": "rooms.example.com"}) as host:
+                ready = host.receive_json()
+                ice = ready["ice_servers"][0]
+                expected = base64.b64encode(hmac.digest(secret.encode(), ice["username"].encode(), "sha1")).decode()
+                assert ready["type"] == "ready" and ice["credential"] == expected
+                host.send_json({"type": "track", "value": track})
+                host.send_json({"type": "track", "value": dict(track, id="https://evil.example")})
+                with client.websocket_connect(guest_path, headers={"Host": "rooms.example.com"}) as guest:
+                    ready = guest.receive_json()
+                    assert ready["track"] == track
+                    assert host.receive_json()["connection"] == "internet"
+                    assert guest.receive_json()["connection"] == "internet"
+                    host.send_json({"type": "track", "value": {"provider": "anghami", "kind": "song", "id": "12345"}})
+                    assert guest.receive_json()["value"]["provider"] == "anghami"
+            result = client.delete(f"/api/rooms/{rid}", headers={"Authorization": "Bearer " + room["host_token"]})
+            assert result.json() == {"closed": True}
+        finally:
+            watch.close_room(rid)
