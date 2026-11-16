@@ -116,7 +116,7 @@ export function Wallpapers() {
       {!data.engine && !data.can_install && <a href={data.lively.official_url} target="_blank" rel="noreferrer"><ExternalLink size={16}/>{ar ? 'تنزيل Lively' : 'Download Lively'}</a>}
       <button disabled={busy} onClick={() => void operate(async () => { await refresh(); })}><RefreshCw size={16}/>{ar ? 'إعادة الفحص' : 'Check again'}</button>
     </section>}
-    {ready && <>
+    {data && ready && <>
       <p className="barq-muted">{ar ? 'اختار MP4 أو WebM أو GIF من جهازك، أو طبّق خلفية من مكتبتك.' : 'Choose a local MP4, WebM or GIF, or apply a wallpaper from your library.'}</p>
       <div className="barq-media-toolbar">
         <button className="barq-media-primary" disabled={busy} onClick={addLocal}><Plus size={17}/>{ar ? 'إضافة خلفية' : 'Add wallpaper'}</button>
