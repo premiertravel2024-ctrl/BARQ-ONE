@@ -170,7 +170,7 @@ def active_room() -> dict | None:
 
 
 def _managed_origin() -> str:
-    origin=os.environ.get("BARQ_WATCH_RELAY_URL","https://barq-one.ashraf-mohamed.workers.dev").strip().rstrip("/")
+    origin=(os.environ.get("BARQ_WATCH_RELAY_URL") or "https://barq-one.ashraf-mohamed.workers.dev").strip().rstrip("/")
     if origin and not re.fullmatch(r"https://[A-Za-z0-9.-]+(?::[0-9]{1,5})?",origin):
         raise RuntimeError("عنوان خادم الغرف لازم يكون HTTPS.")
     return origin
