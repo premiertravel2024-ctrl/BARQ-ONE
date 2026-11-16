@@ -26,21 +26,20 @@ def lively_executable() -> Path | None:
     if sys.platform!="win32":
         return None
     paths=[]
+    executable_names=("Lively.exe","LivelyWPF.exe")
     for env in ("ProgramFiles","ProgramFiles(x86)","LOCALAPPDATA"):
         root=os.environ.get(env)
         if root:
             p=Path(root)
-            paths.extend((
-                p/"Lively Wallpaper"/"Lively.exe",
-                p/"Programs"/"Lively Wallpaper"/"Lively.exe",
-                p/"AM Lively Wallpaper"/"Lively.exe",
-            ))
-    candidate=shutil.which("lively.exe")
-    if candidate:
-        paths.insert(0,Path(candidate))
+            for folder in (p/"Lively Wallpaper",p/"Programs"/"Lively Wallpaper",p/"AM Lively Wallpaper",p/"Microsoft"/"WindowsApps"):
+                paths.extend(folder/name for name in executable_names)
+    for name in executable_names:
+        candidate=shutil.which(name)
+        if candidate:
+            paths.append(Path(candidate))
     for path in paths:
         try:
-            if path.is_file() and path.name.lower()=="lively.exe":
+            if path.is_file() and path.name.lower() in {"lively.exe","livelywpf.exe"}:
                 return path.resolve()
         except (OSError,PermissionError):
             continue

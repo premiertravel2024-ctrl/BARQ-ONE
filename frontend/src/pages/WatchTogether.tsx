@@ -1,86 +1,158 @@
-import {useEffect,useState} from 'react';
-import {Video,Link2,Copy,XCircle,ExternalLink,Users,Radio} from 'lucide-react';
+import {useEffect, useRef, useState} from 'react';
+import {Copy, ExternalLink, Headphones, Link2, Radio, Video, XCircle} from 'lucide-react';
 import {requestJSON} from '../lib/backend';
 import {useApp} from '../store';
 
-type Room={room_id:string;host_url:string;guest_url:string;room_code:string;public:boolean;note?:string};
-type State={rooms:{room_id:string;guest_connected:boolean;host_connected:boolean;age_seconds:number}[];service:string;transcoding:boolean};
+type Mode = 'video' | 'music';
+type Room = {
+  room_id: string;
+  mode: Mode;
+  host_url: string;
+  guest_url: string;
+  room_code: string;
+  public: boolean;
+  lan: boolean;
+  guest_connected: boolean;
+};
 
-export function WatchTogether(){
- const ar=useApp(s=>s.language)==='ar';
- const [room,setRoom]=useState<Room|null>(null);
- const [status,setStatus]=useState<State|null>(null);
- const [busy,setBusy]=useState(false);
- const [error,setError]=useState('');
- const [copied,setCopied]=useState(false);
- useEffect(()=>{
-  let live=true;
-  async function poll(){
-   try{
-    const [result,active]=await Promise.all([
-      requestJSON<State>('/v1/watchrooms/status'),
-      requestJSON<{room:Room|null}>('/v1/watchrooms/active'),
-    ]);
-    if(live){setStatus(result);setRoom(active.room);}
-   }catch(e){if(live)setError(e instanceof Error?e.message:String(e))}
+const joinPrefix = 'BARQ-';
+const post = (body: unknown): RequestInit => ({method: 'POST', body: JSON.stringify(body)});
+
+function parseInvite(value: string) {
+  const invite = value.trim();
+  if (!invite.startsWith(joinPrefix) || invite.length > 950) throw new Error('Invalid invitation');
+  const fields = new URLSearchParams(atob(invite.slice(joinPrefix.length)));
+  const guest_url = fields.get('room');
+  const code = fields.get('code');
+  if (!guest_url || !code) throw new Error('Invalid invitation');
+  return {guest_url, code};
+}
+
+export function WatchTogether({mode = 'video'}: {mode?: Mode}) {
+  const ar = useApp(s => s.language) === 'ar';
+  const [room, setRoom] = useState<Room | null>(null);
+  const [guest, setGuest] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState('');
+  const [copied, setCopied] = useState(false);
+  const [invite, setInvite] = useState('');
+  const current = room?.mode === mode ? room : null;
+  const roomId = room?.room_id;
+  const mutation = useRef(0);
+  const busyRef = useRef(false);
+  const music = mode === 'music';
+  const Icon = music ? Headphones : Video;
+  const inviteCode = current && (current.lan || current.public)
+    ? joinPrefix + btoa(new URLSearchParams({room: current.guest_url, code: current.room_code}).toString())
+    : '';
+
+  useEffect(() => {
+    let live = true;
+    let timer: number;
+    async function refresh() {
+      try {
+        const revision = mutation.current;
+        if (!document.hidden && !busyRef.current) {
+          const active = await requestJSON<{room: Room | null}>('/v1/watchrooms/active');
+          if (live && revision === mutation.current && !busyRef.current) setRoom(active.room);
+        }
+      } catch (e) {
+        if (live && !busyRef.current) setError(e instanceof Error ? e.message : String(e));
+      } finally {
+        if (live && roomId) timer = window.setTimeout(() => void refresh(), 5000);
+      }
+    }
+    void refresh();
+    return () => { live = false; window.clearTimeout(timer); };
+  }, [roomId]);
+
+  async function operate(action: () => Promise<void>) {
+    if (busyRef.current) return;
+    busyRef.current = true;
+    mutation.current++;
+    setBusy(true);
+    setError('');
+    try { await action(); }
+    catch (e) { setError(e instanceof Error ? e.message : String(e)); }
+    finally { busyRef.current = false; setBusy(false); }
   }
-  void poll();const timer=window.setInterval(()=>void poll(),3000);
-  return()=>{live=false;window.clearInterval(timer)};
- },[]);
- async function start(){
-  if(busy||room)return;setBusy(true);setError('');
-  try{setRoom(await requestJSON<Room>('/v1/watchrooms/start',{method:'POST',body:'{}'}))}
-  catch(e){setError(e instanceof Error?e.message:String(e))}
-  finally{setBusy(false)}
- }
- async function stop(){
-  if(!room||busy)return;setBusy(true);setError('');
-  try{
-   await requestJSON('/v1/watchrooms/close',{method:'POST',body:JSON.stringify({room_id:room.room_id})});
-   setRoom(null);
-  }catch(e){setError(e instanceof Error?e.message:String(e))}
-  finally{setBusy(false)}
- }
- async function publish(){
-  if(!room||busy)return;
-  if(!window.confirm(ar?'هتفتح رابطًا مؤقتًا للغرفة عبر الإنترنت. أي شخص معه الرابط والكود يقدر يحاول يدخل. الخدمة للتجارب فقط ومش مناسبة للبث الدائم. توافق؟':'Publish a temporary testing link. Anyone with the link and code can try to join. Proceed?'))return;
-  setBusy(true);setError('');
-  try{
-   const answer=await requestJSON<{guest_url:string;room_code:string;public:boolean}>('/v1/watchrooms/publish',{
-    method:'POST',body:JSON.stringify({room_id:room.room_id,confirmed:true})});
-   setRoom({...room,...answer});
-  }catch(e){setError(e instanceof Error?e.message:String(e))}
-  finally{setBusy(false)}
- }
- async function copy(value:string){
-  try{await navigator.clipboard.writeText(value);setCopied(true)}catch{setError(ar?'مش قادر أنسخ تلقائيًا. انسخ النص من الحقل.':'Copy failed. Please select the link manually.')}
- }
- const current=status?.rooms.find(r=>r.room_id===room?.room_id);
- return <div className="barq-media" dir={ar?'rtl':'ltr'}>
-  <header className="barq-media-head"><div><h2>{ar?'غرفة مشاهدة مع صديق':'Watch Together'}</h2>
-   <p>{ar?'شخص واحد، رابط وكود، بدون تثبيت للضيف. الفيديو من متصفحك إلى متصفحه عبر WebRTC.':'One guest, link and code, no guest installation. Browser-to-browser WebRTC.'}</p></div><span className="barq-chip"><Users size={15}/>{ar?'شخصان فقط':'One guest'}</span></header>
-  {error&&<p className="barq-media-error" role="alert">{error}</p>}
-  {!room&&<section className="barq-media-empty"><Video size={28}/><p>{ar?'الضيف هيفتح الرابط في متصفح حديث. صاحب الغرفة هيختار ملف الفيديو من داخل صفحة المشاهدة، من غير ما السيرفر يقرأ الملفات.':'Your friend joins in a modern browser. Pick your file locally in the host page; the server never reads your filesystem.'}</p>
-    <button disabled={busy} onClick={()=>void start()}>{ar?'إنشاء غرفة محلية':'Create local watch room'}</button>
-    <p className="barq-muted">{ar?'البث عبر الإنترنت محتاج نفقًا خارجيًا بموافقتك، ونجاح WebRTC بيعتمد على الشبكة.':'Internet access needs your explicit approval to enable a temporary tunnel. P2P may fail on strict NAT networks.'}</p></section>}
-  {room&&<>
-   <div className="barq-media-toolbar"><button disabled={busy||room.public} onClick={()=>void publish()}><Radio size={16}/>{ar?'نشر رابط اختبار خارجي بموافقتي':'Publish temporary external test link'}</button>
-    <button disabled={busy} onClick={()=>void stop()}><XCircle size={16}/>{ar?'إغلاق الغرفة بالكامل':'End room and stream'}</button></div>
-   <section className="barq-media-metrics">
-    <div><span>{ar?'المضيف':'Host'}</span><strong>{current?.host_connected?(ar?'متصل':'Connected'):(ar?'غير متصل':'Not connected')}</strong></div>
-    <div><span>{ar?'الضيف':'Guest'}</span><strong>{current?.guest_connected?(ar?'متصل':'Connected'):(ar?'لم يدخل':'Waiting')}</strong></div>
-    <div><span>{ar?'وضع الرابط':'Link status'}</span><strong>{room.public?(ar?'مؤقت خارجي':'Temporary public'):(ar?'محلي فقط':'Local only')}</strong></div>
-   </section>
-   <div className="barq-room-share"><label>{ar?'رابط الضيف':'Guest link'} <input readOnly dir="ltr" value={room.guest_url} onFocus={e=>e.target.select()}/></label>
-    <button onClick={()=>void copy(room.guest_url)} aria-label={ar?'نسخ الرابط':'Copy link'}><Copy size={16}/>{copied?(ar?'تم النسخ':'Copied'):(ar?'نسخ الرابط':'Copy link')}</button>
-    <label>{ar?'كود الغرفة':'Room code'} <input readOnly dir="ltr" value={room.room_code} onFocus={e=>e.target.select()}/></label>
-    <button onClick={()=>void copy(room.room_code)}><Copy size={16}/>{ar?'نسخ الكود':'Copy code'}</button>
-    <a target="_blank" rel="noreferrer" href={room.host_url}><ExternalLink size={16}/>{ar?'افتح صفحة المضيف':'Open host page'}</a>
-   </div>
-   <section className="barq-room-frame"><h3><Link2 size={16}/>{ar?'المشاهدة والدردشة داخل برق':'Watch and chat inside BARQ'}</h3>
-    <iframe title="BARQ Watch Together host" src={room.host_url} allow="autoplay" referrerPolicy="no-referrer"/>
-   </section>
-   <p className="barq-muted">{ar?'الدردشة والبث مؤقتان. الملفات غير المدعومة في المتصفح محتاجة تحويل خارجي حاليًا. لا يوجد TURN مجاني مضمون أو تجاوز لحماية DRM.':'Stream and chat are ephemeral. Unsupported codecs still require external conversion. No guaranteed free TURN relay or DRM bypass.'}</p>
-  </>}
- </div>;
+
+  function start(lan: boolean) {
+    void operate(async () => {
+      setRoom(await requestJSON<Room>('/v1/watchrooms/start', post({mode, lan})));
+    });
+  }
+
+  function join() {
+    void operate(async () => {
+      let parsed: ReturnType<typeof parseInvite>;
+      try { parsed = parseInvite(invite); }
+      catch { throw new Error(ar ? 'الكود مش كامل. انسخ كود الدعوة اللي بيبدأ بـ BARQ-.' : 'Paste the full BARQ- invitation code.'); }
+      const result = await requestJSON<{url: string}>('/v1/watchrooms/join', post(parsed));
+      setGuest(result.url);
+      setInvite('');
+    });
+  }
+
+  function publish() {
+    if (!current || !window.confirm(ar ? 'فتح دعوة مؤقتة عبر الإنترنت للغرفة دي؟' : 'Enable a temporary internet invitation for this room?')) return;
+    void operate(async () => {
+      setRoom(await requestJSON<Room>('/v1/watchrooms/publish', post({room_id: current.room_id, confirmed: true})));
+      setCopied(false);
+    });
+  }
+
+  async function copy(value: string) {
+    try { await navigator.clipboard.writeText(value); setCopied(true); }
+    catch { setError(ar ? 'انسخ كود الدعوة يدويًا من الحقل.' : 'Select and copy the invitation code manually.'); }
+  }
+
+  return <div className="barq-media" dir={ar ? 'rtl' : 'ltr'}>
+    {error && <p className="barq-media-error" role="alert">{error}</p>}
+    {!room && !guest && <div className="barq-room-entry">
+      <section className="barq-media-panel">
+        <Icon size={28} aria-hidden="true"/>
+        <h2>{ar ? 'افتح غرفة' : 'Host a room'}</h2>
+        <p className="barq-muted">{ar
+          ? music ? 'اختار أغنية من جهازك أو شغّل رابط صوت مباشر.' : 'اختار فيلم من جهازك أو شغّل رابط فيديو مباشر.'
+          : music ? 'Choose a music file or a direct audio link.' : 'Choose a video file or a direct video link.'}</p>
+        <button className="barq-media-primary" disabled={busy} onClick={() => start(true)}><Radio size={17}/>{ar ? 'إنشاء غرفة على نفس الشبكة' : 'Host on the local network'}</button>
+        <button disabled={busy} onClick={() => start(false)}><ExternalLink size={16}/>{ar ? 'غرفة بدعوة عبر الإنترنت' : 'Host with an internet invitation'}</button>
+      </section>
+      <form className="barq-media-panel" onSubmit={event => { event.preventDefault(); join(); }}>
+        <Link2 size={28} aria-hidden="true"/>
+        <h2>{ar ? 'ادخل غرفة صاحبك' : 'Join a friend'}</h2>
+        <label htmlFor="barq-room-invite">{ar ? 'كود دعوة برق' : 'BARQ invitation code'}</label>
+        <input id="barq-room-invite" dir="ltr" value={invite} maxLength={950} placeholder="BARQ-…" onChange={e => setInvite(e.target.value)} required/>
+        <button className="barq-media-primary" disabled={busy || !invite.trim()}>{ar ? 'دخول' : 'Join'}</button>
+      </form>
+    </div>}
+    {room && !current && !guest && <section className="barq-media-panel">
+      <p>{ar ? 'فيه غرفة تانية مفتوحة. اقفلها أو افتحها من تبويبها.' : 'Another room is active. Open its tab or end it here.'}</p>
+      <button disabled={busy} onClick={() => void operate(async () => {
+        await requestJSON('/v1/watchrooms/close', post({room_id: room.room_id}));
+        setRoom(null);
+      })}>{ar ? 'إغلاق الغرفة المفتوحة' : 'End active room'}</button>
+    </section>}
+    {current && !guest && <>
+      <section className="barq-media-toolbar">
+        <span className="barq-chip">{current.guest_connected ? (ar ? 'صاحبك متصل' : 'Guest connected') : (ar ? 'مستني صاحبك' : 'Waiting for a guest')}</span>
+        {!current.lan && !current.public && <button disabled={busy} onClick={publish}><Radio size={16}/>{ar ? 'فعّل الدعوة المؤقتة' : 'Enable temporary internet invite'}</button>}
+        <button disabled={busy} onClick={() => void operate(async () => {
+          await requestJSON('/v1/watchrooms/close', post({room_id: current.room_id}));
+          setRoom(null); setCopied(false);
+        })}><XCircle size={16}/>{ar ? 'إنهاء الغرفة' : 'End room'}</button>
+      </section>
+      {inviteCode && <section className="barq-room-share">
+        <label>{ar ? 'كود الدخول من برنامج برق' : 'Join code for the BARQ app'}<input readOnly dir="ltr" value={inviteCode} onFocus={e => e.target.select()}/></label>
+        <button onClick={() => void copy(inviteCode)}><Copy size={16}/>{copied ? (ar ? 'اتنسخ' : 'Copied') : (ar ? 'نسخ الكود' : 'Copy code')}</button>
+        <a href={current.guest_url + '#' + current.room_code} target="_blank" rel="noreferrer"><ExternalLink size={16}/>{ar ? 'رابط للمتصفح' : 'Browser link'}</a>
+        <button onClick={() => void copy(current.guest_url + '#' + current.room_code)} aria-label={ar ? 'نسخ رابط المتصفح' : 'Copy browser link'}><Copy size={16}/></button>
+      </section>}
+    </>}
+    {(guest || current) && <section className="barq-room-frame">
+      {guest && <div className="barq-media-toolbar"><button onClick={() => setGuest('')}><XCircle size={16}/>{ar ? 'مغادرة الغرفة' : 'Leave room'}</button></div>}
+      <iframe title={ar ? 'مشغّل الغرفة' : 'Room player'} src={guest || current?.host_url} allow="autoplay" referrerPolicy="no-referrer"/>
+    </section>}
+  </div>;
 }

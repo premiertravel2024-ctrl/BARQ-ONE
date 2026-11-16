@@ -1,73 +1,136 @@
-import {useEffect,useState} from 'react';
-import {Image,Pause,Play,Square,Shuffle,Volume2,ExternalLink,RefreshCw} from 'lucide-react';
+import {useEffect, useRef, useState} from 'react';
+import {Download, ExternalLink, Image, Pause, Play, Plus, RefreshCw, Shuffle, Square, Volume2} from 'lucide-react';
 import {requestJSON} from '../lib/backend';
 import {useApp} from '../store';
 
-type Wallpaper={id:string;title:string;type:string;preview_available:boolean};
-type Reply={capabilities:{family:string;supported:boolean;release:string};lively:{installed:boolean;license:string;official_url:string;path:string|null};library:Wallpaper[];processes:{pid:number;name:string;ram_mb:number|null;cpu_percent:number|null}[];autopause:string};
+type Wallpaper = {id: string; title: string; type: string; preview_available: boolean};
+type Reply = {
+  capabilities: {family: string; supported: boolean; release: string};
+  lively: {installed: boolean; official_url: string};
+  library: Wallpaper[];
+  installer: 'idle' | 'running' | 'finished' | 'failed';
+  can_install: boolean;
+};
+type CommandResult = {status: string};
 
-export function Wallpapers(){
- const ar=useApp(s=>s.language)==='ar';
- const [data,setData]=useState<Reply|null>(null);
- const [busy,setBusy]=useState(false);
- const [error,setError]=useState('');
- const [volume,setVolume]=useState(40);
- async function refresh(){
-  try{setData(await requestJSON<Reply>('/v1/wallpapers/status'));setError('')}
-  catch(e){setError(e instanceof Error?e.message:String(e))}
- }
- useEffect(()=>{void refresh()},[]);
- async function addLocal(){
-  if(busy)return;setBusy(true);setError('');
-  try{
-   const answer=await requestJSON<{status:string;verified:boolean}>('/v1/wallpapers/pick-local',{method:'POST'});
-   if(answer.status==='command_sent')setError(ar?'بعت الملف المختار إلى Lively، بس تأكد إنه ظهر على سطح المكتب.':'Media sent to Lively; verify the wallpaper is visible.');
-   await refresh();
-  }catch(e){setError(e instanceof Error?e.message:String(e))}
-  finally{setBusy(false)}
- }
- async function invoke(action:string,wallpaper_id?:string){
-  if(busy)return;setBusy(true);setError('');
-  try{
-   const result=await requestJSON<{status:string;verified:boolean}>('/v1/wallpapers/action',{
-    method:'POST',body:JSON.stringify({action,wallpaper_id,volume:action==='volume'?volume:undefined})
-   });
-   if(!result.verified)setError(ar?'بعت الأمر إلى Lively، لكن لازم تتأكد من ظهوره على سطح المكتب.':'Command sent to Lively; visible playback still needs confirmation.');
-   await refresh();
-  }catch(e){setError(e instanceof Error?e.message:String(e))}
-  finally{setBusy(false)}
- }
- return <div className="barq-media" dir={ar?'rtl':'ltr'}>
-  <header className="barq-media-head"><div><h2>{ar?'الخلفيات الحية':'Live Wallpapers'}</h2>
-   <p>{ar?'التحكم في برنامج Lively الخارجي من داخل برق، من غير نسخ محركه.':'Control the separate Lively Wallpaper application from BARQ.'}</p></div>
-   <span className="barq-chip">{data?.capabilities.release||'Windows'} · {data?.lively.license||'GPL-3.0 / MS-PL'}</span></header>
-  {error&&<p className="barq-media-error" role="status">{error}</p>}
-  {data&&!data.lively.installed&&<section className="barq-media-empty"><Image size={27}/><p>{ar?'Lively مش ظاهر في مسارات التثبيت المعروفة. نزّله من المصدر الرسمي بعد موافقتك، أو افتح نسختك المثبتة.':'Lively is not detected in standard install paths. You can install it from its official project.'}</p>
-   <a href={data.lively.official_url} target="_blank" rel="noreferrer"><ExternalLink size={15}/>{ar?'الإصدار الرسمي':'Official releases'}</a></section>}
-  {data?.lively.installed&&<>
-   <div className="barq-media-toolbar">
-    <button disabled={busy} onClick={()=>void invoke('show')}><Image size={16}/>{ar?'افتح Lively':'Open Lively'}</button>
-    <button disabled={busy} onClick={()=>void addLocal()}>{ar?'أضف فيديو أو GIF من جهازك':'Add local video / GIF'}</button>
-    <button disabled={busy} onClick={()=>void invoke('play')}><Play size={16}/>{ar?'تشغيل':'Play'}</button>
-    <button disabled={busy} onClick={()=>void invoke('pause')}><Pause size={16}/>{ar?'إيقاف مؤقت':'Pause'}</button>
-    <button disabled={busy} onClick={()=>void invoke('stop')}><Square size={16}/>{ar?'إيقاف الخلفية':'Stop'}</button>
-    {data.capabilities.family!=='legacy'&&<button disabled={busy} onClick={()=>void invoke('random')}><Shuffle size={16}/>{ar?'عشوائي':'Random'}</button>}
-    <label><Volume2 size={16}/><input type="range" min="0" max="100" value={volume} onChange={e=>setVolume(Number(e.target.value))} aria-label={ar?'مستوى الصوت':'Volume'}/>{volume}%</label>
-    <button disabled={busy} onClick={()=>void invoke('volume')}>{ar?'تطبيق الصوت':'Apply volume'}</button>
-    <button disabled={busy} onClick={()=>void refresh()} aria-label={ar?'تحديث':'Refresh'}><RefreshCw size={16}/></button>
-   </div>
-   <p className="barq-muted">{ar?'إيقاف الخلفية تلقائيًا وقت الألعاب أو البطارية بيتضبط من إعدادات Lively نفسه. افتح البرنامج واضبط قواعد الأداء.':'For fullscreen/battery auto-pause, configure Lively performance rules in its own settings.'}</p>
-   <div className="barq-media-grid">
-   {data.library.map(item=><article key={item.id} className="barq-wallpaper-card">
-     <div className="barq-wallpaper-preview">{item.preview_available?<img src={'/v1/wallpapers/preview/'+encodeURIComponent(item.id)} alt={item.title} loading="lazy"/>:<Image size={30}/>}</div>
-     <div className="barq-wallpaper-detail"><strong dir="auto">{item.title}</strong><small dir="auto">{item.type}</small>
-      <button disabled={busy} onClick={()=>void invoke('apply',item.id)}>{ar?'تطبيق':'Apply'}</button></div>
-    </article>)}
-   </div>
-   {!data.library.length&&<p className="barq-muted">{ar?'مكتبة Lively مش موجودة في المسار المعروف. افتح Lively وأضف الفيديو أو GIF من واجهته؛ مش هنجرب مسارات ملفات من غير موافقتك.':'No detected Lively library. Add a local video/GIF using the official Lively app.'}</p>}
-   <section className="barq-media-metrics"><div><span>{ar?'عمليات Lively المرصودة':'Measured Lively processes'}</span><strong>{data.processes.length}</strong></div>
-    <div><span>{ar?'ذاكرة عمليات Lively':'Lively RAM'}</span><strong>{data.processes.reduce((sum,p)=>sum+(p.ram_mb||0),0).toFixed(1)} MB</strong></div>
-    <div><span>{ar?'استخدام CPU':'CPU usage'}</span><strong>{ar?'غير مقاس بعد':'Not sampled'}</strong></div></section>
-  </>}
- </div>;
+export function Wallpapers() {
+  const ar = useApp(s => s.language) === 'ar';
+  const [data, setData] = useState<Reply | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState('');
+  const [notice, setNotice] = useState('');
+  const [volume, setVolume] = useState(40);
+  const [installing, setInstalling] = useState(false);
+  const pending = useRef(false);
+
+  async function refresh() {
+    const result = await requestJSON<Reply>('/v1/wallpapers/status?metrics=false');
+    setData(result);
+    setInstalling(result.installer === 'running');
+    return result;
+  }
+
+  useEffect(() => {
+    void refresh().catch(e => setError(e instanceof Error ? e.message : String(e)));
+  }, []);
+
+  useEffect(() => {
+    if (!installing) return;
+    let timer: number;
+    let live = true;
+    async function poll() {
+      try {
+        const result = await requestJSON<Reply>('/v1/wallpapers/status?metrics=false');
+        if (!live) return;
+        setData(result);
+        if (result.installer !== 'running') {
+          setInstalling(false);
+          if (result.lively.installed) setNotice(ar ? 'الخلفيات جاهزة. اختار ملف من جهازك.' : 'Ready. Choose a wallpaper file.');
+          else setError(ar ? 'التثبيت مخلصش بنجاح. راجع نافذة Windows وجرب تاني.' : 'Installation did not finish. Check the Windows installer and retry.');
+          return;
+        }
+      } catch (e) {
+        if (live) setError(e instanceof Error ? e.message : String(e));
+      }
+      if (live) timer = window.setTimeout(() => void poll(), 3000);
+    }
+    timer = window.setTimeout(() => void poll(), 1200);
+    return () => { live = false; window.clearTimeout(timer); };
+  }, [installing, ar]);
+
+  async function operate(action: () => Promise<void>) {
+    if (pending.current) return;
+    pending.current = true;
+    setBusy(true);
+    setError('');
+    setNotice('');
+    try { await action(); }
+    catch (e) { setError(e instanceof Error ? e.message : String(e)); }
+    finally { pending.current = false; setBusy(false); }
+  }
+
+  function install() {
+    void operate(async () => {
+      const result = await requestJSON<CommandResult>('/v1/wallpapers/install', {method: 'POST'});
+      if (result.status === 'running') setInstalling(true);
+      else await refresh();
+    });
+  }
+
+  function invoke(action: string, wallpaper_id?: string) {
+    void operate(async () => {
+      const result = await requestJSON<CommandResult>('/v1/wallpapers/action', {
+        method: 'POST', body: JSON.stringify({action, wallpaper_id, volume: action === 'volume' ? volume : undefined}),
+      });
+      if (result.status === 'command_sent') setNotice(ar ? 'الأمر اتبعت لمشغّل الخلفيات.' : 'Command sent to the wallpaper player.');
+    });
+  }
+
+  function addLocal() {
+    void operate(async () => {
+      const result = await requestJSON<CommandResult>('/v1/wallpapers/pick-local', {method: 'POST'});
+      if (result.status === 'cancelled') return;
+      setNotice(ar ? 'الملف اتبعت لمشغّل الخلفيات عشان يضيفه ويطبّقه.' : 'The wallpaper player received the file to import and apply.');
+      await refresh();
+    });
+  }
+
+  const ready = data?.lively.installed;
+  return <div className="barq-media" dir={ar ? 'rtl' : 'ltr'}>
+    {error && <p className="barq-media-error" role="alert">{error}</p>}
+    {notice && <p className="barq-muted" role="status">{notice}</p>}
+    {!data && !error && <p className="barq-muted" role="status">{ar ? 'بنفحص مشغّل الخلفيات…' : 'Checking the wallpaper player…'}</p>}
+    {data && !ready && <section className="barq-media-panel">
+      <Image size={29} aria-hidden="true"/>
+      <h2>{ar ? 'جهّز الخلفيات الحية' : 'Set up live wallpapers'}</h2>
+      <p className="barq-muted">{ar ? 'ثبّت Lively مرة واحدة، وبعدها تقدر تضيف وتتحكم في الخلفيات من برق.' : 'Install Lively once, then add and control wallpapers from BARQ.'}</p>
+      {data.can_install && <button className="barq-media-primary" disabled={busy || installing} onClick={install}><Download size={17}/>{installing ? (ar ? 'التثبيت شغّال في Windows…' : 'Windows installer is running…') : (ar ? 'تثبيت مشغّل الخلفيات' : 'Install wallpaper player')}</button>}
+      {!data.can_install && <a href={data.lively.official_url} target="_blank" rel="noreferrer"><ExternalLink size={16}/>{ar ? 'تنزيل Lively' : 'Download Lively'}</a>}
+      <button disabled={busy} onClick={() => void operate(async () => { await refresh(); })}><RefreshCw size={16}/>{ar ? 'إعادة الفحص' : 'Check again'}</button>
+    </section>}
+    {ready && <>
+      <p className="barq-muted">{ar ? 'اختار فيديو أو GIF من جهازك، أو طبّق خلفية من مكتبتك.' : 'Choose a local video or GIF, or apply a wallpaper from your library.'}</p>
+      <div className="barq-media-toolbar">
+        <button className="barq-media-primary" disabled={busy} onClick={addLocal}><Plus size={17}/>{ar ? 'إضافة خلفية' : 'Add wallpaper'}</button>
+        <button disabled={busy} onClick={() => invoke('play')}><Play size={16}/>{ar ? 'تشغيل' : 'Play'}</button>
+        <button disabled={busy} onClick={() => invoke('pause')}><Pause size={16}/>{ar ? 'إيقاف مؤقت' : 'Pause'}</button>
+        <button disabled={busy} onClick={() => invoke('stop')}><Square size={16}/>{ar ? 'إيقاف' : 'Stop'}</button>
+        {data.capabilities.family !== 'legacy' && <button disabled={busy} onClick={() => invoke('random')}><Shuffle size={16}/>{ar ? 'عشوائي' : 'Random'}</button>}
+        <label><Volume2 size={16}/><input type="range" min="0" max="100" value={volume} onChange={e => setVolume(Number(e.target.value))} aria-label={ar ? 'مستوى الصوت' : 'Volume'}/>{volume}%</label>
+        <button disabled={busy} onClick={() => invoke('volume')}>{ar ? 'تطبيق الصوت' : 'Set volume'}</button>
+        <button disabled={busy} onClick={() => invoke('show')}><Image size={16}/>{ar ? 'فتح Lively' : 'Open Lively'}</button>
+        <button disabled={busy} onClick={() => void operate(async () => { await refresh(); })} aria-label={ar ? 'تحديث المكتبة' : 'Refresh library'}><RefreshCw size={16}/></button>
+      </div>
+      {data.library.length === 0 && <p className="barq-muted">{ar ? 'مكتبة الخلفيات فاضية. اضغط إضافة خلفية عشان تبدأ.' : 'Your library is empty. Add a wallpaper to get started.'}</p>}
+      <div className="barq-media-grid">
+        {data.library.map(item => <article key={item.id} className="barq-wallpaper-card">
+          <div className="barq-wallpaper-preview">{item.preview_available ? <img src={'/v1/wallpapers/preview/' + encodeURIComponent(item.id)} alt="" loading="lazy" decoding="async"/> : <Image size={30}/>}</div>
+          <div className="barq-wallpaper-detail">
+            <strong dir="auto">{item.title}</strong>
+            <button disabled={busy} onClick={() => invoke('apply', item.id)}>{ar ? 'تطبيق' : 'Apply'}</button>
+          </div>
+        </article>)}
+      </div>
+    </>}
+  </div>;
 }

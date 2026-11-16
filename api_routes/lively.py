@@ -1,4 +1,4 @@
-"""Lively Wallpaper adapter; no copied wallpaper engine and no auto-install.
+"""Lively Wallpaper adapter for the separately installed Lively Wallpaper app.
 
 All actions are from a fixed allowlist. The user must enable BARQ Computer
 Control and explicitly initiate the operation. Lively remains a separate app.
@@ -9,6 +9,8 @@ import json
 import os
 from pathlib import Path
 import subprocess
+import shutil
+import threading
 import sys
 
 from fastapi import APIRouter, HTTPException
@@ -18,6 +20,8 @@ from pydantic import BaseModel, Field
 from core.desktop_capabilities import lively_executable, windows_version
 
 router=APIRouter(prefix="/v1/wallpapers",tags=["wallpapers"])
+_install_lock=threading.Lock()
+_install_job=None
 
 
 def _consent():
@@ -35,6 +39,7 @@ def _library_folder() -> Path | None:
     candidates=(
         Path(root)/"Lively Wallpaper"/"Library"/"wallpapers",
         Path(root)/"Lively Wallpaper"/"Library"/"wallpaper",
+        Path(root)/"Packages"/"12030rocksdanister.LivelyWallpaper_97hta09mmv6hy"/"LocalCache"/"Local"/"Lively Wallpaper"/"Library"/"wallpapers",
     )
     return next((path for path in candidates if path.is_dir()),None)
 
@@ -105,6 +110,38 @@ def _run(args: list[str]) -> dict:
     return {"status":"command_sent","verified":False}
 
 
+def _installer_status() -> str:
+    with _install_lock:
+        if _install_job is None:
+            return "idle"
+        code=_install_job.poll()
+        return "running" if code is None else "finished" if code==0 else "failed"
+
+
+@router.post("/install")
+def install():
+    _consent()
+    if lively_executable():
+        return {"status":"installed"}
+    if windows_version()["family"]!="modern":
+        raise HTTPException(501,"The supported Lively installer requires Windows 10 or 11")
+    winget=shutil.which("winget.exe")
+    if not winget:
+        raise HTTPException(503,"Windows App Installer (winget) is unavailable")
+    global _install_job
+    with _install_lock:
+        if _install_job and _install_job.poll() is None:
+            return {"status":"running"}
+        try:
+            _install_job=subprocess.Popen(
+                [winget,"install","--id","rocksdanister.LivelyWallpaper","--exact","--source","winget","--interactive"],
+                creationflags=getattr(subprocess,"CREATE_NEW_CONSOLE",0),
+            )
+        except OSError as exc:
+            raise HTTPException(503,"Could not launch the Windows installer") from exc
+    return {"status":"running"}
+
+
 class Action(BaseModel):
     action: str=Field(pattern="^(play|pause|stop|show|volume|apply|random)$")
     wallpaper_id: str|None=None
@@ -112,7 +149,7 @@ class Action(BaseModel):
 
 
 @router.get("/status")
-def wallpaper_status():
+def wallpaper_status(metrics: bool=True):
     from core.desktop_capabilities import status
     try:
         import psutil
@@ -121,7 +158,7 @@ def wallpaper_status():
     data=status()
     processes=[]
     try:
-        for process in (psutil.process_iter(["pid","name","memory_info","cpu_times"]) if psutil else []):
+        for process in (psutil.process_iter(["pid","name","memory_info","cpu_times"]) if metrics and psutil else []):
             name=str(process.info.get("name") or "").lower()
             if name in ("lively.exe","livelywpf.exe","livelycefstream.exe","livelympv.exe","livelyvlc.exe"):
                 mem=process.info.get("memory_info")
@@ -131,7 +168,8 @@ def wallpaper_status():
     except (OSError,PermissionError):
         pass
     return {"capabilities":data["windows"],"lively":data["lively"],
-            "library":items(),"processes":processes,
+            "library":items(),"processes":processes,"installer":_installer_status(),
+            "can_install":data["windows"]["family"]=="modern" and bool(shutil.which("winget.exe")),
             "autopause":"Configure fullscreen and battery rules in Lively Settings"}
 
 

@@ -1,7 +1,7 @@
-"""Ephemeral browser-only watch client.
+"""Ephemeral player for shared video and music rooms.
 
-The video File object never travels through the signaling server. Browsers
-must support HTMLMediaElement.captureStream and the selected video codecs.
+Files stay with the host and only captured tracks travel to the guest.
+The browser must support captureStream and the selected media codec.
 """
 PAGE = r"""<!doctype html>
 <html lang="ar" dir="rtl">
@@ -13,7 +13,7 @@ main{max-width:1200px;margin:auto;padding:24px}header{display:flex;align-items:c
 h1{font-size:1.45rem}h1 b{color:#ff6888}.sub{color:#c7b1c3;font-size:.9rem;line-height:1.7}
 .grid{display:grid;grid-template-columns:minmax(0,1.9fr) minmax(270px,.8fr);gap:16px;margin-top:15px}
 .panel{border:1px solid #473342;background:#19151f;border-radius:16px;padding:15px;min-width:0}
-video{width:100%;background:#070509;border-radius:12px;max-height:65vh}
+video,audio{width:100%;background:#070509;border-radius:12px;max-height:65vh}
 button,input,select{border-radius:9px;border:1px solid #5c3848;background:#32212b;color:#fff;padding:8px;font:inherit}
 button{cursor:pointer}button:hover{border-color:#ff6888}button:disabled{opacity:.45;cursor:default}
 .row{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:9px 0}.status{color:#ffd2dc}
@@ -21,19 +21,25 @@ button{cursor:pointer}button:hover{border-color:#ff6888}button:disabled{opacity:
 .msg{padding:6px 0;border-bottom:1px solid #302433;overflow-wrap:anywhere}
 .msg small{color:#c4abb9;margin-inline-end:6px}#chatText{flex:1;min-width:0}
 #emoji{display:flex;gap:8px}.emoji{border-radius:50%}input[type=file]{max-width:100%}
-#localWrap[hidden],#guestWrap[hidden],#joinPanel[hidden]{display:none}
+[hidden]{display:none!important}
+#linkMedia{min-width:min(340px,100%);direction:ltr}.source-options{display:grid;gap:10px;margin-bottom:14px}.source-options label{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
 .player{position:relative;min-width:0}.captions{position:absolute;inset-inline:4%;bottom:9%;text-align:center;pointer-events:none;white-space:pre-line;overflow-wrap:anywhere;unicode-bidi:plaintext;font-size:clamp(1rem,2.4vw,1.65rem);font-weight:750;line-height:1.55;color:#fff;text-shadow:0 2px 6px #000,0 0 4px #000;max-height:32%;overflow:hidden}
 @media(max-width:820px){.grid{grid-template-columns:1fr}#messages{height:260px}}
 </style></head>
-<body><main><header><div><h1>BARQ <b>Watch Together</b></h1><div class="sub">مشاهدة ملف محلي مع شخص واحد · بدون حساب · مكالمة WebRTC مباشرة</div></div><div id="status" class="status">جاري الاتصال...</div></header>
+<body><main><header><div><h1 id="roomTitle">غرفة المشاهدة</h1></div><div id="status" class="status">جاري الاتصال...</div></header>
 <div id="joinPanel" class="panel" hidden><p>ادخل كود الغرفة اللي بعتهولك صاحبها</p><div class="row"><input id="code" maxlength="6" inputmode="numeric" placeholder="Room code"><button id="join">دخول</button></div></div>
 <div class="grid">
 <section class="panel">
- <div id="localWrap" hidden><div class="row"><label>اختار ملف فيديو من جهازك <input id="file" type="file" accept="video/*,.mp4,.webm,.mkv,.mov"></label><label>الجودة <select id="quality"><option value="auto">Auto</option><option value="high">High</option><option value="medium">Medium</option><option value="low">Low</option></select></label><label>ترجمة اختيارية SRT/VTT <input id="subFile" type="file" accept=".srt,.vtt,text/vtt"></label></div><div class="row"><label><input id="guestControls" type="checkbox"> السماح للضيف بطلب الإيقاف والتقديم</label></div></div>
+ <div id="localWrap" hidden>
+  <div class="source-options">
+   <label><span id="fileLabel">فيديو من جهازك</span><input id="file" type="file" accept="video/*,.mp4,.webm,.mov"></label>
+   <form class="row" id="linkForm"><input id="linkMedia" type="url" placeholder="https://…" aria-label="رابط ملف الوسائط" required><button>تشغيل من رابط</button></form>
+  </div>
+  <div class="row"><label id="videoQuality">الجودة <select id="quality"><option value="auto">تلقائي</option><option value="high">عالية</option><option value="medium">متوسطة</option><option value="low">منخفضة</option></select></label><label id="subtitlePicker">ترجمة SRT/VTT <input id="subFile" type="file" accept=".srt,.vtt,text/vtt"></label><label><input id="guestControls" type="checkbox"> السماح للضيف بالتحكم في التشغيل</label></div>
+ </div>
  <div class="player"><video id="video" controls playsinline></video><div id="captions" class="captions" dir="auto" aria-live="off"></div></div>
- <div class="row" id="guestWrap" hidden><button id="resumePlayback">تشغيل الصورة والصوت</button><button id="pauseRequest">اطلب إيقاف مؤقت</button><button id="seekRequest">اطلب تقديم 30 ثانية</button></div>
- <p class="sub" id="mediaNote">الملف بيُفتح في متصفح صاحب الغرفة فقط. سيرفر الغرفة مش بيقرأ أي ملف من الهارد.</p>
- <div class="sub">لو الملف MKV/H.265 أو الصيغة غير مدعومة في المتصفح، استخدم ملف MP4/WebM متوافق. إعادة الترميز المباشر لسه مش متاحة في النسخة دي.</div>
+ <div class="row" id="guestWrap" hidden><button id="resumePlayback">تشغيل الوسائط</button><button id="pauseRequest">اطلب إيقاف مؤقت</button><button id="seekRequest">اطلب تقديم 30 ثانية</button></div>
+ <p class="sub" id="mediaNote" role="status"></p>
 </section>
 <aside class="panel"><h2>الدردشة</h2><div id="messages" aria-live="polite"></div><div class="row"><input id="chatText" maxlength="500" placeholder="اكتب رسالة..." aria-label="Chat message"><button id="send">إرسال</button></div><p class="sub" id="typing"></p><div id="emoji"><button class="emoji" data-emoji="❤️">❤️</button><button class="emoji" data-emoji="🔥">🔥</button><button class="emoji" data-emoji="😂">😂</button><button class="emoji" data-emoji="👏">👏</button></div><p class="sub">الدردشة مؤقتة ومش بتتسجل على الهارد.</p></aside>
 </div></main>
@@ -46,44 +52,57 @@ var token=params.get('token')||'';
 var roomId=location.pathname.split('/').pop();
 var socket=null,peer=null,localStream=null,connected=false,pendingIce=[];
 var video=document.getElementById('video');
+var music=params.get('mode')==='music';
+var blobUrl=null,guestPresent=false,loadVersion=0,rtcQueue=Promise.resolve();
+if(music){
+ var audio=document.createElement('audio');audio.id='video';audio.controls=true;video.replaceWith(audio);video=audio;
+ document.getElementById('roomTitle').textContent='غرفة الموسيقى';
+ document.getElementById('fileLabel').textContent='أغنية من جهازك';
+ document.getElementById('file').accept='audio/*,.mp3,.m4a,.wav,.ogg,.opus,.flac';
+ document.getElementById('videoQuality').hidden=true;
+ document.getElementById('subtitlePicker').hidden=true;
+}
 var captionEl=document.getElementById('captions'),cues=[],lastCaption='';
 var status=document.getElementById('status');
 var host=role==='host';
+var paired=params.get('paired')==='1';
+var nearby=params.get('lan')==='1'||/^http:\/\/(?:10\.|172\.|192\.168\.|100\.)/.test(location.origin);
 document.getElementById('localWrap').hidden=!host;
 document.getElementById('guestWrap').hidden=host;
-document.getElementById('joinPanel').hidden=host;
+document.getElementById('joinPanel').hidden=host||paired;
 if(!host){video.controls=false;status.textContent='ادخل كود الغرفة';}
 function note(text){status.textContent=text;}
 function send(type,value){if(socket&&socket.readyState===WebSocket.OPEN){socket.send(JSON.stringify({type:type,value:value}));}}
-function addMessage(who,text){var box=document.getElementById('messages');var row=document.createElement('div');row.className='msg';var meta=document.createElement('small');meta.textContent=who+' · '+new Date().toLocaleTimeString();var span=document.createElement('span');span.textContent=text;row.append(meta,span);box.appendChild(row);box.scrollTop=box.scrollHeight;}
+function addMessage(who,text){var box=document.getElementById('messages');var row=document.createElement('div');row.className='msg';var meta=document.createElement('small');meta.textContent=who+' · '+new Date().toLocaleTimeString();var span=document.createElement('span');span.textContent=text;row.append(meta,span);box.appendChild(row);if(box.childElementCount>150)box.firstElementChild.remove();box.scrollTop=box.scrollHeight;}
 function connect(code){
  var proto=location.protocol==='https:'?'wss:':'ws:';
- var url=proto+'//'+location.host+'/signal/'+encodeURIComponent(roomId)+'?role='+role+'&token='+encodeURIComponent(token)+'&code='+encodeURIComponent(code||'');
+ var url=paired?proto+'//'+location.host+'/join-signal/'+encodeURIComponent(roomId):proto+'//'+location.host+'/signal/'+encodeURIComponent(roomId)+'?role='+role+'&token='+encodeURIComponent(token)+'&code='+encodeURIComponent(code||'');
  socket=new WebSocket(url);
- socket.onopen=function(){note('متصل بالسيرفر المحلي');connected=true;};
+ socket.onopen=function(){note('الغرفة متصلة');connected=true;};
  socket.onerror=function(){note('فشل اتصال الغرفة');};
- socket.onclose=function(){connected=false;note('الغرفة اتقفلت أو الاتصال اتقطع');if(peer){peer.close();peer=null;}};
+ socket.onclose=function(){connected=false;guestPresent=false;note('اتصال الغرفة اتقطع');if(!host&&!paired)document.getElementById('joinPanel').hidden=false;if(peer){peer.close();peer=null;}};
  socket.onmessage=async function(event){
   var packet;try{packet=JSON.parse(event.data);}catch(e){return;}
-  if(packet.type==='ready'){note(host?'مستني الضيف يدخل':'مستني صاحب الغرفة يشغل الفيديو');}
-  if(packet.type==='peer-joined'){note('الشخص التاني اتصل');if(host&&localStream)await makeOffer();}
-  if(packet.type==='peer-left'){note('الشخص التاني خرج');if(peer){peer.close();peer=null;}}
+  if(packet.type==='ready'){note(host?'مستني الضيف يدخل':'مستني صاحب الغرفة يشغّل ملف');}
+  if(packet.type==='peer-joined'){guestPresent=true;nearby=packet.connection==='lan';note('الشخص التاني اتصل');if(host&&localStream)queueRTC(makeOffer);}
+  if(packet.type==='peer-left'){guestPresent=false;pendingIce=[];note('الشخص التاني خرج');if(peer){peer.close();peer=null;}}
   if(packet.type==='chat'){addMessage(packet.role==='host'?'صاحب الغرفة':'الضيف',packet.text||'');}
   if(packet.type==='typing'){document.getElementById('typing').textContent=packet.text?'الشخص التاني بيكتب...':'';}
   if(packet.type==='reaction'){addMessage('تفاعل',packet.text||'');}
-  if(packet.type==='offer'&&!host){var pc=makePeer();await pc.setRemoteDescription(packet.value);await drainIce();var answer=await pc.createAnswer();await pc.setLocalDescription(answer);send('answer',pc.localDescription);}
-  if(packet.type==='answer'&&host&&peer){await peer.setRemoteDescription(packet.value);await drainIce();}
-  if(packet.type==='ice'){if(peer&&peer.remoteDescription){try{await peer.addIceCandidate(packet.value);}catch(e){}}else pendingIce.push(packet.value);}
+  if(packet.type==='offer'&&!host)queueRTC(async function(){if(peer){peer.close();peer=null;}var pc=makePeer();await pc.setRemoteDescription(packet.value);await drainIce();var answer=await pc.createAnswer();await pc.setLocalDescription(answer);send('answer',pc.localDescription);});
+  if(packet.type==='answer'&&host)queueRTC(async function(){if(peer&&peer.signalingState==='have-local-offer'){await peer.setRemoteDescription(packet.value);await drainIce();}});
+  if(packet.type==='ice')queueRTC(async function(){if(peer&&peer.remoteDescription){try{await peer.addIceCandidate(packet.value);}catch(e){}}else if(pendingIce.length<100)pendingIce.push(packet.value);});
   if(packet.type==='request-pause'&&host){if(document.getElementById('guestControls').checked){video.paused?video.play():video.pause();}else addMessage('تنبيه','الضيف طلب إيقاف أو تشغيل الفيديو.');}
   if(packet.type==='request-seek'&&host){if(document.getElementById('guestControls').checked){video.currentTime=Math.max(0,video.currentTime+30);}else addMessage('تنبيه','الضيف طلب تقديم الفيديو.');}
   if(packet.type==='sync'&&!host){note('المشاهدة متصلة · '+(packet.value&&packet.value.playing?'تشغيل':'متوقف'));}
   if(packet.type==='subtitle'&&!host){captionEl.textContent=String(packet.value||'').slice(0,400);}
  };
 }
+function queueRTC(operation){rtcQueue=rtcQueue.then(operation).catch(function(){note('حصل خطأ في اتصال الوسائط. جرّب إعادة الاتصال بالغرفة.');});}
 async function drainIce(){while(pendingIce.length){try{await peer.addIceCandidate(pendingIce.shift());}catch(e){}}}
 function makePeer(){
  if(peer)return peer;
- peer=new RTCPeerConnection({iceServers:[{urls:'stun:stun.l.google.com:19302'}]});
+ peer=new RTCPeerConnection({iceServers:nearby?[]:[{urls:'stun:stun.l.google.com:19302'}]});
  peer.onicecandidate=function(e){if(e.candidate)send('ice',e.candidate.toJSON());};
  peer.onconnectionstatechange=function(){if(!peer)return;
   if(peer.connectionState==='failed')note('فشل اتصال WebRTC المباشر. جرّب شبكة أخرى أو VPN آمن؛ المشروع لا يحتوي على TURN relay.');
@@ -94,12 +113,12 @@ function makePeer(){
  return peer;
 }
 async function makeOffer(){
- if(!host||!localStream||!connected)return;
+ if(!host||!localStream||!connected||!guestPresent)return;
  if(peer){peer.close();peer=null;}
  var pc=makePeer();
  var quality=document.getElementById('quality').value;
  var maxRate=quality==='high'?4000000:quality==='medium'?1800000:quality==='low'?600000:null;
- if(maxRate){for(var sender of pc.getSenders()){if(sender.track&&sender.track.kind==='video'){var p=sender.getParameters();p.encodings=p.encodings||[{}];p.encodings[0].maxBitrate=maxRate;try{await sender.setParameters(p);}catch(e){}}}}
+ if(maxRate){for(var sender of pc.getSenders()){if(sender.track&&sender.track.kind==='video'){var p=sender.getParameters();if(!p.encodings||!p.encodings.length)continue;p.encodings[0].maxBitrate=maxRate;try{await sender.setParameters(p);}catch(e){}}}}
  var offer=await pc.createOffer();await pc.setLocalDescription(offer);send('offer',pc.localDescription);
 }
 function timeInSeconds(value){
@@ -136,28 +155,53 @@ if(host){
  });
  video.addEventListener('timeupdate',updateSubtitle);
  video.addEventListener('seeked',updateSubtitle);
- document.getElementById('file').addEventListener('change',async function(e){
-  var file=e.target.files&&e.target.files[0];if(!file)return;
-  if(video.srcObject){video.srcObject=null;}
-  video.src=URL.createObjectURL(file);
+ async function loadMedia(source,external){
+  var version=++loadVersion;
+  if(peer){peer.close();peer=null;}
+  if(localStream){localStream.getTracks().forEach(function(track){track.stop();});localStream=null;}
+  if(blobUrl){URL.revokeObjectURL(blobUrl);blobUrl=null;}
+  video.pause();
+  if(external)video.crossOrigin='anonymous';else video.removeAttribute('crossorigin');
+  if(!external)blobUrl=URL.createObjectURL(source);
+  video.src=external?source:blobUrl;
   try{
    await video.play();
+   if(version!==loadVersion)return;
    var capture=video.captureStream||video.mozCaptureStream;
-   if(!capture)throw Error('Browser does not support captureStream');
+   if(!capture)throw Error('المشغّل لا يدعم مشاركة الوسائط');
    localStream=capture.call(video);
-   if(!localStream.getTracks().length)throw Error('Video stream has no tracks');
-   document.getElementById('mediaNote').textContent='الملف موجود عندك محليًا؛ WebRTC هو اللي بيبعته مباشرة للضيف.';
-   if(connected)await makeOffer();
-  }catch(err){note('المتصفح مش قادر يشغّل أو يبث الملف: '+String(err.message||err));}
+   if(!localStream.getTracks().length)throw Error('الملف مفيهوش صوت أو فيديو متوافق');
+   document.getElementById('mediaNote').textContent=external?'المشاركة شغالة من الرابط المباشر.':'الملف بيتشارك مباشرة من جهازك.';
+   queueRTC(makeOffer);
+  }catch(error){if(version===loadVersion)note(external?'الرابط لازم يكون HTTPS مباشر لملف قابل للتشغيل والمشاركة.':'تعذّر تشغيل الملف. جرّب MP4 أو WebM للفيديو، أو MP3 أو WAV للموسيقى.');}
+ }
+ document.getElementById('file').addEventListener('change',function(e){
+  var file=e.target.files&&e.target.files[0];if(file)void loadMedia(file,false);
  });
+ document.getElementById('linkForm').onsubmit=function(event){
+  event.preventDefault();
+  try{
+   var url=new URL(document.getElementById('linkMedia').value);
+   if(url.protocol!=='https:'||url.username||url.password)throw Error();
+   void loadMedia(url.href,true);
+  }catch(error){note('اكتب رابط HTTPS مباشر لملف الوسائط.');}
+ };
+ window.addEventListener('pagehide',function(){if(blobUrl)URL.revokeObjectURL(blobUrl);if(localStream)localStream.getTracks().forEach(function(track){track.stop();});});
  ['play','pause','seeked'].forEach(function(type){video.addEventListener(type,function(){send('sync',{playing:!video.paused,position:video.currentTime});});});
 }else{
  document.getElementById('join').onclick=function(){var code=document.getElementById('code').value.trim();if(!/^[0-9]{6}$/.test(code)){note('الكود لازم يكون 6 أرقام');return;}document.getElementById('joinPanel').hidden=true;connect(code);};
+ var automaticCode=location.hash.slice(1);
+ if(paired){connect('');}
+ else if(/^[0-9]{6}$/.test(automaticCode)){
+  document.getElementById('code').value=automaticCode;
+  document.getElementById('joinPanel').hidden=true;
+  connect(automaticCode);
+ }
  document.getElementById('resumePlayback').onclick=function(){video.muted=false;video.play().catch(function(){note('المتصفح منع التشغيل التلقائي؛ اضغط تشغيل مرة تانية.');});};
  document.getElementById('pauseRequest').onclick=function(){send('request-pause',true);};
  document.getElementById('seekRequest').onclick=function(){send('request-seek',30);};
 }
-function chat(){var input=document.getElementById('chatText'),msg=input.value.trim();if(!msg)return;socket.send(JSON.stringify({type:'chat',text:msg}));addMessage(host?'أنا (المضيف)':'أنا (الضيف)',msg);input.value='';send('typing','');}
+function chat(){var input=document.getElementById('chatText'),msg=input.value.trim();if(!msg||!connected||socket.readyState!==WebSocket.OPEN)return;socket.send(JSON.stringify({type:'chat',text:msg}));addMessage(host?'أنا (المضيف)':'أنا (الضيف)',msg);input.value='';send('typing','');}
 document.getElementById('send').onclick=chat;
 document.getElementById('chatText').onkeydown=function(e){if(e.key==='Enter'){e.preventDefault();chat();}else send('typing','1');};
 document.querySelectorAll('.emoji').forEach(function(btn){btn.onclick=function(){send('reaction',btn.dataset.emoji);addMessage('أنا',btn.dataset.emoji);};});

@@ -53,9 +53,9 @@ jobs:
         run: |
           $out="release"
           $names=@(
-            "BARQ_Setup_2.40.0.exe",
-            "BARQ_Portable_2.40.0.zip",
-            "build-ok-v2.40.0.marker",
+            "BARQ_Setup_2.40.1.exe",
+            "BARQ_Portable_2.40.1.zip",
+            "build-ok-v2.40.1.marker",
             "installed-self-test.json",
             "self-test.json",
             "release-evidence.json"
@@ -67,10 +67,10 @@ jobs:
             }
           }
           $report=Get-Content (Join-Path $out "installed-self-test.json") -Raw | ConvertFrom-Json
-          if ($report.status -ne 'ok' -or $report.version -ne '2.40.0' -or !$report.frozen) {
+          if ($report.status -ne 'ok' -or $report.version -ne '2.40.1' -or !$report.frozen) {
             throw 'Packaged installer failed local Windows self-test'
           }
-          Get-FileHash -Algorithm SHA256 "release/BARQ_Setup_2.40.0.exe","release/BARQ_Portable_2.40.0.zip" |
+          Get-FileHash -Algorithm SHA256 "release/BARQ_Setup_2.40.1.exe","release/BARQ_Portable_2.40.1.zip" |
             Format-Table -AutoSize
 
       - name: Save failed build diagnostics
@@ -92,11 +92,11 @@ jobs:
         if: success()
         uses: actions/upload-artifact@v4
         with:
-          name: BARQ-ONE-2.40.0-WINDOWS-VERIFIED
+          name: BARQ-ONE-2.40.1-WINDOWS-VERIFIED
           path: |
-            release/BARQ_Setup_2.40.0.exe
-            release/BARQ_Portable_2.40.0.zip
-            release/build-ok-v2.40.0.marker
+            release/BARQ_Setup_2.40.1.exe
+            release/BARQ_Portable_2.40.1.zip
+            release/build-ok-v2.40.1.marker
             release/self-test.json
             release/installed-self-test.json
             release/release-evidence.json

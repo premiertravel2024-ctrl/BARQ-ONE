@@ -10,7 +10,7 @@ $release = Join-Path $root 'release'
 New-Item -ItemType Directory -Path $release -Force | Out-Null
 $stamp = Get-Date -Format 'yyyyMMdd-HHmmss'
 $log = Join-Path $release "local-windows-build-$stamp.log"
-$version = '2.40.0'
+$version = '2.40.1'
 $installer = Join-Path $release "BARQ_Setup_$version.exe"
 $portable = Join-Path $release "BARQ_Portable_$version.zip"
 $marker = Join-Path $release "build-ok-v$version.marker"

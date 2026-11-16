@@ -149,3 +149,29 @@ def test_lively_local_file_import_requires_native_user_selection(tmp_path,monkey
     with pytest.raises(Exception):
         lively.pick_local_wallpaper()
     assert len(invoked)==1
+
+
+def test_music_room_and_native_invitation_keep_admin_api_private(monkeypatch):
+    from services import watch_together as watch
+
+    monkeypatch.setattr(watch, "_ensure_server", lambda *args: None)
+    room = watch.create_room(mode="music")
+    try:
+        assert watch.active_room()["mode"] == "music"
+        assert "mode=music" in room["host_url"]
+        with TestClient(watch.app) as client:
+            host_path = room["host_url"].split("/r/", 1)[1]
+            assert client.get("/r/" + host_path, headers={"Host": "192.168.1.30"}).status_code == 403
+
+        guest_url = room["guest_url"].replace("127.0.0.1:0", "192.168.1.30:41234")
+        guest_url = guest_url.replace(f"127.0.0.1:{watch.PORT}", "192.168.1.30:41234")
+        joined = watch.join_invite(guest_url, room["room_code"])
+        assert joined.startswith(f"http://127.0.0.1:{watch.PORT}/guest/")
+        assert "mode=music&paired=1" in joined
+        with pytest.raises(ValueError):
+            watch.join_invite(room["host_url"], room["room_code"])
+        with pytest.raises(ValueError):
+            watch.join_invite(guest_url.replace("192.168.1.30", "8.8.8.8"), room["room_code"])
+    finally:
+        watch.close_room(room["room_id"])
+        watch._guest_invites.clear()

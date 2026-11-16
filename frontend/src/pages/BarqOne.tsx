@@ -1,5 +1,5 @@
 import {useEffect,useState} from 'react';
-import {Thermometer,MemoryStick,HardDrive,Activity,AudioLines,Cpu,Download,LayoutDashboard,LibraryBig,MessageSquare,Radio,Search,Settings2,Star,Terminal,Timer,Workflow,CircleDot,Package,Image,Shield} from 'lucide-react';
+import {Thermometer,MemoryStick,HardDrive,Activity,AudioLines,Cpu,Download,LayoutDashboard,LibraryBig,MessageSquare,Radio,Search,Settings2,Star,Terminal,Timer,Workflow,CircleDot,Package,Image,Shield,Headphones} from 'lucide-react';
 import {requestJSON,type RouterProvider} from '../lib/backend';
 import {useApp} from '../store';
 import {getHandsFreeState} from '../components/chat/HandsFreeVoice';
@@ -23,6 +23,7 @@ export const sections=[
  ['resources','توفير الموارد','Resource Saver',Shield],
  ['wallpapers','الخلفيات الحية','Live Wallpapers',Image],
  ['watch','غرفة المشاهدة','Watch Together',Radio],
+ ['music','غرفة الموسيقى','Music Room',Headphones],
  ['automation','الأتمتة','Automation',Timer],
  ['settings','الإعدادات','Settings',Settings2],
 ] as const;
@@ -336,7 +337,8 @@ export function BarqOne({page,providers,onVoice,onNavigate,onModels,onAssistantS
   {page==='monitor'&&<MonitorPanel full/>}
   {page==='resources'&&<ResourceSaver/>}
   {page==='wallpapers'&&<Wallpapers/>}
-  {page==='watch'&&<WatchTogether/>}
+  {page==='watch'&&<WatchTogether mode="video"/>}
+  {page==='music'&&<WatchTogether mode="music"/>}
   {page==='automation'&&<section className="one-surface"><h2>{ar?'الروتينات والتذكيرات':'Routines and reminders'}</h2>
    <button type="button" onClick={onAssistantSettings}><Settings2 size={17}/>{ar?'إعدادات المساعد الشخصي':'Personal assistant settings'}</button>
   </section>}

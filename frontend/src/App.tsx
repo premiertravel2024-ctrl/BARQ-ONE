@@ -109,7 +109,7 @@ export default function App(){
   if(page==='settings'){setSettingsTab('general');setSettings(false);}
   setOnePage(page);setPlayground(false);
  };
- return <div data-release-marker="v2.40.0-build-gated-ui" className="ops-shell" dir={language==='ar'?'rtl':'ltr'}>
+ return <div data-release-marker="v2.40.1-build-gated-ui" className="ops-shell" dir={language==='ar'?'rtl':'ltr'}>
   <OperationsHeader page={onePage} navigate={navigateOne} search={()=>setPalette(true)} settings={()=>navigateOne('settings')}/>
   <div className={playground?'hidden':'ops-body'} dir="ltr">
    <OperationsRail page={onePage} navigate={navigateOne} newChat={()=>{newChat();navigateOne('chat')}} onDelete={setDeleteId} onPlayground={openPlayground}/>

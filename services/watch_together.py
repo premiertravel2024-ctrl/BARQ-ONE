@@ -1,13 +1,14 @@
 """Isolated, ephemeral one-host/one-guest WebRTC signaling for BARQ Watch Together.
 
 This localhost service never serves files, the BARQ API, or directories.
-The host browser alone reads the chosen video File object, then sends tracks
+The host browser reads the chosen media, then sends audio and video tracks
 directly to the guest using browser WebRTC. No transcoder/relay is implied.
 """
 from __future__ import annotations
 import asyncio
 import atexit
 import json
+import ipaddress
 import re
 import socket
 import shutil
@@ -15,16 +16,19 @@ import subprocess
 import secrets
 import threading
 import time
+from urllib.parse import parse_qs, urlencode, urlsplit, urlunsplit
 from dataclasses import dataclass
-from typing import Any
 
-from fastapi import FastAPI, WebSocket
+from fastapi import FastAPI, Request, WebSocket, WebSocketDisconnect
 from fastapi.responses import HTMLResponse, JSONResponse
 
 PORT=0  # OS-selected loopback port; never expose BARQ's admin API
 app=FastAPI(title="BARQ Watch Room (isolated)",docs_url=None,redoc_url=None,openapi_url=None)
 _lock=threading.RLock()
+_startup_lock=threading.Lock()
+_lan_binding: tuple[str, int] | None = None
 _rooms:dict[str,"Room"]={}
+_guest_invites: dict[str,tuple[str,str,float]] = {}
 _server=None
 _thread=None
 _loop=None
@@ -39,6 +43,9 @@ class Room:
     guest_token:str
     code:str
     created:float
+    mode:str="video"
+    lan:bool=False
+    timer:threading.Timer|None=None
     host:WebSocket|None=None
     guest:WebSocket|None=None
     closed:bool=False
@@ -54,42 +61,90 @@ def _find(room_id:str) -> Room|None:
         return None
 
 
-def create_room() -> dict:
-    _ensure_server()
-    with _lock:
-        if _rooms:
-            raise RuntimeError("Close the existing watch room before starting another")
-        room=Room(id=secrets.token_urlsafe(12),
-                  host_token=secrets.token_urlsafe(32),
-                  guest_token=secrets.token_urlsafe(32),
-                  code=str(secrets.randbelow(900000)+100000),
-                  created=time.monotonic())
-        _rooms[room.id]=room
-    timeout=threading.Timer(7200,close_room,args=(room.id,))
-    timeout.daemon=True
-    timeout.start()
-    base=f"http://127.0.0.1:{PORT}/r/{room.id}"
-    return {"room_id":room.id,
-            "host_url":base+"?role=host&token="+room.host_token,
-            "guest_url":base+"?role=guest&token="+room.guest_token,
-            "room_code":room.code,
-            "public":False,"status":"created",
-            "note":"Guest URL is local until an explicitly approved, isolated tunnel is configured. No external access is active."}
+def _private_ipv4(value: str) -> bool:
+    try:
+        address = ipaddress.IPv4Address(value)
+    except ipaddress.AddressValueError:
+        return False
+    return any(address in network for network in (
+        ipaddress.IPv4Network("192.168.0.0/16"), ipaddress.IPv4Network("10.0.0.0/8"),
+        ipaddress.IPv4Network("172.16.0.0/12"), ipaddress.IPv4Network("100.64.0.0/10"),
+    ))
+
+
+def _lan_address() -> str:
+    # UDP connect selects the local route. No packet is sent.
+    candidates=[]
+    with socket.socket(socket.AF_INET,socket.SOCK_DGRAM) as probe:
+        try:
+            probe.connect(("192.0.2.1",9))
+            address=probe.getsockname()[0]
+            if _private_ipv4(address):
+                candidates.append(address)
+        except OSError:
+            pass
+    try:
+        addresses=socket.gethostbyname_ex(socket.gethostname())[2]
+    except OSError:
+        addresses=[]
+    try:
+        import psutil
+        candidates.extend(entry.address for entries in psutil.net_if_addrs().values()
+                          for entry in entries if entry.family==socket.AF_INET)
+    except (ImportError,OSError):
+        pass
+    for address in dict.fromkeys([*candidates,*addresses]):
+        if not _private_ipv4(address):
+            continue
+        with socket.socket(socket.AF_INET,socket.SOCK_STREAM) as check:
+            try:
+                check.bind((address,0))
+            except OSError:
+                continue
+            return address
+    raise RuntimeError("مفيش عنوان شبكة محلية متاح. اتصل بنفس الشبكة أو استخدم الدعوة المؤقتة عبر الإنترنت.")
+
+
+def _room_details(room: Room) -> dict:
+    local=f"http://127.0.0.1:{PORT}/r/{room.id}"
+    remote=(_public_base if _tunnel_process is not None and _tunnel_process.poll() is None and _public_base else None)
+    nearby=f"http://{_lan_binding[0]}:{_lan_binding[1]}/r/{room.id}" if room.lan and _lan_binding else None
+    return {"room_id":room.id,"mode":room.mode,
+            "host_url":local+"?role=host&token="+room.host_token+"&mode="+room.mode,
+            "guest_url":(remote+"/r/"+room.id if remote else nearby or local)+"?role=guest&token="+room.guest_token+"&mode="+room.mode,
+            "room_code":room.code,"lan":room.lan,"public":bool(remote),"status":"created",
+            "host_connected":room.host is not None,"guest_connected":room.guest is not None}
+
+
+def create_room(*,mode: str="video",lan: bool=False) -> dict:
+    if mode not in ("video","music"):
+        raise ValueError("Unsupported room mode")
+    with _startup_lock:
+        with _lock:
+            if _rooms:
+                raise RuntimeError("Close the existing room before starting another")
+        if lan:
+            _ensure_server(_lan_address())
+        else:
+            _ensure_server()
+        with _lock:
+            room=Room(id=secrets.token_urlsafe(12),
+                      host_token=secrets.token_urlsafe(32),
+                      guest_token=secrets.token_urlsafe(32),
+                      code=str(secrets.randbelow(900000)+100000),
+                      created=time.monotonic(),mode=mode,lan=lan)
+            room.timer=threading.Timer(7200,close_room,args=(room.id,))
+            room.timer.daemon=True
+            _rooms[room.id]=room
+            room.timer.start()
+            return _room_details(room)
 
 
 def active_room() -> dict | None:
     """Local UI-only credentials. Never include these in Gemini tool responses."""
     with _lock:
-        rooms=[room for room in _rooms.values() if not room.closed]
-        if not rooms:
-            return None
-        room=rooms[0]
-        local=f"http://127.0.0.1:{PORT}/r/{room.id}"
-        remote=(_public_base if _tunnel_process is not None and _tunnel_process.poll() is None and _public_base else None)
-        return {"room_id":room.id,
-                "host_url":local+"?role=host&token="+room.host_token,
-                "guest_url":(remote+"/r/"+room.id if remote else local)+"?role=guest&token="+room.guest_token,
-                "room_code":room.code,"public":bool(remote),"status":"created"}
+        room=next((room for room in _rooms.values() if not room.closed),None)
+        return _room_details(room) if room else None
 
 
 def enable_test_tunnel(room_id:str, *, confirmed:bool) -> dict:
@@ -108,8 +163,7 @@ def enable_test_tunnel(room_id:str, *, confirmed:bool) -> dict:
         raise RuntimeError("cloudflared isn't installed; use official free binary")
     with _lock:
         if _tunnel_process and _tunnel_process.poll() is None and _public_base:
-            return {"guest_url":_public_base+"/r/"+room.id+"?role=guest&token="+room.guest_token,
-                    "room_code":room.code,"public":True}
+            return _room_details(room)
     proc=subprocess.Popen(
         [exe,"tunnel","--url",f"http://127.0.0.1:{PORT}"],
         stdout=subprocess.DEVNULL,stderr=subprocess.PIPE,
@@ -138,9 +192,13 @@ def enable_test_tunnel(room_id:str, *, confirmed:bool) -> dict:
         else:
             _tunnel_process=proc
             _public_base=url_holder[0]
-        return {"guest_url":_public_base+"/r/"+room.id+"?role=guest&token="+room.guest_token,
-                "room_code":room.code,"public":True,
-                "note":"Temporary Quick Tunnel for testing only. One guest, code required. Close the room to stop public access."}
+        if _rooms.get(room.id) is not room or room.closed:
+            if _tunnel_process is proc:
+                proc.terminate()
+                _tunnel_process=None
+                _public_base=None
+            raise RuntimeError("Room closed while opening the tunnel")
+        return _room_details(room)
 
 
 def close_room(room_id:str) -> bool:
@@ -149,11 +207,15 @@ def close_room(room_id:str) -> bool:
         if not room:
             return False
         room.closed=True
+        if room.timer:
+            room.timer.cancel()
     global _tunnel_process,_public_base
-    if not _rooms and _tunnel_process and _tunnel_process.poll() is None:
-        _tunnel_process.terminate()
-        _tunnel_process=None
-        _public_base=None
+    with _lock:
+        if not _rooms:
+            if _tunnel_process and _tunnel_process.poll() is None:
+                _tunnel_process.terminate()
+            _tunnel_process=None
+            _public_base=None
     if _loop:
         for ws in (room.guest,room.host):
             if ws:
@@ -166,6 +228,7 @@ def close_room(room_id:str) -> bool:
 
 def close_all():
     with _lock:
+        _guest_invites.clear()
         ids=list(_rooms)
     for room_id in ids:
         close_room(room_id)
@@ -186,19 +249,34 @@ def status() -> list[dict]:
                 for r in _rooms.values() if not r.closed]
 
 
-def _ensure_server():
-    global _thread,_server,_loop,PORT
-    if _thread and _thread.is_alive() and _server and _server.started:
-        return
+def _ensure_server(lan_ip: str | None=None):
+    global _thread,_server,_loop,PORT,_lan_binding
+    if _thread and _thread.is_alive():
+        current_address = _lan_binding[0] if _lan_binding else None
+        if _server and _server.started and current_address==lan_ip:
+            return
+        if _server:
+            _server.should_exit=True
+        _thread.join(timeout=4)
+        if _thread.is_alive():
+            raise RuntimeError("The previous room is still shutting down. Retry shortly.")
     import uvicorn
-    sock=socket.socket(socket.AF_INET,socket.SOCK_STREAM)
+    addresses = ["127.0.0.1",lan_ip] if lan_ip else ["127.0.0.1"]
+    sockets=[]
+    _lan_binding=None
     try:
-        sock.bind(("127.0.0.1",0))
-        sock.listen(64)
-    except OSError:
-        sock.close()
-        raise RuntimeError("Could not reserve an isolated watch-room loopback port")
-    PORT=sock.getsockname()[1]
+        for address in addresses:
+            sock=socket.socket(socket.AF_INET,socket.SOCK_STREAM)
+            sockets.append(sock)
+            sock.bind((address,0))
+            sock.listen(64)
+    except OSError as exc:
+        for sock in sockets:
+            sock.close()
+        raise RuntimeError("Could not reserve the room ports. Check the local network.") from exc
+    PORT=sockets[0].getsockname()[1]
+    if lan_ip:
+        _lan_binding=(lan_ip,sockets[1].getsockname()[1])
     done=threading.Event()
     failure=[]
     def serve():
@@ -210,13 +288,14 @@ def _ensure_server():
                                   log_level="error",lifespan="off")
             _server=uvicorn.Server(config)
             done.set()
-            _loop.run_until_complete(_server.serve(sockets=[sock]))
+            _loop.run_until_complete(_server.serve(sockets=sockets))
         except Exception as exc:
             failure.append(str(exc)[:130])
             done.set()
         finally:
             try:
-                sock.close()
+                for sock in sockets:
+                    sock.close()
                 _loop.close()
             except Exception:
                 pass
@@ -233,18 +312,123 @@ def _ensure_server():
 
 
 @app.get("/r/{room_id}")
-def room_page(room_id:str,role:str="",token:str=""):
+def room_page(request: Request,room_id:str,role:str="",token:str=""):
     room=_find(room_id)
     if not room or role not in ("host","guest"):
         return JSONResponse({"error":"Room unavailable"},status_code=404)
+    if role=="host" and not _local_host(request):
+        return JSONResponse({"error":"Host page is local only"},status_code=403)
     right=room.host_token if role=="host" else room.guest_token
-    if not token or not secrets.compare_digest(token,right):
+    if not token or not secrets.compare_digest(token.encode(),right.encode()):
         return JSONResponse({"error":"Invalid room token"},status_code=403)
     from services.watch_web import PAGE
-    return HTMLResponse(PAGE,headers={"Cache-Control":"no-store","Referrer-Policy":"no-referrer",
-                                     "Content-Security-Policy":("default-src 'self'; img-src 'self' data: blob:; "
-                                       "media-src blob:; connect-src 'self' ws: wss:; "
-                                       "style-src 'unsafe-inline'; script-src 'unsafe-inline'")})
+    return HTMLResponse(PAGE,headers=_page_headers())
+
+
+def _page_headers():
+    return {"Cache-Control":"no-store","Referrer-Policy":"no-referrer",
+            "Content-Security-Policy":("default-src 'self'; img-src 'self' data: blob:; "
+              "media-src blob: https:; connect-src 'self' ws: wss:; "
+              "style-src 'unsafe-inline'; script-src 'unsafe-inline'")}
+
+
+def join_invite(guest_url: str, code: str) -> str:
+    try:
+        url=urlsplit(guest_url)
+        port=url.port
+    except ValueError as exc:
+        raise ValueError("كود دعوة الغرفة غير صالح") from exc
+    authority=url.hostname or ""
+    local_network=url.scheme=="http" and _private_ipv4(authority) and port is not None and port>=1024
+    internet=(url.scheme=="https" and port in (None,443)
+              and re.fullmatch(r"[a-z0-9-]+[.]trycloudflare[.]com",authority))
+    params=parse_qs(url.query)
+    token=params.get("token",[""])[0]
+    mode=params.get("mode",["video"])[0]
+    name=re.fullmatch(r"/r/([A-Za-z0-9_-]{16})",url.path)
+    if (not (local_network or internet) or url.username or url.password or url.fragment
+            or not name or params.get("role")!=["guest"]
+            or not re.fullmatch(r"[A-Za-z0-9_-]{43}",token)
+            or not re.fullmatch(r"[0-9]{6}",code) or mode not in ("video","music")):
+        raise ValueError("كود دعوة الغرفة غير صالح")
+    scheme="ws" if local_network else "wss"
+    query=urlencode({"role":"guest","token":token,"code":code})
+    signal_url=urlunsplit((scheme,url.netloc,"/signal/"+name[1],query,""))
+    with _startup_lock:
+        if not (_thread and _thread.is_alive() and _server and _server.started):
+            _ensure_server()
+        with _lock:
+            key=secrets.token_urlsafe(24)
+            _guest_invites.clear()
+            _guest_invites[key]=(signal_url,mode,time.monotonic()+7200)
+    return f"http://127.0.0.1:{PORT}/guest/{key}?role=guest&mode={mode}&paired=1"
+
+
+def _guest_invitation(key: str):
+    with _lock:
+        invite=_guest_invites.get(key)
+        return invite if invite and invite[2]>time.monotonic() else None
+
+
+@app.get("/guest/{key}")
+def local_guest_page(request: Request,key: str):
+    if not _local_host(request) or not _guest_invitation(key):
+        return JSONResponse({"error":"Invalid local invitation"},status_code=404)
+    from services.watch_web import PAGE
+    return HTMLResponse(PAGE,headers=_page_headers())
+
+
+@app.websocket("/join-signal/{key}")
+async def join_signal(ws: WebSocket,key: str):
+    from websockets.asyncio.client import connect
+    from websockets.exceptions import WebSocketException
+
+    class DirectConnection(connect):
+        def process_redirect(self, exc):
+            # The validated invite must remain the sole outbound destination.
+            return exc
+
+    invite=_guest_invitation(key)
+    if not invite or not _local_host(ws):
+        await ws.close(code=1008)
+        return
+    await ws.accept()
+    try:
+        async with DirectConnection(invite[0],open_timeout=8,close_timeout=2,max_size=65536,proxy=None) as remote:
+            async def upstream():
+                while True:
+                    message=await ws.receive_text()
+                    if len(message)>65536:
+                        return
+                    await remote.send(message)
+
+            async def downstream():
+                async for message in remote:
+                    if isinstance(message,str):
+                        await ws.send_text(message)
+
+            tasks={asyncio.create_task(upstream()),asyncio.create_task(downstream())}
+            try:
+                done,_=await asyncio.wait(tasks,return_when=asyncio.FIRST_COMPLETED)
+                for task in done:
+                    task.result()
+            finally:
+                for task in tasks:
+                    task.cancel()
+                await asyncio.gather(*tasks,return_exceptions=True)
+    except (OSError,TimeoutError,RuntimeError,WebSocketException,WebSocketDisconnect):
+        pass
+    finally:
+        try:
+            await ws.close()
+        except (RuntimeError,WebSocketDisconnect):
+            pass
+
+
+def _local_host(connection) -> bool:
+    host=connection.headers.get("host","").split(":",1)[0]
+    peer=connection.client.host if connection.client else ""
+    return host in ("127.0.0.1","localhost","testserver") and peer in ("127.0.0.1","::1","testclient")
 
 
 @app.websocket("/signal/{room_id}")
@@ -256,7 +440,7 @@ async def signal(ws:WebSocket,room_id:str):
     if not room or role not in ("host","guest"):
         await ws.close(code=1008);return
     expected=room.host_token if role=="host" else room.guest_token
-    if not secrets.compare_digest(token,expected):
+    if (role=="host" and not _local_host(ws)) or not secrets.compare_digest(token.encode(),expected.encode()):
         await ws.close(code=1008);return
     if role=="guest":
         with _lock:
@@ -266,7 +450,7 @@ async def signal(ws:WebSocket,room_id:str):
             else:
                 if now>=room.locked_until and room.failed_auths>=6:
                     room.failed_auths=0
-                allowed=secrets.compare_digest(code,room.code)
+                allowed=secrets.compare_digest(code.encode(),room.code.encode())
                 if allowed:
                     room.failed_auths=0
                 else:
@@ -277,18 +461,24 @@ async def signal(ws:WebSocket,room_id:str):
             await ws.close(code=1008)
             return
     with _lock:
-        if room.closed or (room.host if role=="host" else room.guest) is not None:
-            await ws.close(code=1008);return
-        if role=="host": room.host=ws
-        else: room.guest=ws
-    await ws.accept()
+        occupied=room.closed or (room.host if role=="host" else room.guest) is not None
+        if not occupied:
+            if role=="host": room.host=ws
+            else: room.guest=ws
+    if occupied:
+        await ws.close(code=1008)
+        return
     last=0.;count=0
     try:
+        await ws.accept()
         await ws.send_json({"type":"ready","role":role})
         other=room.guest if role=="host" else room.host
         if other:
-            await other.send_json({"type":"peer-joined","role":role})
-            await ws.send_json({"type":"peer-joined","role":"guest" if role=="host" else "host"})
+            guest=ws if role=="guest" else other
+            host_header=guest.headers.get("host","").split(":",1)[0]
+            connection="lan" if _private_ipv4(host_header) else "internet"
+            await other.send_json({"type":"peer-joined","role":role,"connection":connection})
+            await ws.send_json({"type":"peer-joined","role":"guest" if role=="host" else "host","connection":connection})
         allowed_host={"offer","ice","chat","typing","reaction","sync","settings","subtitle"}
         allowed_guest={"answer","ice","chat","typing","reaction","request-pause","request-seek"}
         while not room.closed:
@@ -334,8 +524,6 @@ async def signal(ws:WebSocket,room_id:str):
         if other and not room.closed:
             try:await other.send_json({"type":"peer-left","role":role})
             except Exception:pass
-        if role=="host":
-            close_room(room_id)
 
 
 atexit.register(close_all)

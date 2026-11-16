@@ -1,6 +1,7 @@
 """BARQ Watch Together controller; media remains in the selected browser File."""
 from __future__ import annotations
 import sys
+from typing import Literal
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, Field
 
@@ -13,6 +14,28 @@ def _consent():
         raise HTTPException(501,"Windows desktop session required")
     if not load_policy().enabled:
         raise HTTPException(403,"Enable Computer Control in Settings first")
+
+
+class Start(BaseModel):
+    mode: Literal["video","music"]="video"
+    lan: bool=False
+
+
+class Join(BaseModel):
+    guest_url: str=Field(max_length=600)
+    code: str=Field(pattern=r"^[0-9]{6}$")
+
+
+@router.post("/join")
+def join(request:Join):
+    _consent()
+    from services.watch_together import join_invite
+    try:
+        return {"url":join_invite(request.guest_url,request.code)}
+    except ValueError as exc:
+        raise HTTPException(400,str(exc)) from exc
+    except RuntimeError as exc:
+        raise HTTPException(503,str(exc)) from exc
 
 
 class Close(BaseModel):
@@ -38,11 +61,11 @@ def active():
 
 
 @router.post("/start")
-def create():
+def create(request: Start=Start()):
     _consent()
     from services.watch_together import create_room
     try:
-        return create_room()
+        return create_room(mode=request.mode,lan=request.lan)
     except RuntimeError as exc:
         raise HTTPException(503,str(exc)) from exc
 
