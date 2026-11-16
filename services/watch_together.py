@@ -9,6 +9,13 @@ import asyncio
 import atexit
 import json
 import ipaddress
+import hashlib
+import os
+import sys
+import tempfile
+from pathlib import Path
+from urllib.error import URLError
+from urllib.request import urlopen
 import re
 import socket
 import shutil
@@ -26,6 +33,7 @@ PORT=0  # OS-selected loopback port; never expose BARQ's admin API
 app=FastAPI(title="BARQ Watch Room (isolated)",docs_url=None,redoc_url=None,openapi_url=None)
 _lock=threading.RLock()
 _startup_lock=threading.Lock()
+_tunnel_setup_lock=threading.Lock()
 _lan_binding: tuple[str, int] | None = None
 _rooms:dict[str,"Room"]={}
 _guest_invites: dict[str,tuple[str,str,float]] = {}
@@ -147,6 +155,70 @@ def active_room() -> dict | None:
         return _room_details(room) if room else None
 
 
+_CLOUDFLARED_VERSION="2026.11.0"
+_CLOUDFLARED_SHA256="d5c1d82031da6253dcdcff64c944cd0fe063016edeb2e4fd088075fc9bd52d0a"
+
+
+def _tunnel_binary() -> str:
+    if sys.platform!="win32":
+        executable=shutil.which("cloudflared")
+        if executable:
+            return executable
+        raise RuntimeError("cloudflared is unavailable on this system")
+
+    from core.paths import data_dir
+    folder=data_dir()/"tools"/"cloudflared"/_CLOUDFLARED_VERSION
+    executable=folder/"cloudflared.exe"
+
+    def verified(path: Path) -> bool:
+        try:
+            with path.open("rb") as body:
+                return hashlib.file_digest(body,"sha256").hexdigest()==_CLOUDFLARED_SHA256
+        except OSError:
+            return False
+
+    with _tunnel_setup_lock:
+        if verified(executable):
+            return str(executable)
+        temporary=None
+        try:
+            folder.mkdir(parents=True,exist_ok=True)
+            url=("https://github.com/cloudflare/cloudflared/releases/download/"
+                 +_CLOUDFLARED_VERSION+"/cloudflared-windows-amd64.exe")
+            with tempfile.NamedTemporaryFile(dir=folder,suffix=".download",delete=False) as out:
+                temporary=Path(out.name)
+                deadline=time.monotonic()+75
+                count=0
+                with urlopen(url,timeout=12) as source:
+                    while chunk:=source.read(256*1024):
+                        count+=len(chunk)
+                        if count>80*1024*1024 or time.monotonic()>deadline:
+                            raise RuntimeError("Cloudflare download exceeded its limit")
+                        out.write(chunk)
+            if not verified(temporary):
+                raise RuntimeError("Cloudflare checksum verification failed")
+            os.replace(temporary,executable)
+            return str(executable)
+        except (OSError,URLError,RuntimeError) as exc:
+            raise RuntimeError("تعذّر تجهيز رابط الإنترنت. اتأكد من الاتصال وجرب تاني.") from exc
+        finally:
+            if temporary:
+                temporary.unlink(missing_ok=True)
+
+
+def _reachable_guest_page(base: str,room: Room,process) -> bool:
+    url=base+"/r/"+room.id+"?role=guest&token="+room.guest_token+"&mode="+room.mode
+    deadline=time.monotonic()+20
+    while time.monotonic()<deadline and process.poll() is None and not room.closed:
+        try:
+            with urlopen(url,timeout=4) as response:
+                if response.status==200:
+                    return True
+        except (OSError,URLError):
+            time.sleep(1)
+    return False
+
+
 def enable_test_tunnel(room_id:str, *, confirmed:bool) -> dict:
     """Opt-in, temporary Cloudflare Quick Tunnel (testing only, not production).
 
@@ -158,14 +230,14 @@ def enable_test_tunnel(room_id:str, *, confirmed:bool) -> dict:
     room=_find(room_id)
     if room is None:
         raise ValueError("Room is closed")
-    exe=shutil.which("cloudflared")
-    if not exe:
-        raise RuntimeError("cloudflared isn't installed; use official free binary")
     with _lock:
         if _tunnel_process and _tunnel_process.poll() is None and _public_base:
             return _room_details(room)
+    exe=_tunnel_binary()
+    if _find(room_id) is not room:
+        raise RuntimeError("Room closed while setting up the internet invite")
     proc=subprocess.Popen(
-        [exe,"tunnel","--url",f"http://127.0.0.1:{PORT}"],
+        [exe,"tunnel","--no-autoupdate","--url",f"http://127.0.0.1:{PORT}"],
         stdout=subprocess.DEVNULL,stderr=subprocess.PIPE,
         creationflags=getattr(subprocess,"CREATE_NO_WINDOW",0),
     )
@@ -182,10 +254,11 @@ def enable_test_tunnel(room_id:str, *, confirmed:bool) -> dict:
                 ready.set()
         ready.set()
     threading.Thread(target=drain,daemon=True,name="BARQ-QuickTunnel-Logs").start()
-    ready.wait(timeout=12)
-    if not url_holder or proc.poll() is not None:
-        proc.terminate()
-        raise RuntimeError("Quick Tunnel wasn't established; it may be unavailable on this network")
+    ready.wait(timeout=25)
+    if not url_holder or not _reachable_guest_page(url_holder[0],room,proc):
+        if proc.poll() is None:
+            proc.terminate()
+        raise RuntimeError("تعذّر فتح رابط الغرفة من الإنترنت. جرّب تاني أو استخدم نفس الشبكة.")
     with _lock:
         if _tunnel_process and _tunnel_process.poll() is None:
             proc.terminate()

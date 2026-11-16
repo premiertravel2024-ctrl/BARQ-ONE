@@ -78,8 +78,11 @@ export function WatchTogether({mode = 'video'}: {mode?: Mode}) {
   }
 
   function start(lan: boolean) {
+    if (!lan && !confirmInternetInvite()) return;
     void operate(async () => {
-      setRoom(await requestJSON<Room>('/v1/watchrooms/start', post({mode, lan})));
+      const created = await requestJSON<Room>('/v1/watchrooms/start', post({mode, lan}));
+      setRoom(created);
+      if (!lan) setRoom(await publishRoom(created));
     });
   }
 
@@ -94,10 +97,20 @@ export function WatchTogether({mode = 'video'}: {mode?: Mode}) {
     });
   }
 
+  function confirmInternetInvite() {
+    return window.confirm(ar
+      ? 'برق هيجهّز رابط مؤقت للغرفة على الإنترنت عبر Cloudflare. أي حد معاه الدعوة يقدر يطلب الدخول. تكمّل؟'
+      : 'BARQ will use Cloudflare to create a temporary room link. Anyone with the invite can try to join. Continue?');
+  }
+
+  function publishRoom(active: Room) {
+    return requestJSON<Room>('/v1/watchrooms/publish', post({room_id: active.room_id, confirmed: true}));
+  }
+
   function publish() {
-    if (!current || !window.confirm(ar ? 'فتح دعوة مؤقتة عبر الإنترنت للغرفة دي؟' : 'Enable a temporary internet invitation for this room?')) return;
+    if (!current || !confirmInternetInvite()) return;
     void operate(async () => {
-      setRoom(await requestJSON<Room>('/v1/watchrooms/publish', post({room_id: current.room_id, confirmed: true})));
+      setRoom(await publishRoom(current));
       setCopied(false);
     });
   }
@@ -137,7 +150,7 @@ export function WatchTogether({mode = 'video'}: {mode?: Mode}) {
     {current && !guest && <>
       <section className="barq-media-toolbar">
         <span className="barq-chip">{current.guest_connected ? (ar ? 'صاحبك متصل' : 'Guest connected') : (ar ? 'مستني صاحبك' : 'Waiting for a guest')}</span>
-        {!current.lan && !current.public && <button disabled={busy} onClick={publish}><Radio size={16}/>{ar ? 'فعّل الدعوة المؤقتة' : 'Enable temporary internet invite'}</button>}
+        {!current.public && <button disabled={busy} onClick={publish}><Radio size={16}/>{busy ? (ar ? 'بنجهّز رابط الإنترنت…' : 'Preparing the internet invite…') : (ar ? 'إنشاء رابط للإنترنت' : 'Create an internet link')}</button>}
         <button disabled={busy} onClick={() => void operate(async () => {
           await requestJSON('/v1/watchrooms/close', post({room_id: current.room_id}));
           setRoom(null); setCopied(false);

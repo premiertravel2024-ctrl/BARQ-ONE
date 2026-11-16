@@ -175,3 +175,30 @@ def test_music_room_and_native_invitation_keep_admin_api_private(monkeypatch):
     finally:
         watch.close_room(room["room_id"])
         watch._guest_invites.clear()
+
+
+def test_windows_internet_tunnel_download_is_verified_before_use(monkeypatch, tmp_path):
+    import hashlib
+    import io
+    from core import paths
+    from services import watch_together as watch
+
+    official = b"testing cloudflared bytes"
+    calls = []
+    monkeypatch.setattr(watch.sys, "platform", "win32")
+    monkeypatch.setattr(paths, "data_dir", lambda: tmp_path)
+    monkeypatch.setattr(watch, "_CLOUDFLARED_SHA256", hashlib.sha256(official).hexdigest())
+
+    def download(url, timeout):
+        calls.append(url)
+        return io.BytesIO(b"invalid download" if len(calls) == 1 else official)
+
+    monkeypatch.setattr(watch, "urlopen", download)
+    with pytest.raises(RuntimeError, match="رابط الإنترنت"):
+        watch._tunnel_binary()
+    executable = watch._tunnel_binary()
+    from pathlib import Path
+    assert Path(executable).read_bytes() == official
+    assert watch._tunnel_binary() == executable
+    assert len(calls) == 2
+    assert all(url.startswith("https://github.com/cloudflare/cloudflared/releases/download/") for url in calls)
