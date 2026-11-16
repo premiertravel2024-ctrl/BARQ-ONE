@@ -18,26 +18,26 @@ def test_room_creation_invite_validation():
     _rooms.pop(created['code'])
 
 
-def test_room_socket_accepts_desktop_port_and_checks_origin():
+def test_desktop_room_connects_on_its_dynamic_port_and_checks_origin():
     app = FastAPI()
     app.include_router(router)
-    origin = 'http://127.0.0.1:53821'
+    origin = 'http://127.0.0.1:49152'
     with TestClient(app, base_url=origin) as client:
-        created = client.post('/v1/listening/rooms').json()
-        code = created['code']
-        socket_url = f'ws://127.0.0.1:53821/v1/listening/rooms/{code}/ws?secret={created["secret"]}'
+        response = client.post('/v1/listening/rooms')
+        assert response.status_code == 200
+        room = response.json()
+        socket_url = f"ws://127.0.0.1:49152/v1/listening/rooms/{room['code']}/ws?secret={room['secret']}"
         try:
-            with pytest.raises(WebSocketDisconnect) as error:
-                with client.websocket_connect(socket_url, headers={'Origin': 'http://127.0.0.1:8000'}):
-                    pass
-            assert error.value.code == 1008
-
-            with client.websocket_connect(socket_url, headers={'Origin': origin}) as host:
+            with pytest.raises(WebSocketDisconnect) as exc:
+                with client.websocket_connect(socket_url, headers={'origin': 'http://127.0.0.1:49153'}):
+                    pytest.fail('a different local origin was accepted')
+            assert exc.value.code == 1008
+            with client.websocket_connect(socket_url, headers={'origin': origin}) as host:
                 assert host.receive_json()['participants'] == 1
-                with client.websocket_connect(socket_url, headers={'Origin': origin}) as guest:
+                with client.websocket_connect(socket_url, headers={'origin': origin}) as guest:
                     assert host.receive_json()['participants'] == 2
                     assert guest.receive_json()['participants'] == 2
-                    host.send_json({'type': 'chat', 'text': 'أهلاً'})
-                    assert guest.receive_json()['text'] == 'أهلاً'
+                    host.send_json({'type': 'playback', 'track': 'https://example.com/music.mp3', 'position': 12})
+                    assert guest.receive_json()['position'] == 12
         finally:
-            _rooms.pop(code, None)
+            _rooms.pop(room['code'], None)

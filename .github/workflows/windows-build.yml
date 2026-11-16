@@ -163,6 +163,7 @@ jobs:
           if-no-files-found: warn
           retention-days: 30
       - name: Upload installer, portable app, and evidence
+        id: upload-windows
         uses: actions/upload-artifact@v4
         with:
           name: BARQ-v2.37.2-verified-Windows-x64
@@ -176,3 +177,32 @@ jobs:
             release/UI_BUILD_MODE.txt
           if-no-files-found: error
           retention-days: 30
+      - name: Download the published Windows artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: BARQ-v2.37.2-verified-Windows-x64
+          path: ${{ runner.temp }}/barq-published-artifact
+      - name: Verify the installer in the published artifact
+        shell: pwsh
+        env:
+          ARTIFACT_URL: ${{ steps.upload-windows.outputs.artifact-url }}
+        run: |
+          $folder = Join-Path $env:RUNNER_TEMP 'barq-published-artifact'
+          $filename = 'BARQ_Setup_2.37.2.exe'
+          $installer = Get-Item -LiteralPath (Join-Path $folder $filename)
+          $evidence = Get-Content -LiteralPath (Join-Path $folder 'release-evidence.json') -Raw | ConvertFrom-Json
+          $hash = (Get-FileHash -LiteralPath $installer.FullName -Algorithm SHA256).Hash.ToLowerInvariant()
+          if ($hash -ne $evidence.sha256.PSObject.Properties["release/$filename"].Value) {
+            throw 'The downloaded installer SHA-256 differs from the release evidence'
+          }
+          $reader = [System.IO.BinaryReader]::new($installer.OpenRead())
+          try {
+            if ($reader.ReadUInt16() -ne 0x5a4d) { throw 'Installer has no DOS header' }
+            $reader.BaseStream.Position = 0x3c
+            $reader.BaseStream.Position = $reader.ReadUInt32()
+            if ($reader.ReadUInt32() -ne 0x00004550) { throw 'Installer has no Windows PE signature' }
+          } finally {
+            $reader.Dispose()
+          }
+          "Verified published installer: $filename ($($installer.Length) bytes), SHA-256 $hash"
+          "Installer artifact: $env:ARTIFACT_URL"

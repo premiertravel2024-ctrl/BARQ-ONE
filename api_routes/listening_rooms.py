@@ -49,7 +49,7 @@ def _prune():
 
 def _lookup(code: str, secret: str) -> Room:
     room = _rooms.get(code.upper())
-    if not room or not secrets.compare_digest(room.secret.encode(), secret.encode()):
+    if not room or not secrets.compare_digest(room.secret, secret):
         raise HTTPException(404, 'الغرفة غير موجودة أو رابط الدعوة غير صحيح')
     return room
 
@@ -91,22 +91,26 @@ async def _broadcast(room: Room, message: dict):
 async def room_socket(ws: WebSocket, code: str):
     # WebSocket requests bypass HTTP middleware: validate the same local-only
     # boundary explicitly. Never accept arbitrary browser origins.
-    authority = ws.headers.get('host', '').lower()
+    host = ws.headers.get('host', '').lower()
     origin = ws.headers.get('origin', '')
     peer = ws.client.host if ws.client else ''
     try:
-        host = urlsplit(f'http://{authority}').hostname
-        parsed = urlsplit(origin) if origin else None
-        origin_allowed = parsed is None or (
-            parsed.scheme in ('http', 'https') and parsed.netloc.lower() == authority
-        )
+        hostname = urlsplit(f'//{host}').hostname
     except ValueError:
-        host, origin_allowed = None, False
-    if (host not in ('127.0.0.1', 'localhost', '::1', 'testserver')
-            or peer not in ('127.0.0.1', '::1', 'testclient')
-            or not origin_allowed):
+        hostname = None
+    if hostname not in ('127.0.0.1', 'localhost', '::1', 'testserver') or peer not in ('127.0.0.1', '::1', 'testclient'):
         await ws.close(code=1008)
         return
+    if origin:
+        try:
+            parsed = urlsplit(origin)
+        except ValueError:
+            await ws.close(code=1008)
+            return
+        expected_scheme = 'https' if ws.url.scheme == 'wss' else 'http'
+        if parsed.scheme != expected_scheme or parsed.netloc.lower() != host:
+            await ws.close(code=1008)
+            return
     try:
         room = _lookup(code, ws.query_params.get('secret', ''))
     except HTTPException:
@@ -116,13 +120,10 @@ async def room_socket(ws: WebSocket, code: str):
         await ws.close(code=1008)
         return
     client_id = secrets.token_hex(8)
-    await ws.accept()
-    if len(room.sockets) >= 2:
-        await ws.close(code=1008)
-        return
     room.sockets[client_id] = ws
-    await _broadcast(room, _snapshot(room))
     try:
+        await ws.accept()
+        await _broadcast(room, _snapshot(room))
         while True:
             msg = await ws.receive_json()
             if not isinstance(msg, dict):
