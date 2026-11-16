@@ -1,0 +1,6 @@
+# BARQ native wallpaper player
+BARQ ONE now includes an original WebView2/Win32 wallpaper child process; **no third-party Lively installation** is requested by the Windows 10/11 UI. Desktop embeds the child under Explorer WorkerW and supplies local MP4/WebM/GIF via a tokenized loopback streaming server (HTTP Range supported). Only files selected in Windows native picker appear in the manifest, and they are never uploaded. Control remains behind the existing BARQ Computer Control permission. On older systems a legacy adapter remains possible via BARQ_WALLPAPER_LEGACY=1.
+
+The approach is informed by open-source Lively Wallpaper's use of separate wallpaper rendering processes and desktop shell hosting, but this implementation does not copy Lively GPL-3.0 source. Credit: https://github.com/rocksdanister/lively. Copying/bundling actual modern Lively code would require complying with its GPL-3.0 distribution and corresponding-source requirements.
+
+Scope: primary Windows display, WebView2-supported codecs, no guaranteed WebM/MOV transcoding, no validated Windows 8.1 support. Windows 10/11 and a physical dual-monitor smoke test are still required. On an unrecognized Explorer desktop WorkerW, engine refuses to overlay icons instead of drawing an unsafe window.

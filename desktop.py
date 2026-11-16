@@ -323,6 +323,9 @@ def apply_explicit_install_computer_consent() -> int:
         return 1
 
 def main() -> int:
+    if len(sys.argv) == 4 and sys.argv[1] == '--barq-wallpaper-engine':
+        from services.native_wallpaper import engine_main
+        return engine_main(sys.argv[2], sys.argv[3])
     # Separate lightweight watchdog in the same frozen BARQ.exe. It never
     # launches the desktop UI, model engine, voice session, or local API.
     if len(sys.argv)==5 and sys.argv[1]=='--resource-saver-guardian':

@@ -1,8 +1,4 @@
-"""Lively Wallpaper adapter for the separately installed Lively Wallpaper app.
-
-All actions are from a fixed allowlist. The user must enable BARQ Computer
-Control and explicitly initiate the operation. Lively remains a separate app.
-"""
+"""BARQ built-in desktop wallpaper controller; legacy Lively CLI retained only as fallback."""
 from __future__ import annotations
 
 import json
@@ -32,6 +28,26 @@ def _consent():
         raise HTTPException(403,"Enable Computer Control first")
 
 
+def _native_enabled():
+    return sys.platform == "win32" and windows_version()["family"] == "modern" and os.environ.get("BARQ_WALLPAPER_LEGACY") != "1"
+
+
+def _native_command(args):
+    from services import native_wallpaper as native
+    if args[:2] == ["setwp", "--file"] and len(args) == 3:
+        return native.control("random") if args[2] == "random" else (
+            native.apply(args[2]) if len(args[2]) == 24 and args[2].isalnum() else native.import_file(args[2]))
+    if args[:2] == ["closewp", "--monitor"] and len(args) == 3:
+        return native.control("stop")
+    if args[:2] == ["app", "--play"] and len(args) == 3:
+        return native.control("play" if args[2] == "true" else "pause")
+    if args[:2] == ["app", "--volume"] and len(args) == 3:
+        return native.control("volume", int(args[2]))
+    if args == ["app", "--showApp", "true"]:
+        return native.control("show")
+    raise HTTPException(400, "Unsupported wallpaper action")
+
+
 def _library_folder() -> Path | None:
     root=os.environ.get("LOCALAPPDATA")
     if not root:
@@ -45,6 +61,9 @@ def _library_folder() -> Path | None:
 
 
 def items() -> list[dict]:
+    if _native_enabled():
+        from services.native_wallpaper import list_wallpapers
+        return list_wallpapers()
     root=_library_folder()
     if not root:
         return []
@@ -93,6 +112,8 @@ def _wallpaper(id: str) -> Path:
 
 def _run(args: list[str]) -> dict:
     _consent()
+    if _native_enabled():
+        return _native_command(args)
     exe=lively_executable()
     if not exe:
         raise HTTPException(404,"Lively Wallpaper not installed. Download only from the official release.")
@@ -121,6 +142,8 @@ def _installer_status() -> str:
 @router.post("/install")
 def install():
     _consent()
+    if _native_enabled():
+        return {"status":"integrated", "verified":True}
     if lively_executable():
         return {"status":"installed"}
     if windows_version()["family"]!="modern":
@@ -156,6 +179,12 @@ def wallpaper_status(metrics: bool=True):
     except ImportError:
         psutil=None
     data=status()
+    if _native_enabled():
+        from services import native_wallpaper as native
+        return {"capabilities":data["windows"],"lively":data["lively"],
+                "engine":native.state(),"library":native.list_wallpapers(),
+                "processes":[],"installer":"finished","can_install":False,
+                "autopause":"Embedded BARQ engine; no separate Lively installation"}
     processes=[]
     try:
         for process in (psutil.process_iter(["pid","name","memory_info","cpu_times"]) if metrics and psutil else []):
@@ -176,6 +205,8 @@ def wallpaper_status(metrics: bool=True):
 @router.get("/preview/{wallpaper_id}")
 def wallpaper_preview(wallpaper_id:str):
     _consent()
+    if _native_enabled():
+        raise HTTPException(404,"A preview is not available for this native wallpaper")
     folder=_wallpaper(wallpaper_id)
     for name in ("thumbnail.jpg","thumbnail.png","preview.jpg"):
         target=folder/name
