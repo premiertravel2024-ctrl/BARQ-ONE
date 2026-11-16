@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="ar" dir="rtl">
 <head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>BARQ Watch Together</title>
+<title>BARQ ONE · Shared Rooms</title>
 <style>
 :root{color-scheme:dark}*{box-sizing:border-box}body{margin:0;background:#0f0d13;color:#f7eef3;font-family:system-ui,Arial,sans-serif}
 main{max-width:1200px;margin:auto;padding:24px}header{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap}
@@ -20,25 +20,95 @@ button{cursor:pointer}button:hover{border-color:#ff6888}button:disabled{opacity:
 #linkMedia{min-width:min(340px,100%);direction:ltr}.source-options{display:grid;gap:10px;margin-bottom:14px}.source-options label{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
 .player{position:relative;min-width:0}.captions{position:absolute;inset-inline:4%;bottom:9%;text-align:center;pointer-events:none;white-space:pre-line;overflow-wrap:anywhere;unicode-bidi:plaintext;font-size:clamp(1rem,2.4vw,1.65rem);font-weight:750;line-height:1.55;color:#fff;text-shadow:0 2px 6px #000,0 0 4px #000;max-height:32%;overflow:hidden}
 @media(max-width:820px){.grid{grid-template-columns:1fr}#messages{height:260px}}
+
+/* BARQ ONE room redesign - identical local and Cloudflare guests */
+:root{--room-accent:#ef5076;--room-edge:#42313f;--room-surface:#1b1721;--room-muted:#b5a9b8}
+body{background:radial-gradient(ellipse 85% 70% at 75% -30%,rgba(124,31,66,.20),transparent 70%),#100d14}
+main{max-width:1530px;padding:clamp(12px,1.6vw,22px)}
+.room-head{padding:14px 18px;background:linear-gradient(110deg,#221721,#161219);border:1px solid var(--room-edge);border-radius:16px}
+.room-head h1{font-size:clamp(1.08rem,2.3vw,1.5rem);margin:2px 0 3px}
+.room-eyebrow{font-size:.68rem;letter-spacing:1.5px;font-weight:850;color:#ff90af}
+.room-head-note{margin:0;font-size:.74rem;color:var(--room-muted)}
+.status{display:flex;align-items:center;gap:8px;max-width:100%;overflow-wrap:anywhere;font-size:.78rem;padding:8px 11px;background:#36212e;border:1px solid #734559;border-radius:99px}
+.status:before{content:"";display:block;width:7px;height:7px;flex:0 0 7px;background:var(--room-accent);border-radius:50%;box-shadow:0 0 10px #e7527b}
+.grid{grid-template-columns:minmax(0,1fr) minmax(245px,315px);align-items:start;gap:14px;margin-top:14px}
+.panel{border:1px solid #3f3040;border-radius:16px;background:linear-gradient(135deg,#1d1822,#151219);padding:clamp(12px,1.6vw,20px)}
+.section-header{display:flex;flex-wrap:wrap;gap:9px;align-items:center;margin-bottom:7px}
+.section-header span{background:#3b2130;color:#ff9db4;border-radius:6px;padding:4px 8px;font-size:.7rem}
+.section-header strong{font-size:.95rem}
+.source-hint{color:#b9a8b9;font-size:.78rem;margin:0 0 11px}
+.source-options{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,1fr);gap:10px;margin:0 0 12px}
+.source-options label{min-width:0}
+.file-picker,.subtitle-picker{position:relative;display:flex;align-items:center;flex-wrap:wrap;gap:8px;padding:10px 12px;border:1px dashed #74435c;border-radius:12px;background:#241b27;cursor:pointer}
+.file-picker{min-height:74px}
+.file-picker:hover,.file-picker:focus-within,.subtitle-picker:hover,.subtitle-picker:focus-within{border-color:#f35b82;background:#33202e}
+.file-picker #file,.subtitle-picker #subFile{position:absolute;inset:0;opacity:0;width:100%;height:100%;cursor:pointer;z-index:2}
+.file-picker>span:first-child{font-size:.79rem;font-weight:700}
+.file-cta{padding:6px 11px;background:#a6385c;border-radius:7px;font-size:.76rem;white-space:nowrap}
+.file-name{display:block;flex:1 1 100%;color:#bdacbc;direction:auto;text-align:start;font-size:.72rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
+#linkForm{margin:0;display:flex;align-items:stretch;gap:7px;min-width:0;flex-wrap:nowrap}
+#linkMedia{flex:1;min-width:0;direction:ltr;text-align:left;padding:9px}
+#linkForm button,#musicService button{background:#482a3a;border-color:#845067;white-space:nowrap;font-size:.76rem}
+#musicService{display:flex;flex-wrap:wrap;gap:7px;border:1px solid #463042;background:#251a28;border-radius:12px;padding:9px;margin:0 0 11px}
+#musicService input{min-width:0;flex:1;direction:ltr;text-align:left}
+#localWrap>.row{padding:10px;background:#15121b;border-radius:12px;border:1px solid #372a37;flex-wrap:wrap}
+#localWrap label{font-size:.76rem}
+#subtitlePicker{padding:7px 10px;min-height:37px;border-style:solid}
+#subFileName{color:#e3b8c9}
+#guestControls{accent-color:#ec547a}
+.player{background:radial-gradient(ellipse at 50% 30%,#311d2a,#08070d 72%);display:grid;place-items:center;border:1px solid #42303c;border-radius:13px;overflow:hidden;min-height:260px}
+.player video{width:100%;height:auto;aspect-ratio:16/9;max-height:min(66vh,730px);object-fit:contain;display:block;border-radius:0;background:#060509}
+.player[data-fit="cover"] video{object-fit:cover}
+.player-screen-actions{position:absolute;top:11px;left:11px;z-index:10;display:flex;gap:7px;direction:rtl}
+.player-screen-actions button{font-size:.76rem;background:#221925ed;border:1px solid #6a4055;color:#fff;border-radius:8px;padding:7px 11px;min-height:35px}
+.player-screen-actions button:hover{background:#953455}
+.player:fullscreen,.player:-webkit-full-screen{width:100vw;height:100vh;max-width:none;max-height:none;border:0;border-radius:0;background:#000;display:flex;align-items:center;justify-content:center}
+.player:fullscreen video,.player:-webkit-full-screen video{width:100%;height:100%;max-height:100%;aspect-ratio:auto;border-radius:0;object-fit:contain}
+.player[data-fit="cover"]:fullscreen video,.player[data-fit="cover"]:-webkit-full-screen video{object-fit:cover}
+.player:fullscreen .player-screen-actions,.player:-webkit-full-screen .player-screen-actions{top:18px;left:18px}
+.player:fullscreen .captions{bottom:10%;z-index:2}
+.room-music .player{min-height:245px;padding:90px 15px 24px;position:relative;align-items:end}
+.room-music .player:before{content:"♫";position:absolute;top:20px;left:calc(50% - 33px);width:66px;height:66px;border-radius:50%;background:linear-gradient(130deg,#522339,#251927);color:#ff9fb7;border:1px solid #795064;box-shadow:0 0 40px #b6385c44;font-size:2rem;display:grid;place-items:center}
+.room-music .player audio{width:min(100%,750px);min-height:55px;border-radius:13px;background:#251b28}
+.room-chat{position:sticky;top:8px;min-width:0}
+.chat-heading{display:flex;justify-content:space-between;align-items:center;gap:8px;border-bottom:1px solid #40303b;padding-bottom:10px;margin-bottom:10px}
+.chat-heading h2{margin:0;font-size:1rem}.chat-heading span{font-size:.69rem;color:#b9a6b5}
+#messages{height:clamp(225px,40vh,475px);background:#110e16;border-color:#423040;border-radius:12px;padding:9px;overflow:auto}
+.msg{border:0;border-radius:10px;background:#2a1e2a;margin-bottom:7px;padding:9px;font-size:.81rem}
+.msg small{display:block;font-size:.68rem;color:#d6a6bb;margin-bottom:5px}
+.chat-compose{margin:10px 0;display:flex;flex-wrap:nowrap}
+#chatText{background:#231926;border:1px solid #644459;padding:10px 11px;min-width:0}
+#send{background:#b8395e;border-color:#b8395e;padding:9px 14px;font-weight:700}
+#emoji{flex-wrap:wrap}#emoji button{border-radius:10px;background:#332231}
+#mediaNote{min-height:20px;font-size:.76rem;margin-bottom:0}
+#officialMusic{background:#251c29;border:1px solid #493043;border-radius:12px;padding:12px;flex-wrap:wrap}
+#officialMusic a{display:inline-block;background:#a9365a;border-radius:8px;padding:9px 12px;color:#fff;text-decoration:none}
+button{transition:background-color .15s ease,border-color .15s ease}
+button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid #ff799f;outline-offset:2px}
+@media(max-width:1050px){.grid{grid-template-columns:minmax(0,1fr) minmax(220px,280px)}.source-options{grid-template-columns:1fr}}
+@media(max-width:700px){main{padding:10px}.grid{grid-template-columns:1fr}.room-chat{position:static}#messages{height:235px}.source-options{grid-template-columns:1fr}#linkForm{flex-wrap:wrap}#linkForm button{width:100%}.room-head-note{display:none}.player{min-height:190px}.room-music .player{min-height:230px}}
+
 </style></head>
-<body><main><header><div><h1 id="roomTitle">غرفة المشاهدة</h1></div><div id="status" class="status">جاري الاتصال...</div></header>
+<body><main><header class="room-head"><div><span class="room-eyebrow">BARQ ONE · SHARED ROOM</span><h1 id="roomTitle">غرفة المشاهدة</h1><p class="room-head-note">شاركوا اللحظة، والملفات تفضل على جهاز صاحب الغرفة.</p></div><div id="status" class="status" role="status" aria-live="polite">جاري الاتصال...</div></header>
 <div id="joinPanel" class="panel" hidden><p>ادخل كود الغرفة اللي بعتهولك صاحبها</p><div class="row"><input id="code" maxlength="6" inputmode="numeric" placeholder="Room code"><button id="join">دخول</button></div></div>
 <div class="grid">
-<section class="panel">
+<section class="panel room-media-panel">
  <div id="localWrap" hidden>
+  <div class="section-header"><span>الوسائط</span><strong id="sourceTitle">اختار اللي هتشغّله</strong></div>
+  <p class="source-hint" id="sourceHint">فيديو من جهازك أو رابط مباشر للملف.</p>
   <div class="source-options">
-   <label><span id="fileLabel">فيديو من جهازك</span><input id="file" type="file" accept="video/*,.mp4,.webm,.mov"></label>
+   <label class="file-picker"><span id="fileLabel">فيديو من جهازك</span><span class="file-cta">اختيار ملف</span><span class="file-name" id="fileName">لم يتم اختيار ملف</span><input id="file" type="file" accept="video/*,.mp4,.webm,.mov" aria-label="اختيار ملف للغرفة"></label>
    <form class="row" id="linkForm"><input id="linkMedia" type="url" placeholder="https://…" aria-label="رابط ملف الوسائط" required><button>تشغيل من رابط</button></form>
   </div>
   <form class="row" id="musicService" hidden><input id="musicServiceUrl" type="url" required placeholder="رابط أغنية أو ألبوم" aria-label="رابط Spotify أو أنغامي"><button>مشاركة من Spotify أو أنغامي</button></form>
-  <div class="row"><label id="videoQuality">الجودة <select id="quality"><option value="auto">تلقائي</option><option value="high">عالية</option><option value="medium">متوسطة</option><option value="low">منخفضة</option></select></label><label id="subtitlePicker">ترجمة SRT/VTT <input id="subFile" type="file" accept=".srt,.vtt,text/vtt"></label><label><input id="guestControls" type="checkbox"> السماح للضيف بالتحكم في التشغيل</label></div>
+  <div class="row"><label id="videoQuality">الجودة <select id="quality"><option value="auto">تلقائي</option><option value="high">عالية</option><option value="medium">متوسطة</option><option value="low">منخفضة</option></select></label><label class="subtitle-picker" id="subtitlePicker">ترجمة SRT/VTT <span id="subFileName">اختيار ملف</span><input id="subFile" type="file" accept=".srt,.vtt,text/vtt" aria-label="اختيار ملف ترجمة"></label><label><input id="guestControls" type="checkbox"> السماح للضيف بالتحكم في التشغيل</label></div>
  </div>
- <div class="player"><video id="video" controls playsinline></video><div id="captions" class="captions" dir="auto" aria-live="off"></div></div>
+ <div class="player" id="videoStage" data-fit="contain"><video id="video" controls playsinline></video><div id="captions" class="captions" dir="auto" aria-live="off"></div><div class="player-screen-actions" id="screenActions"><button type="button" id="fitMode" title="اختيار طريقة عرض الفيديو" aria-pressed="false">ملء الإطار</button><button type="button" id="enterFullscreen" title="عرض الفيديو على حجم الشاشة">⛶ ملء الشاشة</button></div></div>
  <div class="row" id="guestWrap" hidden><button id="resumePlayback">تشغيل الوسائط</button><button id="pauseRequest">اطلب إيقاف مؤقت</button><button id="seekRequest">اطلب تقديم 30 ثانية</button></div>
  <section id="officialMusic" hidden class="row"></section>
  <p class="sub" id="mediaNote" role="status"></p>
 </section>
-<aside class="panel"><h2>الدردشة</h2><div id="messages" aria-live="polite"></div><div class="row"><input id="chatText" maxlength="500" placeholder="اكتب رسالة..." aria-label="Chat message"><button id="send">إرسال</button></div><p class="sub" id="typing"></p><div id="emoji"><button class="emoji" data-emoji="❤️">❤️</button><button class="emoji" data-emoji="🔥">🔥</button><button class="emoji" data-emoji="😂">😂</button><button class="emoji" data-emoji="👏">👏</button></div><p class="sub">الدردشة مؤقتة ومش بتتسجل على الهارد.</p></aside>
+<aside class="panel room-chat"><div class="chat-heading"><h2>الدردشة</h2><span>لحظية ومؤقتة</span></div><div id="messages" aria-live="polite"></div><div class="row chat-compose"><input id="chatText" maxlength="500" placeholder="اكتب رسالة..." aria-label="Chat message"><button id="send">إرسال</button></div><p class="sub" id="typing"></p><div id="emoji"><button class="emoji" data-emoji="❤️">❤️</button><button class="emoji" data-emoji="🔥">🔥</button><button class="emoji" data-emoji="😂">😂</button><button class="emoji" data-emoji="👏">👏</button></div><p class="sub">الدردشة مؤقتة ومش بتتسجل على الهارد.</p></aside>
 </div></main>
 <script>
 (function(){
@@ -52,6 +122,10 @@ var video=document.getElementById('video');
 var music=params.get('mode')==='music';
 var blobUrl=null,guestPresent=false,loadVersion=0,rtcQueue=Promise.resolve();
 if(music){
+ document.body.classList.add('room-music');
+ document.getElementById('sourceTitle').textContent='اختار الأغنية';
+ document.getElementById('sourceHint').textContent='شغّل من جهازك أو استخدم رابط صوت مباشر أو Spotify وأنغامي.';
+ document.getElementById('screenActions').hidden=true;
  var audio=document.createElement('audio');audio.id='video';audio.controls=true;video.replaceWith(audio);video=audio;
  document.getElementById('roomTitle').textContent='غرفة الموسيقى';
  document.getElementById('fileLabel').textContent='أغنية من جهازك';
@@ -60,6 +134,24 @@ if(music){
  document.getElementById('subtitlePicker').hidden=true;
 }
 var captionEl=document.getElementById('captions'),cues=[],lastCaption='';
+var stage=document.getElementById('videoStage');
+var fullscreenButton=document.getElementById('enterFullscreen'),fitButton=document.getElementById('fitMode');
+function updateFullscreenLabel(){fullscreenButton.textContent=document.fullscreenElement?'⤡ إنهاء ملء الشاشة':'⛶ ملء الشاشة';}
+document.addEventListener('fullscreenchange',updateFullscreenLabel);
+fullscreenButton.onclick=function(){
+ if(document.fullscreenElement){void document.exitFullscreen().catch(function(){note('تعذّر إغلاق وضع ملء الشاشة.');});return;}
+ if(stage.requestFullscreen){
+   void stage.requestFullscreen().then(updateFullscreenLabel).catch(function(){note('المتصفح منع ملء الشاشة. جرّب زر ملء الشاشة في مشغّل الفيديو.');});
+ }else if(video.webkitEnterFullscreen){try{video.webkitEnterFullscreen();}catch(e){note('المشغّل لا يدعم ملء الشاشة.');}}
+ else note('وضع ملء الشاشة غير متاح في المتصفح الحالي.');
+};
+fitButton.onclick=function(){
+ var fill=stage.dataset.fit!=='cover';
+ stage.dataset.fit=fill?'cover':'contain';
+ fitButton.setAttribute('aria-pressed',String(fill));
+ fitButton.textContent=fill?'إظهار الفيديو كاملًا':'ملء الإطار';
+};
+
 var status=document.getElementById('status');
 var host=role==='host';
 var paired=params.get('paired')==='1';
@@ -198,6 +290,7 @@ if(host){
  connect('');
  document.getElementById('subFile').addEventListener('change',async function(e){
   var file=e.target.files&&e.target.files[0];if(!file)return;
+  document.getElementById('subFileName').textContent=file.name;
   if(file.size>1048576){note('ملف الترجمة كبير جدًا. الحد 1MB');return;}
   try{cues=parseSubtitles(await file.text());lastCaption='';updateSubtitle();
    document.getElementById('mediaNote').textContent='الترجمة اتحملت محليًا. اللي بيتبعت للضيف هو السطر الحالي فقط.';
@@ -227,7 +320,7 @@ if(host){
   }catch(error){if(version===loadVersion)note(external?'الرابط لازم يكون HTTPS مباشر لملف قابل للتشغيل والمشاركة.':'تعذّر تشغيل الملف. جرّب MP4 أو WebM للفيديو، أو MP3 أو WAV للموسيقى.');}
  }
  document.getElementById('file').addEventListener('change',function(e){
-  var file=e.target.files&&e.target.files[0];if(file)void loadMedia(file,false);
+  var file=e.target.files&&e.target.files[0];document.getElementById('fileName').textContent=file?file.name:'لم يتم اختيار ملف';if(file)void loadMedia(file,false);
  });
  document.getElementById('linkForm').onsubmit=function(event){
   event.preventDefault();
