@@ -1,0 +1,122 @@
+[
+  {
+    "path": ".github/workflows/windows-build.yml",
+    "status": "modified"
+  },
+  {
+    "path": "BUILD_BARQ.bat",
+    "status": "modified"
+  },
+  {
+    "path": "BUILD_WINDOWS_EXE.bat",
+    "status": "modified"
+  },
+  {
+    "path": "README.md",
+    "status": "modified"
+  },
+  {
+    "path": "core/version.py",
+    "status": "modified"
+  },
+  {
+    "path": "docs/v2.27/UI_ENGINEERING_AR.md",
+    "status": "added"
+  },
+  {
+    "path": "frontend/package-lock.json",
+    "status": "modified"
+  },
+  {
+    "path": "frontend/package.json",
+    "status": "modified"
+  },
+  {
+    "path": "frontend/src/components/layout/SettingsModal.tsx",
+    "status": "modified"
+  },
+  {
+    "path": "frontend/src/components/workspace/MissionBoard.tsx",
+    "status": "modified"
+  },
+  {
+    "path": "frontend/src/components/workspace/WorkspaceStudio.tsx",
+    "status": "modified"
+  },
+  {
+    "path": "frontend/src/store/index.ts",
+    "status": "modified"
+  },
+  {
+    "path": "mission/blueprint.py",
+    "status": "modified"
+  },
+  {
+    "path": "mission/engine.py",
+    "status": "modified"
+  },
+  {
+    "path": "mission/interface.py",
+    "status": "added"
+  },
+  {
+    "path": "mission/quality.py",
+    "status": "modified"
+  },
+  {
+    "path": "mission/validation.py",
+    "status": "modified"
+  },
+  {
+    "path": "scripts/build_windows.ps1",
+    "status": "modified"
+  },
+  {
+    "path": "scripts/installer.iss",
+    "status": "modified"
+  },
+  {
+    "path": "tests/test_v226_project_pipeline.py",
+    "status": "modified"
+  },
+  {
+    "path": "tests/test_v227_interface_quality.py",
+    "status": "added"
+  },
+  {
+    "path": "verification/v2.27/SUMMARY.json",
+    "status": "added"
+  },
+  {
+    "path": "verification/v2.27/browser-approvals.json",
+    "status": "added"
+  },
+  {
+    "path": "verification/v2.27/frontend-build.log",
+    "status": "added"
+  },
+  {
+    "path": "verification/v2.27/self-test.json",
+    "status": "added"
+  },
+  {
+    "path": "verification/v2.27/tests.log",
+    "status": "added"
+  },
+  {
+    "path": "verification/v2.27/tests.xml",
+    "status": "added"
+  },
+  {
+    "path": "web/react/assets/index-BzQ9EUFN.js",
+    "status": "added"
+  },
+  {
+    "path": "web/react/assets/index-DqJ0vybz.js",
+    "status": "removed"
+  },
+  {
+    "path": "web/react/index.html",
+    "status": "modified"
+  }
+]

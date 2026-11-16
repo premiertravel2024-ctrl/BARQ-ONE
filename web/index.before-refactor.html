@@ -1,0 +1,286 @@
+<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>AI Router Agent</title><style>
+@font-face{font-family:"GE SS Two";src:url("/fonts/ge-ss-two-medium.otf") format("opentype");font-style:normal;font-weight:400 700;font-display:swap;}
+
+:root{color-scheme:dark;--bg:#212121;--panel:#171717;--hover:#303030;--muted:#a3a3a3;--line:#393939;--accent:#d8e7df}*{box-sizing:border-box}body{margin:0;font-family:"GE SS Two",Tahoma,Arial,sans-serif;background:var(--bg);color:#f2f2f2}.app{display:flex;height:100dvh}.sidebar{width:270px;background:var(--panel);display:flex;flex-direction:column;padding:17px 11px;border-left:1px solid #252525}.brand{display:flex;align-items:center;gap:10px;font-weight:700;padding:10px 12px}.mark{display:grid;place-items:center;background:#e3ece7;color:#161616;width:33px;height:33px;border-radius:11px}.sidebtn{border:0;background:transparent;color:#eee;text-align:right;border-radius:10px;padding:12px;cursor:pointer;font:inherit}.sidebtn:hover,.sidebtn.active{background:var(--hover)}.history{overflow:auto;flex:1;margin-top:20px}.history h4{font-size:12px;color:var(--muted);margin:14px 12px}.history button{width:100%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.sidefoot{font-size:12px;color:var(--muted);padding:15px 12px;border-top:1px solid var(--line)}main{min-width:0;flex:1;display:flex;flex-direction:column}.top{height:68px;display:flex;justify-content:space-between;align-items:center;padding:0 27px}.modelpill{background:#2d2d2d;border:1px solid #414141;color:#e8e8e8;border-radius:11px;padding:10px 12px;font:inherit;max-width:240px}.status{color:var(--muted);font-size:12px}.messages{flex:1;overflow-y:auto;padding:18px 20px 26px}.content{max-width:820px;margin:auto;display:flex;flex-direction:column;gap:25px}.welcome{margin:auto;text-align:center;max-width:600px;padding:20px}.welcome .logo{font-size:43px}.welcome h1{font-size:30px;font-weight:600}.welcome p{color:var(--muted);line-height:1.9}.bubble{max-width:85%;white-space:pre-wrap;overflow-wrap:anywhere;line-height:1.8;font-size:15px}.bubble.user{align-self:flex-start;background:#303030;border-radius:20px;padding:12px 18px}.bubble.assistant{align-self:stretch;padding:5px 7px}.meta{font-size:11px;color:var(--muted);margin-top:10px;direction:ltr;text-align:right}.composewrap{padding:10px 24px 23px}.compose{max-width:820px;margin:auto;background:#303030;border:1px solid #454545;border-radius:25px;padding:12px 14px}.compose textarea{resize:none;min-height:56px;max-height:200px;width:100%;border:0;background:transparent;outline:none;color:white;font:15px/1.7 "GE SS Two",Tahoma,Arial;padding:6px}.composebar{display:flex;align-items:center;justify-content:space-between;gap:8px}.send{border:0;border-radius:50%;background:#f1f1f1;color:#222;width:38px;height:38px;font-size:21px;cursor:pointer}.send:disabled{opacity:.35;cursor:wait}.hint{font-size:11px;color:var(--muted);text-align:center;padding-top:11px}.small{font-size:12px;color:var(--muted)}.toggle{display:flex;align-items:center;gap:6px}.mobile{display:none}@media(max-width:720px){.sidebar{display:none}.top{padding:0 15px}.composewrap{padding:8px 12px 15px}.mobile{display:inline}.bubble{max-width:95%}.welcome h1{font-size:24px}}
+
+.manager{border-top:1px solid var(--line);padding:12px;max-height:45vh;overflow:auto}.manager summary{cursor:pointer;font-size:13px;padding:7px 0}.manager button{font:inherit;cursor:pointer;background:#343434;color:#eee;border:1px solid #555;border-radius:8px;padding:6px 10px}.manager input{width:100%;background:#292929;border:1px solid #555;border-radius:8px;color:white;padding:8px;margin:6px 0}.manager .entry{border:1px solid #393939;border-radius:9px;padding:9px;margin:6px 0;font-size:11px;overflow-wrap:anywhere}.manager .entry small{display:block;color:#aaa}.manager .ok{color:#7dd7a3}.manager .bad{color:#e2a9a9}.manager pre{white-space:pre-wrap;max-height:130px;overflow:auto;font-size:11px}
+
+.voicebtn{background:#383e3b;border:1px solid #56665e;color:#eafff1;border-radius:12px;padding:9px 13px;font:inherit;cursor:pointer;white-space:nowrap}.voicebtn:hover{background:#4a5550}.voicebtn[disabled]{opacity:.45;cursor:not-allowed}.voicebtn.recording{background:#713d43;color:#fff;border-color:#e68d96;animation:micPulse 1.3s infinite}.voicebtn.speaking{background:#255a51}.voicebtn:focus-visible{outline:2px solid #9ed8bf}.voice-controls{display:flex;gap:6px;align-items:center;flex-wrap:wrap}.voice-settings{margin:9px 0;padding:10px;border:1px solid #434b47;border-radius:10px;background:#242927;font-size:12px}.voice-settings label{display:block;margin-top:8px;color:#d3e8da}.voice-settings select{width:100%;padding:8px;background:#343a39;border:1px solid #57605b;color:white;border-radius:7px;font:inherit}.voice-settings button{padding:7px;margin-top:8px}.voice-indicator{color:#9fcaaf;font-size:12px;min-height:15px}.voice-toggles{display:flex;align-items:center;gap:6px;font-size:12px}.voice-toggles input{accent-color:#88ceac}@keyframes micPulse{50%{box-shadow:0 0 0 6px #a9434738}}
+
+/* Integrated workspace / agent / builder tools */
+.sidebar{overflow-y:auto}.history{min-height:110px;max-height:180px;flex:none}.manager{max-height:none;overflow:visible}
+.manager details{margin:5px 0;border:1px solid #333c3a;border-radius:10px;padding:6px 9px;background:#1e2222}
+.manager summary{font-size:13px;font-weight:650}.manager label{display:block;margin-top:6px}.manager select,.manager textarea{background:#292929;color:white;border:1px solid #555;border-radius:8px;font:inherit;width:100%;padding:8px;margin:4px 0}
+.manager textarea{min-height:100px;direction:ltr;font:12px/1.6 Consolas,monospace}.manager input{margin:4px 0}
+.manager .buttonrow{display:flex;gap:5px;flex-wrap:wrap}.manager .buttonrow button{flex:1}.manager pre{max-height:280px;background:#141816;border-radius:7px;padding:9px;white-space:pre-wrap;word-wrap:break-word}
+.manager .lineitem{padding:7px 5px;border-bottom:1px solid #303332;display:flex;gap:6px;align-items:center;justify-content:space-between;cursor:pointer;font-size:11px}
+.manager .lineitem:hover{background:#2e3431}.manager .notice{font-size:11px;color:#c4dacd;white-space:pre-wrap;line-height:1.7}
+.agent-switch{display:flex;align-items:center;gap:7px;font-size:12px;cursor:pointer}.agent-switch input{accent-color:#9fdfbe}
+</style></head><body><div class="app"><aside class="sidebar"><div class="brand"><div class="mark">✦</div> AI Router Agent</div><button class="sidebtn" id="new">＋ محادثة جديدة</button><div class="history"><h4>المحادثات</h4><div id="history"></div></div><button class="sidebtn" id="deleteChat" type="button">🗑 حذف المحادثة الحالية</button><div class="manager"><details open><summary>🖥️ اتصال الإنترنت / Ollama</summary>
+<label for="routingMode" class="small">طريقة اختيار النموذج</label>
+<select id="routingMode"><option value="auto">تلقائي — سحابي ثم Ollama وقت الانقطاع</option><option value="local">محلي فقط — Ollama دون إنترنت</option><option value="cloud">سحابي فقط</option></select>
+<div id="localConnection" class="notice">جاري اكتشاف Ollama على جهازك...</div>
+<button id="refreshLocal" type="button">↻ فحص Ollama والنماذج</button>
+<div class="small">يستخدم النماذج المحمّلة عندك فقط. Gemini Voice يحتاج إنترنت؛ المحادثة الكتابية تظل متاحة محليًا.</div>
+</details><details><summary>⚙ إدارة النماذج</summary><button id="refreshModels" type="button">تحديث الحالة</button><div id="modelDetails"></div></details><details><summary>🧰 الأدوات ومساحة العمل</summary><label class="small" for="workspace">مسار مشروع Git على جهازك</label><input id="workspace" placeholder="C:\\Projects\\my-repo"><button id="refreshTools" type="button">عرض الأدوات</button><div id="toolDetails"></div><pre id="toolOutput"></pre><div class="small">الأدوات لا تعمل تلقائيًا؛ يلزم تأكيد كل تنفيذ. REA معطّل حتى ضبط أمره الحقيقي.</div></details></div><div class="manager"><details open><summary>🧠 وضع المساعد المنفّذ</summary><label class="agent-switch"><input type="checkbox" id="agentEnabled"> استخدام خطة أدوات بموافقتك قبل التنفيذ</label><div class="small">لا ينفذ المساعد أي أدوات بدون تأكيد، ولا يغيّر الملفات قبل موافقة مستقلة على التعديل.</div><pre id="agentPlanOutput">لا توجد خطة معلّقة</pre><div id="agentEditReview" hidden><pre id="agentEditDiff"></pre><button id="agentSaveEdit" type="button">💾 حفظ التعديل بعد مراجعة الفرق</button></div><div class="buttonrow"><button id="agentApprove" disabled type="button">✓ الموافقة وتنفيذ الخطة</button><button id="agentDiscard" type="button">إلغاء الخطة</button></div></details>
+<details><summary>💻 Coding Studio — هندسة البرمجيات</summary>
+<div class="small">اعرف بنية المشروع قبل التعديل، وابحث عن الأكواد داخله من غير إرسال المستودع بالكامل للسحابة.</div>
+<div class="buttonrow"><button id="codeMap" type="button">خريطة المشروع</button><button id="codeDiagnose" type="button">فحص المشروع</button><button id="codeSearch" type="button">بحث في الكود</button><button id="codeOutline" type="button">خريطة الدوال</button></div>
+<input id="codePhrase" placeholder="اسم دالة أو جزء من الخطأ" maxlength="150"><input id="codeOutlinePath" placeholder="ملف الدوال — مثال: src/main.py" spellcheck="false">
+<pre id="codingOutput">حدد مسار المشروع في مساحة العمل أولًا.</pre>
+<div class="small">المساعد يفضّل التعديلات الصغيرة، ويفحص Python/JSON/YAML/TOML قبل الموافقة على حفظ اقتراحاته.</div></details>
+<details><summary>📁 الملفات ومحرر المشاريع</summary><div class="buttonrow"><button id="openWorkspace" type="button">عرض ملفات المشروع</button><button id="workspaceUp" type="button">رجوع للمجلد الرئيسي</button></div><div id="filesPanel"></div><label for="editorPath" class="small">المسار داخل المشروع</label><input id="editorPath" placeholder="src/main.py"><textarea id="sourceEditor" rows="8" spellcheck="false" placeholder="محتوى الملف بعد فتحه..."></textarea><div class="buttonrow"><button id="previewEdit" type="button">معاينة التغيير</button><button id="applyEdit" type="button" disabled>اعتماد الحفظ</button><button id="undoEdit" type="button" disabled>↶ تراجع عن الحفظ</button></div><pre id="editDiff"></pre><div class="small" id="editStatus"></div></details>
+<details><summary>🔌 REA / MCP</summary><div class="buttonrow"><button id="reaEnable" type="button">تفعيل REA</button><button id="reaDiscover" type="button">اكتشاف الأدوات</button></div><div id="mcpTools" class="small">REA مقفول افتراضيًا، ولن يتم تثبيت أي حزمة إلا بتأكيدك.</div><div class="small">ربط أداة MCP إضافية من GitHub (بعد مراجعتها وتثبيتها):</div><input id="mcpId" placeholder="github-server"><input id="mcpCommand" value="npx" placeholder="npx"><input id="mcpArgs" placeholder="-y @publisher/tool@1.2.3 mcp"><button id="mcpRegister" type="button">تسجيل أداة موثوقة</button><div class="small" id="mcpRegistryOutput"></div></details>
+<details><summary>🐙 إدارة GitHub والمستودعات</summary><label for="gitAction">العملية</label><select id="gitAction"><option value="branch">إنشاء فرع Git</option><option value="commit">Commit للملفات المختارة</option><option value="push">رفع فرع GitHub</option><option value="pr">إنشاء Pull Request</option></select><label for="gitParams">JSON للعملية (راجع بعناية)</label><textarea id="gitParams" rows="4" spellcheck="false">{"name":"feature/new-work"}</textarea><div class="buttonrow"><button id="gitPreview" type="button">معاينة</button><button id="gitApply" type="button" disabled>تنفيذ بموافقة</button></div><pre id="gitOutput"></pre><div class="small">يتطلب Git مثبتًا. العمليات على GitHub تحتاج gh auth login مسبقًا.</div></details>
+<details><summary>🛠 منشئ EXE</summary><label for="buildProfile">نوع المشروع</label><select id="buildProfile"><option value="python">Python / PyInstaller</option><option value="tauri">Tauri / Rust</option><option value="electron">Electron</option></select><label for="buildEntry">ملف التشغيل الرئيسي (Python)</label><input id="buildEntry" placeholder="main.py"><label for="buildName">اسم البرنامج</label><input id="buildName" value="MyApplication"><div class="buttonrow"><button id="buildPreview" type="button">مراجعة أمر البناء</button><button id="buildApprove" disabled type="button">موافقة وبدء البناء</button></div><pre id="buildOutput"></pre><button id="buildRefresh" type="button">تحديث نتيجة البناء</button></details>
+<details><summary>🩺 فحص الجهاز والاتصالات</summary><button id="runDoctor" type="button">فحص المتطلبات</button><pre id="doctorOutput"></pre></details><details><summary>🔑 مفاتيح API والإعدادات</summary><label for="apiProvider">مزود النموذج</label><select id="apiProvider"><option value="GEMINI_API_KEY">Gemini</option><option value="GROQ_API_KEY">Groq</option><option value="OPENROUTER_API_KEY">OpenRouter</option><option value="CEREBRAS_API_KEY">Cerebras</option><option value="MISTRAL_API_KEY">Mistral</option><option value="HF_TOKEN">Hugging Face</option></select><input type="password" id="apiKeyInput" autocomplete="off" placeholder="أدخل المفتاح (لن يظهر مجددًا)"><button id="saveApiKey" type="button">حفظ آمن في Windows Credential Manager</button><div id="apiStatus" class="small"></div><div class="small">تشغيل المزودين وتحديد الأولوية من إدارة النماذج.</div></details></div><div class="voice-settings"><div>🎙️ <strong>المساعد الصوتي المصري</strong></div><div class="voice-indicator" id="voiceConfigStatus">جاري فحص Gemini...</div><label for="voiceSelect">الصوت الرجالي</label><select id="voiceSelect"><option value="Charon">Charon — هادئ واحترافي</option><option value="Achird">Achird — ودود وطبيعي</option><option value="Orus">Orus — عميق وواثق</option></select><label for="voiceModel">جودة النطق</label><select id="voiceModel"><option value="gemini-3.8-flash-lite-tts">Flash-Lite — أسرع</option><option value="gemini-3.8-flash-tts">Flash — جودة أعلى</option></select><label class="voice-toggles"><input type="checkbox" id="autoSpeak" checked> الرد بالصوت على الرسائل الصوتية</label><button id="testVoice" type="button">▶ تجربة الصوت</button> <button id="stopVoice" type="button">■ إيقاف الصوت</button><div class="buttonrow"><button class="voicebtn" id="liveVoice" type="button">☎️ بدء محادثة مباشرة</button><button class="voicebtn" id="stopLiveVoice" type="button" disabled>■ إنهاء المكالمة</button></div><div id="liveTranscript" class="small"></div></div><div class="sidefoot">☁️ نماذج سحابية + 🖥️ Ollama بدون إنترنت<br>🔒 المحادثات محفوظة محليًا على جهازك</div></aside><main><header class="top"><div><button class="sidebtn mobile" id="mobileNew">＋</button><select class="modelpill" id="model"><option value="auto">✦ اختيار ذكي تلقائي</option></select></div><div class="status" id="status">جاهز</div></header><section class="messages" id="messages"><div class="content" id="content"></div></section><div class="composewrap"><form class="compose" id="form"><textarea id="prompt" rows="2" placeholder="اسأل أي حاجة..." required></textarea><div id="selectedFiles" class="small"></div><div class="composebar"><div class="voice-controls"><label style="cursor:pointer" class="voicebtn" for="attachFiles">📎 ملف</label><input id="attachFiles" type="file" multiple style="display:none" accept=".txt,.md,.py,.js,.ts,.jsx,.tsx,.json,.yaml,.yml,.csv,.log,.html,.css,.sql,.pdf,.docx,.xlsx"><button class="voicebtn" type="button" id="mic" aria-label="بدء تسجيل رسالة صوتية" title="بدء/إيقاف تسجيل المايك">🎙️ اتكلم</button><span class="small" id="voiceStatus" role="status" aria-live="polite">↵ للإرسال · Shift+↵ لسطر جديد</span></div><button class="send" id="send" aria-label="إرسال">↑</button></div></form><div class="hint">الردود تعتمد على الحصص المجانية المتاحة؛ قد تختلف جودة النماذج وتوافرها.</div></div></main></div><script>
+const randomId=()=>globalThis.crypto?.randomUUID?.() || ('chat-'+Date.now()+'-'+Math.random().toString(36).slice(2));
+const $=id=>document.getElementById(id),storage='ai-router-chats-v2';let chats=[],current=null,busy=false,attachedTexts=[];
+try{chats=JSON.parse(localStorage.getItem(storage)||'[]')}catch{};
+const save=()=>{localStorage.setItem(storage,JSON.stringify(chats));const c=active();if(c)fetch('/v1/conversations',{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:c.id,title:c.title,messages:c.messages})}).catch(()=>{})};const active=()=>chats.find(c=>c.id===current);
+function newChat(){current=randomId();chats.unshift({id:current,title:'محادثة جديدة',messages:[]});save();render()}
+function render(){const c=active();$('history').replaceChildren();for(const item of chats){let b=document.createElement('button');b.className='sidebtn'+(item.id===current?' active':'');b.textContent=item.title;b.onclick=()=>{current=item.id;render()};$('history').append(b)}$('content').replaceChildren();if(!c||!c.messages.length){let w=document.createElement('div');w.className='welcome';w.innerHTML='<div class="logo">✦</div><h1>أقدر أساعدك في إيه؟</h1><p>اكتب سؤالك وسيختار AI Router النموذج المناسب، ولو النت فصل ينتقل إلى Ollama المحلي.</p>';$('content').append(w)}else for(const m of c.messages){let d=document.createElement('div');d.className='bubble '+m.role;d.textContent=m.content;if(m.meta){let sm=document.createElement('div');sm.className='meta';sm.textContent=m.meta;d.append(sm)}$('content').append(d)}$('messages').scrollTop=$('messages').scrollHeight}
+async function loadModels(){try{let r=await fetch('/v1/models');if(!r.ok)return;let d=await r.json();let selected=$('model').value;$('model').replaceChildren(new Option('✦ اختيار ذكي تلقائي','auto'));for(const item of d.data){let o=document.createElement('option');o.value=item.id;o.textContent=item.id;$('model').append(o)}$('model').value=[...$('model').options].some(o=>o.value===selected)?selected:'auto'}catch{}}
+async function send(e){e.preventDefault();if(busy)return;let txt=$('prompt').value.trim();if(!txt && !attachedTexts.length)return;
+if(attachedTexts.length){txt+=(txt?'\n\n':'')+attachedTexts.map(f=>'[مرفق: '+f.filename+']\n'+f.text+'\n[/مرفق]').join('\n\n');attachedTexts=[];$('selectedFiles').textContent=''}if(!active())newChat();let c=active();c.messages.push({role:'user',content:txt});if(c.messages.length===1)c.title=txt.slice(0,34);$('prompt').value='';busy=true;$('send').disabled=true;$('status').textContent='جاري اختيار النموذج...';save();render();try{const fromVoice=nextIsVoice;nextIsVoice=false;
+if($('agentEnabled').checked){
+  const workspace=$('workspace').value.trim();if(!workspace)throw Error('اكتب مسار المشروع أولًا في قسم الأدوات');
+  let r=await apiJson('/v1/agent/plan',{workspace,model:$('model').value,messages:c.messages.map(m=>({role:m.role,content:m.content}))});
+  pendingAgent=r.plan_id;$('agentApprove').disabled=false;
+  $('agentPlanOutput').textContent='الموديل: '+r.model+'\n'+r.plan.reason+'\n'+JSON.stringify(r.plan.steps,null,2)+'\n'+r.plan.answer;
+  c.messages.push({role:'assistant',content:'📋 الخطة جاهزة للمراجعة. افتح قسم «وضع المساعد المنفّذ» واضغط الموافقة على الخطوات إذا كانت مناسبة.',meta:r.model});
+  $('status').textContent='الخطة بانتظار موافقتك';return;
+}
+const r=await fetch('/v1/router/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:$('model').value,voice_mode:fromVoice,messages:c.messages.map(m=>({role:m.role,content:m.content}))})});let data=await r.json();if(!r.ok)throw Error(data.detail?.message||data.detail||'تعذر الاتصال');c.messages.push({role:'assistant',content:data.content,meta:data.model+(data.attempts?.length?' · بدائل جُرّبت: '+data.attempts.length:'')});$('status').textContent=(data.offline?'🖥️ أوفلاين · ':'استخدم: ')+data.model;if(data.offline){voiceStatus('المحادثة شغالة محليًا عبر Ollama. صوت Gemini يحتاج إنترنت.')}if(fromVoice && $('autoSpeak').checked && !data.offline){await speak(data.content)}refreshLocalStatus()}catch(err){c.messages.push({role:'assistant',content:'تعذر إكمال الطلب: '+String(err.message).slice(0,400),meta:'لم يتم احتسابها كإجابة ناجحة'});$('status').textContent='تعذر إكمال الطلب'}finally{busy=false;$('send').disabled=false;save();render()}}
+async function recoverSavedConversations(){try{
+ const response=await fetch('/v1/conversations');if(!response.ok)return;
+ const data=await response.json();if(!Array.isArray(data.conversations))return;
+ const known=new Set(chats.map(c=>c.id));let restored=0;
+ for(const item of data.conversations){if(known.has(item.id))continue;
+   const detail=await fetch('/v1/conversations/'+encodeURIComponent(item.id));if(!detail.ok)continue;
+   const c=await detail.json();if(!Array.isArray(c.messages))continue;
+   chats.push({id:c.id,title:c.title,messages:c.messages});known.add(c.id);restored++;
+ }
+ if(restored){localStorage.setItem(storage,JSON.stringify(chats));render()}
+}catch(e){console.warn('Local history recovery unavailable',e)}}
+$('form').addEventListener('submit',send);$('prompt').addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();$('form').requestSubmit()}});$('deleteChat').onclick=()=>{if(!active()||busy)return;if(!confirm('حذف المحادثة الحالية؟'))return;let deletedId=current;chats=chats.filter(c=>c.id!==current);current=chats[0]?.id||null;fetch('/v1/conversations/'+encodeURIComponent(deletedId),{method:'DELETE'}).catch(()=>{});if(!current)newChat();else{save();render()}};$('new').onclick=newChat;$('mobileNew').onclick=newChat;if(chats.length)current=chats[0].id;else newChat();render();loadModels();recoverSavedConversations();
+
+async function refreshDetails(){try{let d=await(await fetch('/v1/router/models')).json();$('modelDetails').replaceChildren();for(let m of d.models){let el=document.createElement('div');el.className='entry';let name=document.createElement('strong');name.textContent=m.id;let meta=document.createElement('small');meta.textContent=(m.available?'● متاح':'○ غير متاح')+' · '+m.strengths.join(', ')+' · المتبقي اليوم: '+m.remaining_today;meta.className=m.available?'ok':'bad';let test=document.createElement('button');test.textContent='اختبار الاتصال';test.disabled=!m.configured;test.onclick=async()=>{if(!confirm('اختبار النموذج '+m.id+' سيستهلك طلبًا من حصتك المجانية. موافق؟'))return;try{let r=await apiJson('/v1/models/test',{model:m.id});meta.textContent='✅ اتصال ناجح: '+r.response_preview}catch(e){meta.textContent='❌ '+e.message}};el.append(name,meta,test);$('modelDetails').append(el)}}catch(e){$('modelDetails').textContent=String(e)}}
+async function refreshTools(){try{let d=await(await fetch('/v1/tools')).json();$('toolDetails').replaceChildren();for(let t of d.tools){let el=document.createElement('div');el.className='entry';let label=document.createElement('div');label.textContent=t.label+' — '+(t.enabled&&t.available?'جاهز':'غير مفعل / غير متاح');let b=document.createElement('button');b.textContent='تشغيل بعد التأكيد';b.disabled=!t.enabled||!t.available;b.onclick=async()=>{let workspace=$('workspace').value.trim();if(!workspace){alert('حدد مسار المشروع أولاً');return}if(!confirm('تشغيل '+t.label+' داخل '+workspace+'؟'))return;$('toolOutput').textContent='جاري التنفيذ...';try{let r=await fetch('/v1/tools/run',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({tool_id:t.id,workspace,confirmed:true})});let data=await r.json();$('toolOutput').textContent=r.ok?(data.stdout||data.stderr||'انتهى التنفيذ'):(JSON.stringify(data.detail))}catch(e){$('toolOutput').textContent=String(e)}};el.append(label,b);$('toolDetails').append(el)}}catch(e){$('toolDetails').textContent=String(e)}}
+$('refreshModels').onclick=refreshDetails;$('refreshTools').onclick=refreshTools;refreshDetails();refreshTools();
+
+// Voice Mode: Gemini transcription and Egyptian male TTS require internet. Offline Ollama text chat works independently.
+// Microphone recording is explicitly user-initiated and never enabled in the background.
+let micStream=null,recorder=null,voiceChunks=[],isRecording=false,nextIsVoice=false;
+let audioPlayer=null,audioUrl=null,audioAbort=null,voiceBusy=false;
+const voiceSaved='ai-router-voice-v1';
+try {let x=JSON.parse(localStorage.getItem(voiceSaved)||'{}');
+  if(x.voice)$('voiceSelect').value=x.voice;
+  if(x.model)$('voiceModel').value=x.model;
+  if(typeof x.auto==='boolean')$('autoSpeak').checked=x.auto;
+} catch {}
+function rememberVoice(){localStorage.setItem(voiceSaved,JSON.stringify({voice:$('voiceSelect').value,model:$('voiceModel').value,auto:$('autoSpeak').checked}))}
+['voiceSelect','voiceModel','autoSpeak'].forEach(k=>$(k).addEventListener('change',rememberVoice));
+function voiceStatus(msg){$('voiceStatus').textContent=msg}
+function stopSpeech(){if(audioAbort){audioAbort.abort();audioAbort=null}if(audioPlayer){audioPlayer.pause();audioPlayer.src='';audioPlayer=null}if(audioUrl){URL.revokeObjectURL(audioUrl);audioUrl=null}voiceBusy=false;$('testVoice').disabled=false;$('stopVoice').disabled=false}
+$('stopVoice').onclick=()=>{stopSpeech();voiceStatus('تم إيقاف الصوت')};
+async function speak(text){
+  stopSpeech(); voiceBusy=true;
+  let clean=String(text).replace(/```[\s\S]*?```/g,'تم حذف مقطع كود من القراءة الصوتية.').replace(/[*_#`>]/g,'').trim().slice(0,1750);
+  if(!clean){voiceBusy=false;return}
+  let controller=new AbortController(); audioAbort=controller;
+  $('testVoice').disabled=true;voiceStatus('جاري إنشاء الرد بصوت مصري...');
+  try{
+    let r=await fetch('/v1/voice/speak',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({text:clean,voice:$('voiceSelect').value,model:$('voiceModel').value}),signal:controller.signal});
+    if(!r.ok){let j=await r.json();throw Error(j.detail||'تعذر توليد الصوت')}
+    let blob=await r.blob();if(controller.signal.aborted)return;
+    audioUrl=URL.createObjectURL(blob);audioPlayer=new Audio(audioUrl);audioPlayer.onended=()=>{stopSpeech();voiceStatus('جاهز للمحادثة الصوتية')};
+    voiceStatus('🔊 بيتكلم... اضغط إيقاف الصوت أو المايك للمقاطعة');
+    await audioPlayer.play();
+  } catch(e){if(e.name!=='AbortError')voiceStatus('الصوت: '+String(e.message).slice(0,160))}
+  finally{$('testVoice').disabled=false;voiceBusy=false}
+}
+$('testVoice').onclick=()=>speak('أهلاً بيك يا باشا! أنا مساعدك الذكي، جاهز أساعدك في شغلك ومشاريعك.');
+async function startRecording(){
+  if(!navigator.mediaDevices?.getUserMedia || !window.MediaRecorder){voiceStatus('المتصفح لا يدعم التسجيل. استخدم Chrome على localhost.');return}
+  if(busy){voiceStatus('استنى لما الرد الحالي يخلص');return}
+  stopSpeech();voiceChunks=[];
+  try{
+    micStream=await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:true,noiseSuppression:true}});
+    let preferred=['audio/webm;codecs=opus','audio/webm','audio/mp4','audio/ogg;codecs=opus'].find(t=>MediaRecorder.isTypeSupported(t));
+    recorder=new MediaRecorder(micStream,preferred?{mimeType:preferred}:undefined);
+    recorder.ondataavailable=e=>{if(e.data.size)voiceChunks.push(e.data)};
+    recorder.onerror=()=>{voiceStatus('خطأ في تسجيل الميكروفون');stopRecording()};
+    recorder.onstop=async()=>{
+      if(micStream){micStream.getTracks().forEach(t=>t.stop());micStream=null}
+      let parts=voiceChunks;voiceChunks=[];
+      let blob=new Blob(parts,{type:recorder?.mimeType || parts[0]?.type || 'audio/webm'});
+      if(!blob.size){voiceStatus('مفيش صوت اتسجل');return}
+      voiceStatus('جاري تحويل صوتك إلى كلام بواسطة Gemini...');
+      $('mic').disabled=true;
+      try{
+        const r=await fetch('/v1/voice/transcribe',{method:'POST',headers:{'Content-Type':blob.type},body:blob});
+        const data=await r.json();if(!r.ok)throw Error(data.detail||'فشل التعرف على الصوت');
+        let heard=(data.text||'').trim();if(!heard)throw Error('Gemini لم يتعرف على كلام واضح');
+        $('prompt').value=heard;voiceStatus('سمعت: '+heard.slice(0,95));nextIsVoice=true;
+        $('form').requestSubmit();
+      }catch(e){nextIsVoice=false;voiceStatus('التسجيل: '+String(e.message).slice(0,150))}
+      finally{$('mic').disabled=false}
+    };
+    recorder.start();isRecording=true;$('mic').classList.add('recording');$('mic').textContent='⏹️ إنهاء الكلام';
+    voiceStatus('🔴 بسمعك... اضغط إنهاء الكلام لما تخلص');
+  }catch(err){if(micStream)micStream.getTracks().forEach(t=>t.stop());micStream=null;voiceStatus('تعذر تشغيل المايك؛ اسمح بالوصول للميكروفون من المتصفح.');}
+}
+function stopRecording(){if(recorder&&recorder.state==='recording')recorder.stop();isRecording=false;$('mic').classList.remove('recording');$('mic').textContent='🎙️ اتكلم'}
+$('mic').onclick=()=>{if(isRecording)stopRecording();else startRecording()};
+async function loadVoiceSettings(){try{
+  let r=await fetch('/v1/voice/settings');if(!r.ok)throw Error('غير متاح');let s=await r.json();
+  $('voiceConfigStatus').textContent=s.configured?'✅ Gemini متوصل — المايك جاهز':'⚠️ ضيف GEMINI_API_KEY في .env الأول';
+  $('mic').disabled=!s.configured;$('testVoice').disabled=!s.configured;
+}catch(e){$('voiceConfigStatus').textContent='تعذر الوصول لخدمة الصوت';$('mic').disabled=true;$('testVoice').disabled=true}}
+loadVoiceSettings();
+
+
+$('attachFiles').onchange=async e=>{
+ let files=[...e.target.files].slice(0,5);$('selectedFiles').textContent='جاري قراءة الملفات...';
+ for(let f of files){try{let fd=new FormData();fd.append('file',f);let r=await fetch('/v1/attachments/extract',{method:'POST',body:fd});let d=await r.json();if(!r.ok)throw Error(d.detail);attachedTexts.push(d)}catch(err){$('selectedFiles').textContent='⚠ '+f.name+': '+err.message}}
+ if(attachedTexts.length)$('selectedFiles').textContent='📎 '+attachedTexts.map(f=>f.filename).join('، ')+' — سيرسل النص المستخرج للنموذج المختار (محلي أو سحابي).';
+ e.target.value='';
+};
+// Workspace + Model Center + tools + building + AI approval.
+let pendingAgent=null,pendingEdit=null,pendingBuild=null,pendingGit=null,workspaceFolder='',currentBuild=null,lastBackup=null;
+async function apiJson(url,payload,method='POST'){
+ const r=await fetch(url,{method,headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
+ const j=await r.json();if(!r.ok)throw Error(typeof j.detail==='string'?j.detail:JSON.stringify(j.detail));return j;
+}
+const showErr=(id,e)=>$(id).textContent='⚠ '+String(e.message||e).slice(0,400);
+$('agentApprove').onclick=async()=>{
+ if(!pendingAgent)return;
+ if(!confirm('مراجعة نهائية: تنفيذ الخطوات المعروضة داخل المشروع؟ أي تعديل في الملفات يحتاج موافقة ثانية.'))return;
+ let token=pendingAgent;pendingAgent=null;$('agentApprove').disabled=true;$('agentPlanOutput').textContent='جاري تنفيذ الأدوات المسموح بها...';
+ try{
+  let r=await apiJson('/v1/agent/execute',{plan_id:token,confirmed:true});
+  $('agentPlanOutput').textContent=JSON.stringify(r.results,null,2).slice(0,16000);
+  if(r.pending_edit){pendingAgentEdit=r.pending_edit;$('agentEditReview').hidden=false;$('agentEditDiff').textContent=r.pending_edit.diff+'\n'+JSON.stringify(r.pending_edit.quality||{},null,2)}else{$('agentEditReview').hidden=true;pendingAgentEdit=null;}
+  if(r.next_plan){pendingAgent=r.next_plan.plan_id;$('agentApprove').disabled=false;
+    $('agentPlanOutput').textContent+='\n\nالخطوة التالية — تتطلب موافقة جديدة:\n'+r.next_plan.plan.reason+'\n'+JSON.stringify(r.next_plan.plan.steps,null,2);
+  }else{let c=active();if(c){c.messages.push({role:'assistant',content:r.answer,meta:r.model});save();render()}}
+  for(let step of r.results){if(step.tool==='workspace_edit'&&step.success){try{let item=JSON.parse(step.result);pendingEdit=item.approval_id;$('applyEdit').disabled=false;$('editDiff').textContent=item.diff;$('editStatus').textContent='المساعد جهّز تعديلًا، لكن لم يتم الحفظ. راجعه ثم وافق على حفظه.'}catch{}}}
+ }catch(e){showErr('agentPlanOutput',e)}
+};
+$('agentDiscard').onclick=()=>{pendingAgent=null;$('agentApprove').disabled=true;$('agentPlanOutput').textContent='تم إلغاء الخطة'};
+function getWorkspace(){let w=$('workspace').value.trim();if(!w)throw Error('اكتب مسار مجلد المشروع داخل الكمبيوتر');return w}
+async function listFiles(path=''){
+ try{let q=new URLSearchParams({workspace:getWorkspace(),path});let r=await fetch('/v1/workspace/list?'+q);let d=await r.json();if(!r.ok)throw Error(d.detail);
+ workspaceFolder=path;$('filesPanel').replaceChildren();
+ if(path){let up=document.createElement('button');up.textContent='↩ ..';up.onclick=()=>listFiles(path.includes('/')?path.slice(0,path.lastIndexOf('/')):'');$('filesPanel').append(up)}
+ for(let f of d.items){let el=document.createElement('div');el.className='lineitem';el.textContent=(f.is_dir?'📁 ':'📄 ')+f.name;el.onclick=()=>f.is_dir?listFiles(f.path):openFile(f.path);$('filesPanel').append(el)}
+ }catch(e){showErr('filesPanel',e)}
+}
+async function openFile(path){try{let q=new URLSearchParams({workspace:getWorkspace(),path});let r=await fetch('/v1/workspace/file?'+q);let d=await r.json();if(!r.ok)throw Error(d.detail);$('editorPath').value=path;$('sourceEditor').value=d.content;$('editStatus').textContent='فُتح الملف للقراءة والتحرير.';lastBackup=null;$('undoEdit').disabled=true;$('editDiff').textContent='';pendingEdit=null;$('applyEdit').disabled=true}catch(e){showErr('editStatus',e)}}
+$('openWorkspace').onclick=()=>listFiles('');$('workspaceUp').onclick=()=>listFiles('');
+$('previewEdit').onclick=async()=>{try{let r=await apiJson('/v1/workspace/edit/preview',{workspace:getWorkspace(),path:$('editorPath').value.trim(),content:$('sourceEditor').value});pendingEdit=r.approval_id;$('editDiff').textContent=r.diff||'بدون تغيير';$('applyEdit').disabled=!r.changed;$('editStatus').textContent=r.changed?'راجع الفرق بعناية قبل الموافقة.':'الملف مطابق للأصل.'}catch(e){showErr('editStatus',e)}};
+$('applyEdit').onclick=async()=>{if(!pendingEdit||!confirm('حفظ التعديل المعروض على الكمبيوتر؟ سيتم إنشاء نسخة تراجع.'))return;
+try{let r=await apiJson('/v1/workspace/edit/apply',{approval_id:pendingEdit,confirmed:true});pendingEdit=null;$('applyEdit').disabled=true;lastBackup=r.backup_id;$('undoEdit').disabled=false;$('editStatus').textContent='تم الحفظ؛ نسخة التراجع: '+r.backup_id;$('editDiff').textContent=''}catch(e){showErr('editStatus',e)}};
+$('undoEdit').onclick=async()=>{if(!lastBackup||!confirm('هل توافق على استعادة محتوى الملف قبل آخر حفظ؟ لا يمكن التراجع لو الملف اتغير بعد الحفظ.'))return;
+ try{let id=lastBackup;let r=await apiJson('/v1/workspace/edit/undo',{approval_id:id,confirmed:true});lastBackup=null;$('undoEdit').disabled=true;$('editStatus').textContent='اتراجعنا عن آخر تعديل: '+r.restored;await openFile(r.restored)}catch(e){showErr('editStatus',e)}};
+async function mcpInfo(){try{let r=await(await fetch('/v1/mcp/servers')).json();let x=r.servers.find(s=>s.id==='rea');$('reaEnable').textContent=x.enabled?'إيقاف REA':'تفعيل REA';$('mcpTools').textContent='الحالة: '+(x.enabled?'مفعل':'غير مفعل')+' | npx: '+(x.installed?'موجود':'غير موجود')}catch(e){showErr('mcpTools',e)}}
+$('reaEnable').onclick=async()=>{try{let p=await(await fetch('/v1/mcp/servers')).json();let x=p.servers.find(s=>s.id==='rea');if(!confirm((x.enabled?'تعطيل':'تفعيل')+' REA MCP؟ قد يقوم npx بتحميل النسخة الرسمية المحددة عند أول استخدام.'))return;await apiJson('/v1/mcp/enable',{server:'rea',enabled:!x.enabled});await mcpInfo()}catch(e){showErr('mcpTools',e)}};
+$('mcpRegister').onclick=async()=>{let id=$('mcpId').value.trim(),command=$('mcpCommand').value.trim(),args=$('mcpArgs').value.trim().split(/\s+/).filter(Boolean);
+ if(!confirm('الأداة الخارجية قد تشغّل برامج على جهازك. سجلها فقط لو راجعت مستودعها وتثق في مصدرها.\n'+command+' '+args.join(' ')))return;
+ try{let r=await apiJson('/v1/mcp/register',{id,command,args,enabled:true,confirmed:true});$('mcpRegistryOutput').textContent='تم التسجيل: '+r.id+' — افتح قائمة الأدوات لاكتشافها.'}catch(e){showErr('mcpRegistryOutput',e)} };
+$('reaDiscover').onclick=async()=>{try{$('mcpTools').textContent='جاري الاتصال بـREA...';let r=await fetch('/v1/mcp/tools');let d=await r.json();if(!r.ok)throw Error(d.detail);$('mcpTools').replaceChildren();for(let t of d.tools){let row=document.createElement('div');row.className='entry';let title=document.createElement('strong');title.textContent=t.name;let caption=document.createElement('small');caption.textContent=(t.description||'').slice(0,170);let btn=document.createElement('button');btn.textContent='تشغيل بإدخال JSON';btn.onclick=async()=>{let raw=prompt('JSON arguments for '+t.name,'{}');if(raw===null)return;let args;try{args=JSON.parse(raw)}catch{alert('صيغة JSON غير صحيحة');return}if(!confirm('تشغيل REA: '+t.name+'\n'+JSON.stringify(args).slice(0,800)+'?'))return;try{let x=await apiJson('/v1/mcp/run',{server:'rea',name:t.name,arguments:args,confirmed:true});$('toolOutput').textContent=JSON.stringify(x.result,null,2).slice(0,30000)}catch(e){showErr('toolOutput',e)}};row.append(title,caption,btn);$('mcpTools').append(row)}}catch(e){showErr('mcpTools',e)}};
+$('gitAction').onchange=()=>{let examples={branch:{name:'feature/new-work'},commit:{files:['main.py'],message:'Fix module'},push:{branch:'feature/new-work'},pr:{base:'main',title:'Feature update',body:'Describe changes'}};$('gitParams').value=JSON.stringify(examples[$('gitAction').value],null,2)};
+$('gitPreview').onclick=async()=>{try{let params=JSON.parse($('gitParams').value);let r=await apiJson('/v1/github/preview',{workspace:getWorkspace(),action:$('gitAction').value,params});pendingGit=r.approval_id;$('gitOutput').textContent=r.summary+'\n'+r.command_preview.join(' ');$('gitApply').disabled=false}catch(e){showErr('gitOutput',e)}};
+$('gitApply').onclick=async()=>{if(!pendingGit||!confirm('هذه عملية Git قد تُغيّر المستودع أو ترفع ملفات للإنترنت. هل توافق على الأمر المُعايَن؟'))return;try{let r=await apiJson('/v1/github/apply',{approval_id:pendingGit,confirmed:true});pendingGit=null;$('gitApply').disabled=true;$('gitOutput').textContent='Exit '+r.exit_code+'\n'+r.stdout+'\n'+r.stderr}catch(e){showErr('gitOutput',e)}};
+$('buildPreview').onclick=async()=>{try{let r=await apiJson('/v1/build/preview',{workspace:getWorkspace(),profile:$('buildProfile').value,entry:$('buildEntry').value.trim(),name:$('buildName').value.trim()});pendingBuild=r.id;$('buildApprove').disabled=false;$('buildOutput').textContent='الأمر المقترح:\n'+r.command.join(' ')+'\nالحالة: '+r.status}catch(e){showErr('buildOutput',e)}};
+$('buildApprove').onclick=async()=>{if(!pendingBuild||!confirm('هل توافق على تشغيل أمر البناء في المشروع المحدد؟ قد تنفذ أدوات بناء المشروع كودًا من ملفاته.'))return;try{let r=await apiJson('/v1/build/run',{build_id:pendingBuild,confirmed:true});currentBuild=pendingBuild;pendingBuild=null;$('buildApprove').disabled=true;$('buildOutput').textContent='بدأ البناء: '+r.id+'\n'+r.command.join(' ')}catch(e){showErr('buildOutput',e)}};
+$('buildRefresh').onclick=async()=>{if(!currentBuild)return;try{let r=await(await fetch('/v1/build/jobs/'+currentBuild)).json();$('buildOutput').textContent='الحالة: '+r.status+' | Exit: '+r.exit_code+'\nنتائج:\n'+(r.artifacts||[]).join('\n')+'\n'+r.log}catch(e){showErr('buildOutput',e)}};
+$('runDoctor').onclick=async()=>{try{
+ $('doctorOutput').textContent='جاري فحص المكونات...';
+ const r=await fetch('/v1/system/doctor');const d=await r.json();if(!r.ok)throw Error(JSON.stringify(d));
+ const lines=['النظام: '+d.platform+' '+d.architecture,'Python: '+d.python,'حزمة Windows: '+(d.packaged?'مثبتة':'تعمل من المصدر'),
+ 'أدوات Windows: '+Object.entries(d.runtimes).map(([k,v])=>k+' '+(v?'✓':'✗')).join(' | '),
+ 'المكتبات: '+Object.entries(d.sdk).map(([k,v])=>k+' '+(v?'✓':'✗')).join(' | '),
+ 'مفاتيح الخدمات: '+Object.entries(d.providers).map(([k,v])=>k+' '+(v?'✓':'✗')).join(' | '),
+ 'MCP: '+d.mcp.map(x=>x.id+': '+(x.enabled&&x.installed?'مفعّل':'غير جاهز')).join(' | ')];
+ $('doctorOutput').textContent=lines.join('\n');
+}catch(e){showErr('doctorOutput',e)}};
+$('saveApiKey').onclick=async()=>{try{await apiJson('/v1/settings/key',{key_name:$('apiProvider').value,value:$('apiKeyInput').value});$('apiKeyInput').value='';$('apiStatus').textContent='✅ المفتاح محفوظ في مخزن بيانات Windows. جرب تحديث النماذج.';refreshDetails();loadModels();loadVoiceSettings()}catch(e){showErr('apiStatus',e)}};
+// Model cards: provider on/off + priority controls, saved and validated server-side.
+async function refreshModelControls(){
+ try{let d=await(await fetch('/v1/router/providers')).json();let group=document.createElement('div');group.className='entry';group.style.marginTop='12px';
+ for(let p of d.providers){let row=document.createElement('div');row.className='lineitem';let name=document.createElement('span');name.textContent=p.name+' · '+(p.configured?'🔑':'بدون مفتاح');let toggle=document.createElement('button');toggle.textContent=p.enabled?'تعطيل':'تفعيل';toggle.onclick=async()=>{try{await apiJson('/v1/models/settings',{provider:p.name,enabled:!p.enabled});await refreshDetails()}catch(e){alert(e.message)}};let priority=document.createElement('input');priority.type='number';priority.min=0;priority.max=100;priority.value=p.priority;priority.style.width='54px';priority.title='الأولوية';priority.onchange=async()=>{try{await apiJson('/v1/models/settings',{provider:p.name,priority:Number(priority.value)});refreshDetails()}catch(e){alert(e.message)}};row.append(name,priority,toggle);group.append(row)}
+ $('modelDetails').append(group)
+ }catch(e){}
+}
+const oldRefreshDetails=refreshDetails;
+refreshDetails=async()=>{await oldRefreshDetails();await refreshModelControls()};
+// Coding Studio is local and read-only until an edit has its own approval.
+let pendingAgentEdit=null;
+$('codeDiagnose').onclick=async()=>{try{let q=new URLSearchParams({workspace:getWorkspace()});let r=await fetch('/v1/coding/diagnostics?'+q);let x=await r.json();if(!r.ok)throw Error(JSON.stringify(x.detail));$('codingOutput').textContent=JSON.stringify(x,null,2)}catch(e){showErr('codingOutput',e)}};
+$('codeMap').onclick=async()=>{try{let q=new URLSearchParams({workspace:getWorkspace()});let r=await fetch('/v1/coding/map?'+q);let x=await r.json();if(!r.ok)throw Error(JSON.stringify(x.detail));$('codingOutput').textContent=JSON.stringify(x,null,2)}catch(e){showErr('codingOutput',e)}};
+$('codeSearch').onclick=async()=>{try{let q=new URLSearchParams({workspace:getWorkspace(),phrase:$('codePhrase').value.trim()});let r=await fetch('/v1/coding/search?'+q);let x=await r.json();if(!r.ok)throw Error(JSON.stringify(x.detail));$('codingOutput').textContent=JSON.stringify(x,null,2)}catch(e){showErr('codingOutput',e)}};
+$('codeOutline').onclick=async()=>{try{let q=new URLSearchParams({workspace:getWorkspace(),path:$('codeOutlinePath').value.trim()||$('editorPath').value.trim()});let r=await fetch('/v1/coding/outline?'+q);let x=await r.json();if(!r.ok)throw Error(JSON.stringify(x.detail));$('codingOutput').textContent=JSON.stringify(x,null,2)}catch(e){showErr('codingOutput',e)}};
+$('agentSaveEdit').onclick=async()=>{if(!pendingAgentEdit)return;if(!confirm('تأكيد حفظ الملف بعد مراجعة التغيير؟ سيتم حفظ نسخة تراجع.'))return;
+try{
+ const item=pendingAgentEdit;const r=await apiJson('/v1/workspace/edit/apply',{approval_id:item.approval_id,confirmed:true});
+ pendingAgentEdit=null;$('agentEditReview').hidden=true;
+ await openFile(r.path);
+ // openFile clears stale undo state. Restore the NEW backup only after it returns.
+ lastBackup=r.backup_id;$('undoEdit').disabled=false;
+ $('agentPlanOutput').textContent+='\n✅ تم حفظ '+r.path+' بنجاح؛ جاري إعداد الخطوة التالية من النتيجة الفعلية...';
+ try{
+  let next=await apiJson('/v1/agent/resume',{approval_id:item.approval_id,backup_id:r.backup_id,confirmed:true});
+  if(next.next_plan){pendingAgent=next.next_plan.plan_id;$('agentApprove').disabled=false;
+   $('agentPlanOutput').textContent+='\n\nالخطوة التالية — تتطلب موافقة جديدة:\n'+next.next_plan.plan.reason+'\n'+JSON.stringify(next.next_plan.plan.steps,null,2);
+  }else{
+   $('agentPlanOutput').textContent+='\n'+next.answer;
+   let c=active();if(c){c.messages.push({role:'assistant',content:next.answer,meta:next.model||'AI Router'});save();render()}
+  }
+ }catch(err){$('agentPlanOutput').textContent+='\n⚠ تم حفظ التعديل فعلًا لكن تعذر استكمال الخطة: '+String(err.message).slice(0,250)}
+}catch(e){showErr('agentPlanOutput',e)}};
+mcpInfo();
+// Gemini 3.8 Live: live WebSocket voice proxy; raw mic frames are never uploaded by JS with an API key.
+let liveSocket=null,liveInput=null,liveCtx=null,liveStream=null,liveSources=[],liveNextTime=0,liveActive=false;
+function clearLiveAudio(){for(let s of liveSources){try{s.stop()}catch{}}liveSources=[];liveNextTime=0}
+function pcm16(samples,inputRate){let len=Math.max(1,Math.floor(samples.length*16000/inputRate));let buffer=new ArrayBuffer(len*2),view=new DataView(buffer);for(let i=0;i<len;i++){let f=samples[Math.min(samples.length-1,Math.floor(i*inputRate/16000))];view.setInt16(i*2,Math.round(Math.max(-1,Math.min(1,f))*32767),true)}return buffer}
+function playLivePCM(encoded){if(!liveCtx)return;let raw=atob(encoded),frames=raw.length>>1;if(!frames)return;let buf=liveCtx.createBuffer(1,frames,24000),target=buf.getChannelData(0);for(let i=0;i<frames;i++){let low=raw.charCodeAt(i*2),high=raw.charCodeAt(i*2+1),signed=(high<<8)|low;target[i]=(signed>32767?signed-65536:signed)/32768}let source=liveCtx.createBufferSource();source.buffer=buf;source.connect(liveCtx.destination);let start=Math.max(liveCtx.currentTime+.02,liveNextTime);source.start(start);liveNextTime=start+buf.duration;liveSources.push(source);source.onended=()=>{liveSources=liveSources.filter(s=>s!==source)}}
+async function endLive(){liveActive=false;try{liveSocket?.send(JSON.stringify({type:'end'}));liveSocket?.close()}catch{}liveSocket=null;if(liveInput){try{liveInput.disconnect()}catch{}liveInput=null}if(liveStream){liveStream.getTracks().forEach(t=>t.stop());liveStream=null}clearLiveAudio();if(liveCtx){await liveCtx.close().catch(()=>{});liveCtx=null}$('liveVoice').disabled=false;$('stopLiveVoice').disabled=true;$('liveTranscript').textContent='المكالمة انتهت'}
+$('stopLiveVoice').onclick=endLive;
+$('liveVoice').onclick=async()=>{if(liveActive)return;try{
+ stopSpeech();if(isRecording)stopRecording();liveActive=true;$('liveVoice').disabled=true;$('stopLiveVoice').disabled=false;
+ liveStream=await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:true,noiseSuppression:true}});
+ liveCtx=new (window.AudioContext||window.webkitAudioContext)();await liveCtx.resume();
+ let source=liveCtx.createMediaStreamSource(liveStream);liveInput=liveCtx.createScriptProcessor(4096,1,1);
+ let silent=liveCtx.createGain();silent.gain.value=0;source.connect(liveInput);liveInput.connect(silent);silent.connect(liveCtx.destination);
+ let url='ws://'+location.host+'/v1/voice/live?voice='+encodeURIComponent($('voiceSelect').value);
+ liveSocket=new WebSocket(url);liveSocket.binaryType='arraybuffer';
+ liveSocket.onmessage=event=>{try{let m=JSON.parse(event.data);if(m.type==='ready')$('liveTranscript').textContent='🟢 متصل. اتكلم باللهجة المصرية.';if(m.type==='audio')playLivePCM(m.data);if(m.type==='interrupt'){clearLiveAudio();$('liveTranscript').textContent='المساعد سمع المقاطعة'}if(m.type==='input_text')$('liveTranscript').textContent='إنت: '+m.text;if(m.type==='output_text')$('liveTranscript').textContent='المساعد: '+m.text;if(m.type==='error')$('liveTranscript').textContent='⚠ '+m.message}catch(e){console.warn(e)}};
+ liveSocket.onclose=()=>{if(liveActive)endLive()};
+ liveInput.onaudioprocess=e=>{if(!liveActive)return;e.outputBuffer.getChannelData(0).fill(0);if(liveSocket?.readyState===WebSocket.OPEN && liveSocket.bufferedAmount<250000){let packet=pcm16(e.inputBuffer.getChannelData(0),liveCtx.sampleRate);liveSocket.send(packet)}};
+ $('liveTranscript').textContent='جاري الاتصال بـGemini Live...';
+}catch(e){await endLive();$('liveTranscript').textContent='تعذر بدء المكالمة: '+String(e.message)}};
+window.addEventListener('beforeunload',()=>{if(liveSocket)liveSocket.close();if(liveStream)liveStream.getTracks().forEach(t=>t.stop())});
+
+// Local fallback status: the server checks the loopback Ollama instance, never Ollama Cloud.
+async function refreshLocalStatus(force=false){
+ try{
+   const resp=await fetch('/v1/router/connectivity'+(force?'?refresh=true':''));
+   if(!resp.ok)throw Error('تعذّر فحص النماذج المحلية');
+   const data=await resp.json();
+   $('routingMode').value=data.mode;
+   const models=data.ollama.models||[];
+   const state=data.ollama.enabled ? (data.ollama.reachable?'🟢 Ollama شغال':'🔴 Ollama غير متصل') : '⚪ Ollama معطّل';
+   const cloud=data.cloud_connection==='suspected_offline'?' · ⚠️ السحابي غير متاح مؤقتًا':' · السحابي حسب الاتصال';
+   $('localConnection').textContent=state+cloud+'\n'+(models.length?'النماذج المثبتة: '+models.join('، '):(data.ollama.message||'لا توجد نماذج محلية'));
+   if(force){loadModels();refreshDetails()}
+ }catch(e){$('localConnection').textContent='⚠️ تعذّر فحص Ollama: '+e.message}
+}
+$('routingMode').addEventListener('change',async()=>{
+ try{await apiJson('/v1/router/mode',{mode:$('routingMode').value},'PUT');await refreshLocalStatus(true)}
+ catch(e){alert(e.message);await refreshLocalStatus()}
+});
+$('refreshLocal').onclick=()=>refreshLocalStatus(true);
+refreshLocalStatus();
+</script></body></html>

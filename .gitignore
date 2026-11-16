@@ -1,0 +1,29 @@
+# Never upload local authentication or user data
+.env
+.env.*
+!.env.example
+*.sqlite
+*.sqlite3
+*.db
+*.log
+*.key
+*.pem
+
+# Python cache and packaging
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.venv/
+.buildvenv/
+dist/
+release/
+*.spec
+
+# Frontend build outputs
+frontend/node_modules/
+frontend/dist/
+web/react/
+
+# Local desktop and diagnostics
+*.tmp
+.DS_Store

@@ -1,0 +1,174 @@
+[
+  {
+    "path": ".github/workflows/windows-build.yml",
+    "status": "modified"
+  },
+  {
+    "path": "BUILD_BARQ.bat",
+    "status": "modified"
+  },
+  {
+    "path": "BUILD_WINDOWS_EXE.bat",
+    "status": "modified"
+  },
+  {
+    "path": "README.md",
+    "status": "modified"
+  },
+  {
+    "path": "agent/orchestrator.py",
+    "status": "modified"
+  },
+  {
+    "path": "coding/targeted.py",
+    "status": "added"
+  },
+  {
+    "path": "core/version.py",
+    "status": "modified"
+  },
+  {
+    "path": "docs/v2.26/PROJECT_PIPELINE_AR.md",
+    "status": "added"
+  },
+  {
+    "path": "frontend/package-lock.json",
+    "status": "modified"
+  },
+  {
+    "path": "frontend/package.json",
+    "status": "modified"
+  },
+  {
+    "path": "frontend/src/components/chat/ApprovalDialog.tsx",
+    "status": "modified"
+  },
+  {
+    "path": "frontend/src/components/chat/Message.tsx",
+    "status": "modified"
+  },
+  {
+    "path": "frontend/src/components/layout/SettingsModal.tsx",
+    "status": "modified"
+  },
+  {
+    "path": "frontend/src/components/workspace/BlueprintReview.tsx",
+    "status": "added"
+  },
+  {
+    "path": "frontend/src/components/workspace/MissionBoard.tsx",
+    "status": "added"
+  },
+  {
+    "path": "frontend/src/components/workspace/WorkspaceStudio.tsx",
+    "status": "modified"
+  },
+  {
+    "path": "frontend/src/components/workspace/studioPolish.css",
+    "status": "modified"
+  },
+  {
+    "path": "frontend/src/lib/approvals.ts",
+    "status": "modified"
+  },
+  {
+    "path": "frontend/src/lib/taskActions.ts",
+    "status": "modified"
+  },
+  {
+    "path": "frontend/src/store/index.ts",
+    "status": "modified"
+  },
+  {
+    "path": "mission/blueprint.py",
+    "status": "added"
+  },
+  {
+    "path": "mission/engine.py",
+    "status": "modified"
+  },
+  {
+    "path": "mission/recovery.py",
+    "status": "added"
+  },
+  {
+    "path": "mission/runtime.py",
+    "status": "added"
+  },
+  {
+    "path": "mission/tracking.py",
+    "status": "modified"
+  },
+  {
+    "path": "mission/validation.py",
+    "status": "modified"
+  },
+  {
+    "path": "router/engine.py",
+    "status": "modified"
+  },
+  {
+    "path": "scripts/build_windows.ps1",
+    "status": "modified"
+  },
+  {
+    "path": "scripts/installer.iss",
+    "status": "modified"
+  },
+  {
+    "path": "scripts/ui_approval_smoke.py",
+    "status": "modified"
+  },
+  {
+    "path": "tests/test_v226_project_pipeline.py",
+    "status": "added"
+  },
+  {
+    "path": "verification/v2.26/SUMMARY.json",
+    "status": "added"
+  },
+  {
+    "path": "verification/v2.26/browser-approvals.json",
+    "status": "added"
+  },
+  {
+    "path": "verification/v2.26/browser-live-code.json",
+    "status": "added"
+  },
+  {
+    "path": "verification/v2.26/frontend-build.log",
+    "status": "added"
+  },
+  {
+    "path": "verification/v2.26/self-test.json",
+    "status": "added"
+  },
+  {
+    "path": "verification/v2.26/tests.log",
+    "status": "added"
+  },
+  {
+    "path": "web/react/assets/index-BFD-6tvs.css",
+    "status": "removed"
+  },
+  {
+    "path": "web/react/assets/index-BNS0kGhL.js",
+    "status": "removed"
+  },
+  {
+    "path": "web/react/assets/index-BVywUvw7.css",
+    "status": "added"
+  },
+  {
+    "path": "web/react/assets/index-DqJ0vybz.js",
+    "status": "added"
+  },
+  {
+    "path": "web/react/index.html",
+    "status": "modified"
+  },
+  {
+    "path": "workspace/manager.py",
+    "status": "modified"
+  }
+]

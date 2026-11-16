@@ -1,0 +1,20 @@
+AI Router Agent - Windows test/build repair v2.1.2
+
+Fixes three failures from the user Windows screenshot:
+  * cp1252 UnicodeDecodeError -> UTF-8 build environment and explicit UTF-8 reads
+  * No module named bs4 -> installs beautifulsoup4 in desktop build environment
+  * pytest process exits 1 -> uses the CURRENT Python interpreter instead of system Python
+
+OPTION A: ONE-CLICK REPAIR + REBUILD
+1. Extract ZIP into Downloads or next to existing AI_Router_Agent folder.
+2. Double-click FIX_AND_BUILD.bat from the extracted folder.
+3. The repair searches the Downloads layout and creates backup copies.
+4. Once the repair completes, it automatically starts the existing Windows build.
+
+If the app cannot be located, drag the existing AI_Router_Agent FOLDER onto FIX_AND_BUILD.bat.
+Or run PowerShell manually:
+  powershell -ExecutionPolicy Bypass -File APPLY_FIX.ps1 -ProjectPath "C:\path\to\AI_Router_Agent"
+
+This is a small source patch, NOT a finished Windows EXE.
+No .env, user projects, chats, API keys, or other settings are changed.
+The next complete Windows EXE build still requires the Windows computer.

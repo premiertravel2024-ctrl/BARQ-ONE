@@ -1,0 +1,14 @@
+mode_weights:
+  fast: {quality: 0.20, latency: 0.50, availability: 0.14, reliability: 0.16, privacy: 1.0}
+  balanced: {quality: 0.48, latency: 0.22, availability: 0.13, reliability: 0.17, privacy: 1.0}
+  best: {quality: 0.69, latency: 0.08, availability: 0.08, reliability: 0.15, privacy: 1.0}
+triage_confidence: 0.78
+semantic_cache_similarity: 0.93
+exploration_rate: 0.05
+max_models_per_request: 5
+max_nodes: 8
+max_depth: 4
+safety_margin: 0.10
+max_retries_per_model: 1
+
+coding_name_boost: [deepseek, qwen3-coder, qwen2.5-coder, flint, minimax, glm, gpt-oss, north-mini-code, nemotron, qwen3.8]

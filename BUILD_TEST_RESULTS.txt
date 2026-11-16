@@ -1,0 +1,7 @@
+BARQ v2.9.0
+Python pytest baseline v2.8.8: 292 passed, 65 subtests.
+Python pytest post-change: 304 passed, 65 subtests.
+TS/TSX source syntax: 6 changed files transpile without syntax diagnostics.
+Node/npm: npm ci failed in this Linux environment (Exit handler never called); full TypeScript type-check and Vite build NOT VERIFIED.
+Windows: PyInstaller and Inno Setup NOT VERIFIED on Windows.
+Bundled React UI recovery build may use an older frontend than the v2.9 source.

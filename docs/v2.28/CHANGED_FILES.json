@@ -1,0 +1,126 @@
+[
+  {
+    "path": ".github/workflows/windows-build.yml",
+    "status": "modified"
+  },
+  {
+    "path": "BUILD_BARQ.bat",
+    "status": "modified"
+  },
+  {
+    "path": "BUILD_WINDOWS_EXE.bat",
+    "status": "modified"
+  },
+  {
+    "path": "README.md",
+    "status": "modified"
+  },
+  {
+    "path": "core/version.py",
+    "status": "modified"
+  },
+  {
+    "path": "docs/v2.28/CHAT_LAUNCH_AR.md",
+    "status": "added"
+  },
+  {
+    "path": "frontend/package-lock.json",
+    "status": "modified"
+  },
+  {
+    "path": "frontend/package.json",
+    "status": "modified"
+  },
+  {
+    "path": "frontend/src/components/chat/Composer.tsx",
+    "status": "modified"
+  },
+  {
+    "path": "frontend/src/components/chat/Message.tsx",
+    "status": "modified"
+  },
+  {
+    "path": "frontend/src/components/layout/SettingsModal.tsx",
+    "status": "modified"
+  },
+  {
+    "path": "frontend/src/components/workspace/WorkspaceStudio.tsx",
+    "status": "modified"
+  },
+  {
+    "path": "frontend/src/lib/launcher.ts",
+    "status": "modified"
+  },
+  {
+    "path": "frontend/src/styles/global.css",
+    "status": "modified"
+  },
+  {
+    "path": "launcher/nlu.py",
+    "status": "modified"
+  },
+  {
+    "path": "launcher/resolver.py",
+    "status": "modified"
+  },
+  {
+    "path": "scripts/build_windows.ps1",
+    "status": "modified"
+  },
+  {
+    "path": "scripts/installer.iss",
+    "status": "modified"
+  },
+  {
+    "path": "tests/test_v211_typescript_hotfix.py",
+    "status": "modified"
+  },
+  {
+    "path": "tests/test_v228_launch_paths.py",
+    "status": "added"
+  },
+  {
+    "path": "verification/v2.28/SUMMARY.json",
+    "status": "added"
+  },
+  {
+    "path": "verification/v2.28/browser-chat.json",
+    "status": "added"
+  },
+  {
+    "path": "verification/v2.28/frontend-build.log",
+    "status": "added"
+  },
+  {
+    "path": "verification/v2.28/self-test.json",
+    "status": "added"
+  },
+  {
+    "path": "verification/v2.28/tests.log",
+    "status": "added"
+  },
+  {
+    "path": "verification/v2.28/tests.xml",
+    "status": "added"
+  },
+  {
+    "path": "web/react/assets/index-BVywUvw7.css",
+    "status": "removed"
+  },
+  {
+    "path": "web/react/assets/index-BzQ9EUFN.js",
+    "status": "removed"
+  },
+  {
+    "path": "web/react/assets/index-DqI5yt6V.js",
+    "status": "added"
+  },
+  {
+    "path": "web/react/assets/index-x2LF2tC8.css",
+    "status": "added"
+  },
+  {
+    "path": "web/react/index.html",
+    "status": "modified"
+  }
+]

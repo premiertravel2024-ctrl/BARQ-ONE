@@ -1,0 +1,50 @@
+[
+  {
+    "path": "README.md",
+    "status": "modified"
+  },
+  {
+    "path": "SOURCE_MANIFEST_SHA256.json",
+    "status": "modified"
+  },
+  {
+    "path": "START_HERE_AR.txt",
+    "status": "modified"
+  },
+  {
+    "path": "WINDOWS_BUILD_GUIDE_AR.md",
+    "status": "modified"
+  },
+  {
+    "path": "docs/v2.18.2-installer-fix/BUILD_REPORT_AR.md",
+    "status": "added"
+  },
+  {
+    "path": "docs/v2.18.2-installer-fix/CHANGED_FILES.json",
+    "status": "added"
+  },
+  {
+    "path": "docs/v2.18.2-installer-fix/CHANGED_FILES.md",
+    "status": "added"
+  },
+  {
+    "path": "scripts/installer.iss",
+    "status": "modified"
+  },
+  {
+    "path": "scripts/verify_release_consistency.py",
+    "status": "modified"
+  },
+  {
+    "path": "verification/v2.18.2-installer-fix/preflight-checks.json",
+    "status": "added"
+  },
+  {
+    "path": "verification/v2.18.2-installer-fix/python-tests.log",
+    "status": "added"
+  },
+  {
+    "path": "verification/v2.18.2-installer-fix/python-tests.xml",
+    "status": "added"
+  }
+]

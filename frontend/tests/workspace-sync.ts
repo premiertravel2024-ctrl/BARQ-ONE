@@ -1,0 +1,28 @@
+import assert from 'node:assert/strict';
+import {reconcileFiles,addEditorFile,announceToolOutput,type EditorFile} from '../src/lib/workspaceSync';
+const file:EditorFile={path:'app.py',content:'old',original:'old',revision:'v1'};
+const disk={path:'app.py',content:'external',revision:'v2',exists:true};
+assert.equal(reconcileFiles([file],[disk])[0].content,'external');
+const draft={...file,content:'my draft'};
+const conflict=reconcileFiles([draft],[disk])[0];
+assert.equal(conflict.content,'my draft');assert.equal(conflict.original,'old');assert.equal(conflict.disk?.content,'external');
+assert.equal(conflict.revision,'v1','Do not silently approve the new disk baseline');
+assert.equal(reconcileFiles([conflict],[{...disk,content:'old',revision:'v1'}])[0].disk,undefined);
+const removed=reconcileFiles([file],[{...disk,content:'',exists:false,revision:'missing'}])[0];
+assert.equal(removed.content,'old');assert.equal(removed.disk?.exists,false);
+assert.equal(reconcileFiles([draft],[{path:'app.py',error:'unavailable'}])[0].content,'my draft');
+const full=Array.from({length:18},(_,i)=>({...draft,path:`${i}.py`}));
+assert.throws(()=>addEditorFile(full,{...file,path:'new.py'}),/التبويبات/);
+const oneClean=[file,...full.slice(1)];
+const opened=addEditorFile(oneClean,{...file,path:'new.py'});
+assert.equal(opened.length,18);assert.ok(!opened.some(f=>f.path==='app.py'));
+assert.equal(addEditorFile(full,full[0]),full,'Concurrent open must not duplicate tabs');
+console.log('PASS: external refresh, draft conflict, deletion, read failure, tab capacity, duplicate open');
+
+const events:CustomEvent[]=[];
+Object.defineProperty(globalThis,'window',{value:{dispatchEvent:(event:CustomEvent)=>events.push(event)},configurable:true});
+announceToolOutput('/project',[{tool:'project_build',success:true,result:JSON.stringify({log:'Actual compiler output',artifacts:['dist/App/App.exe'],exit_code:0})}]);
+assert.equal(events[0].type,'barq-tool-output');
+assert.ok(events[0].detail.text.includes('Actual compiler output'));
+assert.ok(events[0].detail.text.includes('dist/App/App.exe'));
+console.log('PASS: real build logs and artifact paths reach the workspace output');

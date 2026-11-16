@@ -1,0 +1,19 @@
+BARQ AI OpenJarvis native integration - local verification (2026-11-01)
+Source based on BARQ_AI_v2.30_PYTEST_ISOLATED_SAFE_FIX_FULL_SOURCE.zip
+
+PASS: python -m compileall -q agent mission router monitor classifier
+PASS: 94 selected Python tests (brain/router/mission/permission/workspace/recovery)
+PASS: full Python test run reached 775 passed, 65 subtests passed, 1 deselected
+      before stopping at an existing Node.js smoke-test requiring esbuild.
+
+NOT PASSED/NOT RUN:
+- Full repository test suite: blocked by missing frontend esbuild dependency
+  in the Linux integration environment.
+- Native Windows EXE installer build: not run in this environment.
+- Real-device microphone, Ollama inference, GUI, and full autonomous mission:
+  not tested on Windows hardware.
+
+Safety:
+- No execution approval bypass implemented.
+- No tool action preview is recorded as a saved edit.
+- No paid services or extra runtime service introduced.

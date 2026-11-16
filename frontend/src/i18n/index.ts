@@ -1,0 +1,42 @@
+import {useApp} from '../store';
+const translations={
+  en:{newChat:'New chat',search:'Search chats',recent:'Today',yesterday:'Yesterday',lastWeek:'Previous 7 days',older:'Older',
+    settings:'Settings',appearance:'Appearance',models:'Models',shortcuts:'Shortcuts',data:'Data',general:'General',
+    prompt:'Message BARQ...',send:'Send',stop:'Stop generating',attach:'Attach files',microphone:'Voice input',
+    greeting:'BARQ AI — How can I help?',subheading:'Ask, build, and solve problems with your AI assistant.',
+    temperature:'Temperature',tokens:'Max tokens',systemPrompt:'System prompt',localOnly:'Local-only mode',
+    light:'Light theme',dark:'Dark theme',share:'Share chat',more:'More options',rename:'Rename',pin:'Pin',unpin:'Unpin',delete:'Delete',
+    removeConfirm:'Delete this conversation?',removeDescription:'This cannot be undone.',cancel:'Cancel',confirm:'Delete',
+    copy:'Copy',copied:'Copied',regenerate:'Regenerate',like:'Good response',dislike:'Bad response',edit:'Edit message',readAloud:'Read aloud',
+    thinking:'Thinking',reasoning:'Reasoning',modelSelect:'Choose a model',auto:'Auto · best free model',
+    menu:'Open menu',close:'Close',profile:'Your workspace',theme:'Toggle theme',language:'Language',
+    export:'Export conversations',clear:'Delete all chats',shortcutsTitle:'Keyboard shortcuts',
+    searchCommands:'Search commands...',sidebar:'Toggle sidebar',chatSettings:'Chat settings',
+    save:'Save',done:'Done',count:'characters',notAvailable:'Speech recognition is not available in this browser.',
+    mock:'Connected through local router API',playground:'Button playground',settingsTitle:'Preferences',
+    suggestion1:'Write code',suggestion1Prompt:'Write clean, tested code for my project.',
+    suggestion2:'Summarize text',suggestion2Prompt:'Summarize this text into clear action points.',
+    suggestion3:'Translate',suggestion3Prompt:'Translate text accurately while keeping its meaning.',
+    suggestion4:'Explain a concept',suggestion4Prompt:'Explain a technical concept with a simple example.'},
+  ar:{newChat:'محادثة جديدة',search:'البحث في المحادثات',recent:'اليوم',yesterday:'أمس',lastWeek:'آخر ٧ أيام',older:'الأقدم',
+    settings:'الإعدادات',appearance:'المظهر',models:'النماذج',shortcuts:'الاختصارات',data:'البيانات',general:'عام',
+    prompt:'اكتب رسالتك إلى BARQ...',send:'إرسال',stop:'إيقاف التوليد',attach:'إرفاق ملفات',microphone:'الإدخال الصوتي',
+    greeting:'برق AI — أساعدك في إيه النهارده؟',subheading:'اسألني، اطلب كود، أو خلّينا نشتغل على مشروعك خطوة بخطوة.',
+    temperature:'درجة الإبداع',tokens:'أقصى عدد رموز',systemPrompt:'تعليمات النظام',localOnly:'النماذج المحلية فقط',
+    light:'الوضع الفاتح',dark:'الوضع الداكن',share:'مشاركة المحادثة',more:'خيارات إضافية',rename:'إعادة تسمية',pin:'تثبيت',unpin:'إلغاء التثبيت',delete:'حذف',
+    removeConfirm:'تحذف المحادثة دي؟',removeDescription:'مش هتقدر ترجعها بعد الحذف.',cancel:'إلغاء',confirm:'حذف',
+    copy:'نسخ',copied:'تم النسخ',regenerate:'إعادة التوليد',like:'إجابة مفيدة',dislike:'إجابة غير مفيدة',edit:'تعديل الرسالة',readAloud:'قراءة بصوت',
+    thinking:'بيفكر',reasoning:'التفكير',modelSelect:'اختار النموذج',auto:'تلقائي · أفضل نموذج مجاني',
+    menu:'فتح القائمة',close:'إغلاق',profile:'مساحة العمل',theme:'تغيير المظهر',language:'اللغة',
+    export:'تصدير المحادثات',clear:'حذف كل المحادثات',shortcutsTitle:'اختصارات الكيبورد',
+    searchCommands:'البحث عن أمر...',sidebar:'فتح وإغلاق القائمة',chatSettings:'إعدادات المحادثة',
+    save:'حفظ',done:'تم',count:'حرف',notAvailable:'المتصفح ده مش بيدعم التعرف على الكلام.',
+    mock:'متصل بمحرك الذكاء الاصطناعي المحلي',playground:'معرض الأزرار',settingsTitle:'تفضيلات البرنامج',
+    suggestion1:'اكتب كود',suggestion1Prompt:'اكتب كود منظم ومختبر للمشروع بتاعي.',
+    suggestion2:'لخّص نص',suggestion2Prompt:'لخّص النص ده إلى نقاط واضحة ومفيدة.',
+    suggestion3:'ترجم',suggestion3Prompt:'ترجم النص بدقة مع الحفاظ على المعنى.',
+    suggestion4:'اشرح فكرة',suggestion4Prompt:'اشرح مفهوم تقني بمثال بسيط وواضح.'}
+} as const;
+export type TranslationKey=keyof typeof translations.en;
+export function t(key:TranslationKey,language:'ar'|'en'):string{return translations[language][key]}
+export function useT(){const language=useApp(s=>s.language);return (key:TranslationKey)=>t(key,language)}

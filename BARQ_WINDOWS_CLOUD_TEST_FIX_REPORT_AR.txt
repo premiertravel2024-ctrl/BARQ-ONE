@@ -1,0 +1,18 @@
+BARQ Windows Cloud/Test Isolation Fix — 2026-10-28
+
+Changed:
+- scripts/build_windows.ps1: npm ci --no-audit --no-fund --include=dev retains dev dependencies and matches the release gate's locked npm invocation.
+- tests/test_cloud_connections.py: fake cloud verification uses environment-only mock credential lookup, never saved Windows credentials.
+- tests/test_cloud_diversity_and_dropdown.py: fake cloud routing does not inherit persisted user billing blocks or OS keyring; runtime Free Guard remains unchanged.
+
+Verification in Linux sandbox:
+- 20/20 targeted tests passed.
+- Full pytest: 840 passed, 6 failed (all six require esbuild, not installed in this sandbox), 65 subtests passed.
+- verify_source_integrity.py: PASS
+- verify_release_consistency.py: PASS
+
+Limitations:
+- Windows installer/EXE and native Windows esbuild binary not tested here.
+- These fixes isolate test fixtures and make build dependency installation deterministic; they do not guarantee unrelated mission execution bugs are fixed.
+- No production Free Guard, approval policies, routing security, cloud endpoints or credentials changed.
+- No old tests deleted or weakened; test fixture independence updated in two existing test files.

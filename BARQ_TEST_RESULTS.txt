@@ -1,0 +1,148 @@
+..................................................................... [  8%]
+............FF.......................................................... [ 16%]
+........................................................................ [ 25%]
+........................................................................ [ 33%]
+........................................................................ [ 42%]
+........................................................................ [ 50%]
+........................................................................ [ 59%]
+.................................................. [ 65%]
+......F.............................. [ 69%]
+................................................................... [ 77%]
+.F...................................................................... [ 85%]
+.F.......................................F......................F....... [ 94%]
+...............................................                          [100%]
+=========================== short test summary info ============================
+FAILED tests/test_chat_smoke_launcher_regression.py::test_local_launch_and_chat_approval_behavior - AssertionError: 
+  node:internal/modules/cjs/loader:1401
+    const err = new Error(message);
+                ^
+  
+  Error: Cannot find module 'esbuild'
+  Require stack:
+  - /mnt/data/barq_final_work/BARQ/frontend/package.json
+      at Function._resolveFilename (node:internal/modules/cjs/loader:1401:15)
+      at defaultResolveImpl (node:internal/modules/cjs/loader:1057:19)
+      at resolveForCJSWithHooks (node:internal/modules/cjs/loader:1062:22)
+      at Function._load (node:internal/modules/cjs/loader:1211:37)
+      at TracingChannel.traceSync (node:diagnostics_channel:322:14)
+      at wrapModuleLoad (node:internal/modules/cjs/loader:235:24)
+      at Module.require (node:internal/modules/cjs/loader:1487:12)
+      at require (node:internal/modules/helpers:135:16)
+      at file:///mnt/data/barq_final_work/BARQ/scripts/chat_coordination_smoke.mjs:9:15
+      at ModuleJob.run (node:internal/modules/esm/module_job:274:25) {
+    code: 'MODULE_NOT_FOUND',
+    requireStack: [ '/mnt/data/barq_final_work/BARQ/frontend/package.json' ]
+  }
+  
+  Node.js v22.16.0
+  
+assert 1 == 0
+ +  where 1 = CompletedProcess(args=['/opt/nvm/versions/node/v22.16.0/bin/node', '/mnt/data/barq_final_work/BARQ/scripts/chat_coordi...DULE_NOT_FOUND',\n  requireStack: [ '/mnt/data/barq_final_work/BARQ/frontend/package.json' ]\n}\n\nNode.js v22.16.0\n").returncode
+FAILED tests/test_chat_smoke_launcher_regression.py::test_runner_preserves_real_child_assertion_failure - assert 'deliberate regression sentinel' in "node:internal/modules/cjs/loader:1401\n  const err = new Error(message);\n              ^\n\nError: Cannot find modul...ODULE_NOT_FOUND',\n  requireStack: [ '/mnt/data/barq_final_work/BARQ/frontend/package.json' ]\n}\n\nNode.js v22.16.0\n"
+ +  where "node:internal/modules/cjs/loader:1401\n  const err = new Error(message);\n              ^\n\nError: Cannot find modul...ODULE_NOT_FOUND',\n  requireStack: [ '/mnt/data/barq_final_work/BARQ/frontend/package.json' ]\n}\n\nNode.js v22.16.0\n" = CompletedProcess(args=['/opt/nvm/versions/node/v22.16.0/bin/node', '/mnt/data/barq_final_work/BARQ/scripts/chat_coordi...DULE_NOT_FOUND',\n  requireStack: [ '/mnt/data/barq_final_work/BARQ/frontend/package.json' ]\n}\n\nNode.js v22.16.0\n").stderr
+FAILED tests/test_provider_recovery_v217.py::test_frontend_retries_are_never_authority_to_execute_tools - AssertionError: 
+  node:internal/modules/cjs/loader:1401
+    const err = new Error(message);
+                ^
+  
+  Error: Cannot find module 'esbuild'
+  Require stack:
+  - /mnt/data/barq_final_work/BARQ/frontend/package.json
+      at Function._resolveFilename (node:internal/modules/cjs/loader:1401:15)
+      at defaultResolveImpl (node:internal/modules/cjs/loader:1057:19)
+      at resolveForCJSWithHooks (node:internal/modules/cjs/loader:1062:22)
+      at Function._load (node:internal/modules/cjs/loader:1211:37)
+      at TracingChannel.traceSync (node:diagnostics_channel:322:14)
+      at wrapModuleLoad (node:internal/modules/cjs/loader:235:24)
+      at Module.require (node:internal/modules/cjs/loader:1487:12)
+      at require (node:internal/modules/helpers:135:16)
+      at file:///mnt/data/barq_final_work/BARQ/scripts/chat_coordination_smoke.mjs:9:15
+      at ModuleJob.run (node:internal/modules/esm/module_job:274:25) {
+    code: 'MODULE_NOT_FOUND',
+    requireStack: [ '/mnt/data/barq_final_work/BARQ/frontend/package.json' ]
+  }
+  
+  Node.js v22.16.0
+  
+assert 1 == 0
+ +  where 1 = CompletedProcess(args=['/opt/nvm/versions/node/v22.16.0/bin/node', '/mnt/data/barq_final_work/BARQ/scripts/chat_coordi...DULE_NOT_FOUND',\n  requireStack: [ '/mnt/data/barq_final_work/BARQ/frontend/package.json' ]\n}\n\nNode.js v22.16.0\n").returncode
+FAILED tests/test_unified_main_chat_execution.py::test_one_main_chat_controls_workspace_and_project_actions - AssertionError: 
+  node:internal/modules/cjs/loader:1401
+    const err = new Error(message);
+                ^
+  
+  Error: Cannot find module 'esbuild'
+  Require stack:
+  - /mnt/data/barq_final_work/BARQ/frontend/package.json
+      at Function._resolveFilename (node:internal/modules/cjs/loader:1401:15)
+      at defaultResolveImpl (node:internal/modules/cjs/loader:1057:19)
+      at resolveForCJSWithHooks (node:internal/modules/cjs/loader:1062:22)
+      at Function._load (node:internal/modules/cjs/loader:1211:37)
+      at TracingChannel.traceSync (node:diagnostics_channel:322:14)
+      at wrapModuleLoad (node:internal/modules/cjs/loader:235:24)
+      at Module.require (node:internal/modules/cjs/loader:1487:12)
+      at require (node:internal/modules/helpers:135:16)
+      at file:///mnt/data/barq_final_work/BARQ/scripts/chat_coordination_smoke.mjs:9:15
+      at ModuleJob.run (node:internal/modules/esm/module_job:274:25) {
+    code: 'MODULE_NOT_FOUND',
+    requireStack: [ '/mnt/data/barq_final_work/BARQ/frontend/package.json' ]
+  }
+  
+  Node.js v22.16.0
+  
+assert 1 == 0
+ +  where 1 = CompletedProcess(args=['/opt/nvm/versions/node/v22.16.0/bin/node', '/mnt/data/barq_final_work/BARQ/scripts/chat_coordi...DULE_NOT_FOUND',\n  requireStack: [ '/mnt/data/barq_final_work/BARQ/frontend/package.json' ]\n}\n\nNode.js v22.16.0\n").returncode
+FAILED tests/test_v218_resources_and_security.py::test_loopback_ipv6_and_foreign_origins - ValueError: invalid literal for int() with base 10: ':1]'
+FAILED tests/test_v220_fast_approvals.py::test_approval_frontend_dispatch_does_not_repeat_approved_actions - AssertionError: 
+  node:internal/modules/cjs/loader:1401
+    const err = new Error(message);
+                ^
+  
+  Error: Cannot find module 'esbuild'
+  Require stack:
+  - /mnt/data/barq_final_work/BARQ/frontend/package.json
+      at Function._resolveFilename (node:internal/modules/cjs/loader:1401:15)
+      at defaultResolveImpl (node:internal/modules/cjs/loader:1057:19)
+      at resolveForCJSWithHooks (node:internal/modules/cjs/loader:1062:22)
+      at Function._load (node:internal/modules/cjs/loader:1211:37)
+      at TracingChannel.traceSync (node:diagnostics_channel:322:14)
+      at wrapModuleLoad (node:internal/modules/cjs/loader:235:24)
+      at Module.require (node:internal/modules/cjs/loader:1487:12)
+      at require (node:internal/modules/helpers:135:16)
+      at file:///mnt/data/barq_final_work/BARQ/scripts/chat_coordination_smoke.mjs:9:15
+      at ModuleJob.run (node:internal/modules/esm/module_job:274:25) {
+    code: 'MODULE_NOT_FOUND',
+    requireStack: [ '/mnt/data/barq_final_work/BARQ/frontend/package.json' ]
+  }
+  
+  Node.js v22.16.0
+  
+assert 1 == 0
+ +  where 1 = CompletedProcess(args=['/opt/nvm/versions/node/v22.16.0/bin/node', '/mnt/data/barq_final_work/BARQ/scripts/chat_coordi...DULE_NOT_FOUND',\n  requireStack: [ '/mnt/data/barq_final_work/BARQ/frontend/package.json' ]\n}\n\nNode.js v22.16.0\n").returncode
+FAILED tests/test_v221_workspace_integrity.py::test_workspace_frontend_preserves_drafts_and_conflicts - AssertionError: 
+  node:internal/modules/cjs/loader:1401
+    const err = new Error(message);
+                ^
+  
+  Error: Cannot find module 'esbuild'
+  Require stack:
+  - /mnt/data/barq_final_work/BARQ/frontend/package.json
+      at Function._resolveFilename (node:internal/modules/cjs/loader:1401:15)
+      at defaultResolveImpl (node:internal/modules/cjs/loader:1057:19)
+      at resolveForCJSWithHooks (node:internal/modules/cjs/loader:1062:22)
+      at Function._load (node:internal/modules/cjs/loader:1211:37)
+      at TracingChannel.traceSync (node:diagnostics_channel:322:14)
+      at wrapModuleLoad (node:internal/modules/cjs/loader:235:24)
+      at Module.require (node:internal/modules/cjs/loader:1487:12)
+      at require (node:internal/modules/helpers:135:16)
+      at file:///mnt/data/barq_final_work/BARQ/scripts/chat_coordination_smoke.mjs:9:15
+      at ModuleJob.run (node:internal/modules/esm/module_job:274:25) {
+    code: 'MODULE_NOT_FOUND',
+    requireStack: [ '/mnt/data/barq_final_work/BARQ/frontend/package.json' ]
+  }
+  
+  Node.js v22.16.0
+  
+assert 1 == 0
+ +  where 1 = CompletedProcess(args=['/opt/nvm/versions/node/v22.16.0/bin/node', '/mnt/data/barq_final_work/BARQ/scripts/chat_coordi...DULE_NOT_FOUND',\n  requireStack: [ '/mnt/data/barq_final_work/BARQ/frontend/package.json' ]\n}\n\nNode.js v22.16.0\n").returncode
+7 failed, 839 passed, 65 subtests passed in 22.49s

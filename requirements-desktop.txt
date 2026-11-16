@@ -1,0 +1,22 @@
+-r requirements.txt
+pywebview>=5.3,<7
+pyinstaller>=6.10,<8
+keyring>=25,<27
+google-genai>=2.25,<3
+beautifulsoup4>=4.12,<5  # required by HTML UI regression and DOM tests
+
+# Acoustic wake fingerprinting and its regression tests run before EXE packaging.
+# Install in the isolated build venv BEFORE pytest (Windows 64-bit Python 3.11).
+numpy==2.2.6
+vosk>=0.3.45,<1
+sounddevice>=0.5,<1
+# In-process Windows tray must be present BEFORE packaging BARQ.exe.
+pystray>=0.19,<1
+Pillow>=10,<13
+
+# Optional Outlook metadata reader is packaged, but not enabled until user signs in.
+-r requirements-outlook-optional.txt
+
+# Local speaker embeddings and Windows media transport.
+sherpa-onnx==1.13.8
+winsdk>=1.0.0b10,<2; sys_platform == 'win32'

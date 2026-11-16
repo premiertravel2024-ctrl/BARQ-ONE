@@ -1,0 +1,182 @@
+[
+  {
+    "path": ".github/workflows/windows-build.yml",
+    "status": "modified",
+    "reason_ar": "تحديث إصدار التشغيل أو بيانات البناء والواجهة إلى 2.18.2."
+  },
+  {
+    "path": "BUILD_BARQ.bat",
+    "status": "modified",
+    "reason_ar": "تحديث إصدار التشغيل أو بيانات البناء والواجهة إلى 2.18.2."
+  },
+  {
+    "path": "BUILD_WINDOWS_EXE.bat",
+    "status": "modified",
+    "reason_ar": "تحديث إصدار التشغيل أو بيانات البناء والواجهة إلى 2.18.2."
+  },
+  {
+    "path": "README.md",
+    "status": "modified",
+    "reason_ar": "التقرير وقائمة الملفات وتعليمات إعادة البناء وحدود التحقق."
+  },
+  {
+    "path": "cache/store.py",
+    "status": "modified",
+    "reason_ar": "اتصال ملفي محدود بعمر العملية مع قفل للتزامن والحفاظ على دعم الكاش في الذاكرة."
+  },
+  {
+    "path": "coding/project_state.py",
+    "status": "modified",
+    "reason_ar": "إغلاق الاتصال إذا تعذر إنشاء مخطط قاعدة بيانات المشروع."
+  },
+  {
+    "path": "core/sqlite.py",
+    "status": "modified",
+    "reason_ar": "إنهاء المعاملة وإغلاق الاتصال deterministically في النجاح والفشل؛ إغلاق الاتصال عند فشل PRAGMA."
+  },
+  {
+    "path": "core/version.py",
+    "status": "modified",
+    "reason_ar": "تحديث إصدار التشغيل أو بيانات البناء والواجهة إلى 2.18.2."
+  },
+  {
+    "path": "desktop.py",
+    "status": "modified",
+    "reason_ar": "ترتيب إغلاق السيرفر والتنظيف، ودليل cleanup_completed وتشخيص مرحلة الخطأ دون إخفائه."
+  },
+  {
+    "path": "docs/v2.18.2/BUILD_REPORT_AR.md",
+    "status": "added",
+    "reason_ar": "التقرير وقائمة الملفات وتعليمات إعادة البناء وحدود التحقق."
+  },
+  {
+    "path": "docs/v2.18.2/CHANGED_FILES.json",
+    "status": "added",
+    "reason_ar": "التقرير وقائمة الملفات وتعليمات إعادة البناء وحدود التحقق."
+  },
+  {
+    "path": "docs/v2.18.2/CHANGED_FILES.md",
+    "status": "added",
+    "reason_ar": "التقرير وقائمة الملفات وتعليمات إعادة البناء وحدود التحقق."
+  },
+  {
+    "path": "frontend/package-lock.json",
+    "status": "modified",
+    "reason_ar": "تحديث إصدار التشغيل أو بيانات البناء والواجهة إلى 2.18.2."
+  },
+  {
+    "path": "frontend/package.json",
+    "status": "modified",
+    "reason_ar": "تحديث إصدار التشغيل أو بيانات البناء والواجهة إلى 2.18.2."
+  },
+  {
+    "path": "frontend/src/components/layout/SettingsModal.tsx",
+    "status": "modified",
+    "reason_ar": "تحديث إصدار التشغيل أو بيانات البناء والواجهة إلى 2.18.2."
+  },
+  {
+    "path": "frontend/src/components/workspace/WorkspaceStudio.tsx",
+    "status": "modified",
+    "reason_ar": "تحديث إصدار التشغيل أو بيانات البناء والواجهة إلى 2.18.2."
+  },
+  {
+    "path": "scripts/build_windows.ps1",
+    "status": "modified",
+    "reason_ar": "الإصدار 2.18.2 واشتراط cleanup_completed في اختبار EXE المجمد."
+  },
+  {
+    "path": "scripts/installer.iss",
+    "status": "modified",
+    "reason_ar": "تحديث إصدار التشغيل أو بيانات البناء والواجهة إلى 2.18.2."
+  },
+  {
+    "path": "scripts/release_evidence.py",
+    "status": "modified",
+    "reason_ar": "رفض اعتماد مخرجات إصدار لا تؤكد نجاح تنظيف self-test."
+  },
+  {
+    "path": "scripts/smoke_install.ps1",
+    "status": "modified",
+    "reason_ar": "اشتراط نجاح التنظيف في تقرير التطبيق المثبت."
+  },
+  {
+    "path": "scripts/verify_source_integrity.py",
+    "status": "modified",
+    "reason_ar": "التأكد من وجود وحدتي SQLite والكاش المطلوبتين للبناء."
+  },
+  {
+    "path": "tests/test_v2182_sqlite_lifecycle.py",
+    "status": "added",
+    "reason_ar": "15 حالة سلوكية لدورة حياة SQLite وقفل Windows والبيانات والتزامن وفشل التنظيف."
+  },
+  {
+    "path": "verification/v2.18.2/frontend-validation.log",
+    "status": "added",
+    "reason_ar": "سجل إعادة الإنتاج أو التحقق الفعلي من النسخة الجديدة."
+  },
+  {
+    "path": "verification/v2.18.2/high-memory.log",
+    "status": "added",
+    "reason_ar": "سجل إعادة الإنتاج أو التحقق الفعلي من النسخة الجديدة."
+  },
+  {
+    "path": "verification/v2.18.2/high-memory.xml",
+    "status": "added",
+    "reason_ar": "سجل إعادة الإنتاج أو التحقق الفعلي من النسخة الجديدة."
+  },
+  {
+    "path": "verification/v2.18.2/low-memory.log",
+    "status": "added",
+    "reason_ar": "سجل إعادة الإنتاج أو التحقق الفعلي من النسخة الجديدة."
+  },
+  {
+    "path": "verification/v2.18.2/low-memory.xml",
+    "status": "added",
+    "reason_ar": "سجل إعادة الإنتاج أو التحقق الفعلي من النسخة الجديدة."
+  },
+  {
+    "path": "verification/v2.18.2/normal.log",
+    "status": "added",
+    "reason_ar": "سجل إعادة الإنتاج أو التحقق الفعلي من النسخة الجديدة."
+  },
+  {
+    "path": "verification/v2.18.2/normal.xml",
+    "status": "added",
+    "reason_ar": "سجل إعادة الإنتاج أو التحقق الفعلي من النسخة الجديدة."
+  },
+  {
+    "path": "verification/v2.18.2/reproduced-sqlite-lock.log",
+    "status": "added",
+    "reason_ar": "سجل إعادة الإنتاج أو التحقق الفعلي من النسخة الجديدة."
+  },
+  {
+    "path": "verification/v2.18.2/source-self-test.json",
+    "status": "added",
+    "reason_ar": "سجل إعادة الإنتاج أو التحقق الفعلي من النسخة الجديدة."
+  },
+  {
+    "path": "verification/v2.18.2/sqlite-lifecycle.log",
+    "status": "added",
+    "reason_ar": "سجل إعادة الإنتاج أو التحقق الفعلي من النسخة الجديدة."
+  },
+  {
+    "path": "verification/v2.18.2/test-runs.json",
+    "status": "added",
+    "reason_ar": "سجل إعادة الإنتاج أو التحقق الفعلي من النسخة الجديدة."
+  },
+  {
+    "path": "web/react/assets/index-BRjimcLo.js",
+    "status": "added",
+    "reason_ar": "أصول React المبنية من سورس v2.18.2."
+  },
+  {
+    "path": "web/react/assets/index-Lf2OkClE.js",
+    "status": "removed",
+    "reason_ar": "أصول React المبنية من سورس v2.18.2."
+  },
+  {
+    "path": "web/react/index.html",
+    "status": "modified",
+    "reason_ar": "أصول React المبنية من سورس v2.18.2."
+  }
+]

@@ -1,0 +1,174 @@
+[
+  {
+    "path": ".github/workflows/windows-build.yml",
+    "status": "modified"
+  },
+  {
+    "path": "BUILD_BARQ.bat",
+    "status": "modified"
+  },
+  {
+    "path": "BUILD_WINDOWS_EXE.bat",
+    "status": "modified"
+  },
+  {
+    "path": "README.md",
+    "status": "modified"
+  },
+  {
+    "path": "SOURCE_MANIFEST_SHA256.json",
+    "status": "modified"
+  },
+  {
+    "path": "START_HERE_AR.txt",
+    "status": "modified"
+  },
+  {
+    "path": "WINDOWS_BUILD_GUIDE_AR.md",
+    "status": "modified"
+  },
+  {
+    "path": "agent/task_intent.py",
+    "status": "modified"
+  },
+  {
+    "path": "brain/understanding.py",
+    "status": "modified"
+  },
+  {
+    "path": "core/version.py",
+    "status": "modified"
+  },
+  {
+    "path": "docs/v2.18.3/BUILD_REPORT_AR.md",
+    "status": "added"
+  },
+  {
+    "path": "docs/v2.18.3/CHANGED_FILES.json",
+    "status": "added"
+  },
+  {
+    "path": "docs/v2.18.3/CHANGED_FILES.md",
+    "status": "added"
+  },
+  {
+    "path": "frontend/package-lock.json",
+    "status": "modified"
+  },
+  {
+    "path": "frontend/package.json",
+    "status": "modified"
+  },
+  {
+    "path": "frontend/scripts/frontend-flow.test.cjs",
+    "status": "modified"
+  },
+  {
+    "path": "frontend/src/components/layout/SettingsModal.tsx",
+    "status": "modified"
+  },
+  {
+    "path": "frontend/src/components/workspace/WorkspaceStudio.tsx",
+    "status": "modified"
+  },
+  {
+    "path": "frontend/src/lib/backend.ts",
+    "status": "modified"
+  },
+  {
+    "path": "frontend/src/lib/chat.ts",
+    "status": "modified"
+  },
+  {
+    "path": "frontend/src/lib/launcher.ts",
+    "status": "modified"
+  },
+  {
+    "path": "frontend/tests/chat-coordination.ts",
+    "status": "modified"
+  },
+  {
+    "path": "launcher/api.py",
+    "status": "modified"
+  },
+  {
+    "path": "scripts/build_windows.ps1",
+    "status": "modified"
+  },
+  {
+    "path": "scripts/installer.iss",
+    "status": "modified"
+  },
+  {
+    "path": "tests/test_v2161_chat_decision_binding.py",
+    "status": "modified"
+  },
+  {
+    "path": "tests/test_v2183_chat_launch_boundary.py",
+    "status": "added"
+  },
+  {
+    "path": "tests/test_v2183_semantic_commands.py",
+    "status": "added"
+  },
+  {
+    "path": "verification/v2.18.3/attempt-root-npm.log",
+    "status": "added"
+  },
+  {
+    "path": "verification/v2.18.3/browser-execution.json",
+    "status": "added"
+  },
+  {
+    "path": "verification/v2.18.3/browser-execution.log",
+    "status": "added"
+  },
+  {
+    "path": "verification/v2.18.3/frontend-validation.log",
+    "status": "added"
+  },
+  {
+    "path": "verification/v2.18.3/python-tests.log",
+    "status": "added"
+  },
+  {
+    "path": "verification/v2.18.3/python-tests.xml",
+    "status": "added"
+  },
+  {
+    "path": "verification/v2.18.3/reproduced-backend.log",
+    "status": "added"
+  },
+  {
+    "path": "verification/v2.18.3/reproduced-frontend.log",
+    "status": "added"
+  },
+  {
+    "path": "verification/v2.18.3/reproduced-retry.log",
+    "status": "added"
+  },
+  {
+    "path": "verification/v2.18.3/source-preflight.log",
+    "status": "added"
+  },
+  {
+    "path": "verification/v2.18.3/source-self-test.json",
+    "status": "added"
+  },
+  {
+    "path": "verification/v2.18.3/targeted-tests.log",
+    "status": "added"
+  },
+  {
+    "path": "web/react/assets/index-BRjimcLo.js",
+    "status": "removed"
+  },
+  {
+    "path": "web/react/assets/index-BXc5iWww.js",
+    "status": "added"
+  },
+  {
+    "path": "web/react/index.html",
+    "status": "modified"
+  }
+]

@@ -1,0 +1,9 @@
+-r requirements.txt
+beautifulsoup4>=4.12,<5
+Pillow>=10,<13
+
+# Acoustic wake regression tests need this too in stand-alone pytest environments.
+numpy==2.2.6
+
+# Actual bundled neural speaker model smoke test.
+sherpa-onnx==1.13.8

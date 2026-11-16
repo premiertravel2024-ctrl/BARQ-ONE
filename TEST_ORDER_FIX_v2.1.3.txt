@@ -1,0 +1,23 @@
+AI Router Agent - Repair v2.1.3 - WINDOWS
+
+Fix for the one failed project activity test:
+  AssertionError: ['code_check', 'run_tests'] != ['run_tests', 'code_check']
+
+Cause: SQLite timestamps tie when actions are recorded in one clock tick.
+Change: use SQLite insert row order (rowid DESC), both for listing actions
+and retaining the most recent 200 actions. No existing database migration.
+Two regression tests cover tied timestamps and history trimming.
+
+STEPS (no Python commands):
+1. Extract this ZIP to Downloads.
+2. Double-click FIX_AND_BUILD.bat in the extracted folder.
+3. Script automatically locates the existing AI_Router_Agent folder,
+   backs up the two old files, applies the patch, then builds the EXE.
+4. If it cannot find the project, drag your original AI_Router_Agent
+   FOLDER onto FIX_AND_BUILD.bat to point it at the correct place.
+
+This is a small PATCH, NOT a built Windows EXE.
+Backups are kept in AI_Router_Agent\.build_fixes\v2.1.3.
+Your API keys, .env, user chats, workspace and other files are untouched.
+Successfully passed on Linux: 93 tests and 57 subtests.
+Windows build must complete on the user's Windows PC.

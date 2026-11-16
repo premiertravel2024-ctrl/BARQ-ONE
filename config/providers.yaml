@@ -1,0 +1,388 @@
+providers:
+- name: gemini
+  base_url: https://generativelanguage.googleapis.com/v1beta/openai
+  api_key_env: GEMINI_API_KEY
+  enabled: true
+  priority: 90
+  rpm: 12
+  rpd: 500
+  models:
+  - name: gemini-3.8-flash
+    strengths:
+    - arabic
+    - vision
+    - reasoning
+    - long-document
+    - writing
+    - coding
+    context_window: 128000
+    free: true
+    data_use: may-train
+    enabled: true
+    rpm: 12
+    rpd: 500
+  - name: gemini-3.5-flash-lite
+    strengths:
+    - simple
+    - fast
+    - translation
+    - writing
+    - arabic
+    context_window: 128000
+    free: true
+    data_use: may-train
+    enabled: true
+    rpm: 12
+    rpd: 500
+  - name: gemini-3.5-flash
+    strengths:
+    - arabic
+    - reasoning
+    - writing
+    - vision
+    context_window: 32768
+    free: true
+    data_use: may-train
+    enabled: false
+    rpm: 12
+    rpd: 500
+  free_status: conditional
+  data_use: may-train
+  notes_ar: لا تفعّل الفوترة في مشروع Google؛ المجاني قد يُستخدم للتدريب.
+  quota_scope: model
+  requires_key: true
+- name: groq
+  base_url: https://api.groq.com/openai/v1
+  api_key_env: GROQ_API_KEY
+  enabled: true
+  priority: 86
+  rpm: 25
+  rpd: 800
+  models:
+  - name: openai/gpt-oss-120b
+    strengths:
+    - coding
+    - reasoning
+    - arabic
+    context_window: 32000
+    free: true
+    data_use: unknown
+    enabled: true
+    rpm: 25
+    rpd: 800
+    tpm: 7000
+    max_input_tokens: 6000
+  - name: openai/gpt-oss-20b
+    strengths:
+    - simple
+    - fast
+    - writing
+    context_window: 16000
+    free: true
+    data_use: unknown
+    enabled: true
+    rpm: 25
+    rpd: 800
+    tpm: 7000
+    max_input_tokens: 6000
+  - name: qwen/qwen3.8-27b
+    strengths:
+    - coding
+    - reasoning
+    - vision
+    - arabic
+    context_window: 8192
+    free: true
+    data_use: unknown
+    enabled: false
+    rpm: 25
+    rpd: 800
+    tpm: 7000
+    max_input_tokens: 6000
+  free_status: conditional
+  data_use: unknown
+  notes_ar: لا تضف وسيلة دفع؛ راجع Billing.
+  quota_scope: model
+  requires_key: true
+- name: nvidia
+  base_url: https://integrate.api.nvidia.com/v1
+  api_key_env: NVIDIA_API_KEY
+  enabled: true
+  priority: 85
+  rpm: 20
+  rpd: 500
+  models:
+  - name: deepseek-ai/deepseek-v4.1-flash
+    strengths:
+    - coding
+    - reasoning
+    - writing
+    - arabic
+    - vision
+    - long-document
+    context_window: 128000
+    free: true
+    data_use: unknown
+    enabled: true
+    rpm: 20
+    rpd: 500
+  - name: google/gemma-4-31b-it
+    strengths:
+    - arabic
+    - writing
+    - reasoning
+    context_window: 32768
+    free: true
+    data_use: unknown
+    enabled: false
+    rpm: 20
+    rpd: 500
+  - name: openai/gpt-oss-20b
+    strengths:
+    - coding
+    - reasoning
+    context_window: 32768
+    free: true
+    data_use: unknown
+    enabled: false
+    rpm: 20
+    rpd: 500
+  - name: nvidia/nemotron-3-ultra-550b-a55b
+    strengths:
+    - reasoning
+    - coding
+    - long-document
+    context_window: 32768
+    free: true
+    data_use: unknown
+    enabled: false
+    rpm: 20
+    rpd: 500
+  free_status: conditional
+  data_use: unknown
+  notes_ar: واجهة تجريبية وقد تسجّل الطلبات؛ لا ترسل بيانات سرية.
+  quota_scope: model
+  requires_key: true
+- name: openrouter
+  base_url: https://openrouter.ai/api/v1
+  api_key_env: OPENROUTER_API_KEY
+  enabled: true
+  priority: 78
+  rpm: 16
+  rpd: 40
+  models:
+  - name: openrouter/free
+    strengths:
+    - reasoning
+    - coding
+    - writing
+    - arabic
+    - long-document
+    context_window: 16000
+    free: true
+    data_use: unknown
+    enabled: true
+    rpm: 16
+    rpd: 40
+  - name: google/gemma-4-31b-it:free
+    strengths:
+    - reasoning
+    - arabic
+    context_window: 16384
+    free: true
+    data_use: unknown
+    enabled: false
+    rpm: 16
+    rpd: 40
+  - name: cohere/north-mini-code:free
+    strengths:
+    - coding
+    context_window: 16384
+    free: true
+    data_use: unknown
+    enabled: false
+    rpm: 16
+    rpd: 40
+  - name: nvidia/nemotron-3-ultra-550b-a55b:free
+    strengths:
+    - reasoning
+    - coding
+    context_window: 32768
+    free: true
+    data_use: unknown
+    enabled: false
+    rpm: 16
+    rpd: 40
+  free_status: conditional
+  data_use: unknown
+  notes_ar: لا تشترِ أرصدة؛ النماذج المجانية تشترك في حد يومي واحد.
+  quota_scope: account
+  requires_key: true
+- name: mistral
+  base_url: https://api.mistral.ai/v1
+  api_key_env: MISTRAL_API_KEY
+  enabled: false
+  priority: 73
+  rpm: 5
+  rpd: 40
+  models:
+  - name: mistral-small-latest
+    strengths:
+    - writing
+    - translation
+    - arabic
+    context_window: 16000
+    free: false
+    data_use: unknown
+    enabled: false
+  free_status: unverified
+  data_use: unknown
+  notes_ar: لم يتم إثبات المجانية؛ غير مفعّل.
+  quota_scope: model
+  requires_key: true
+- name: cerebras
+  base_url: https://api.cerebras.ai/v1
+  api_key_env: CEREBRAS_API_KEY
+  enabled: false
+  priority: 72
+  rpm: 5
+  rpd: 40
+  models:
+  - name: gpt-oss-120b
+    strengths:
+    - fast
+    - coding
+    - reasoning
+    context_window: 16000
+    free: false
+    data_use: unknown
+    enabled: false
+  free_status: requires_payment_method
+  data_use: unknown
+  notes_ar: 'يتطلب وسيلة دفع: محظور داخل BARQ.'
+  quota_scope: model
+  requires_key: true
+- name: cloudflare
+  base_url: https://api.cloudflare.com/client/v4/accounts/${CLOUDFLARE_ACCOUNT_ID}/ai/v1
+  api_key_env: CLOUDFLARE_API_KEY
+  enabled: false
+  priority: 65
+  rpm: 5
+  rpd: 30
+  models:
+  - name: '@cf/openai/gpt-oss-120b'
+    strengths:
+    - reasoning
+    - coding
+    context_window: 8192
+    free: true
+    data_use: unknown
+    enabled: false
+  - name: '@cf/google/gemma-4-26b-a4b-it'
+    strengths:
+    - vision
+    - writing
+    context_window: 8192
+    free: true
+    data_use: unknown
+    enabled: false
+  - name: '@cf/zai-org/glm-4.7-flash'
+    strengths:
+    - coding
+    - reasoning
+    context_window: 8192
+    free: true
+    data_use: unknown
+    enabled: false
+  free_status: conditional
+  data_use: unknown
+  notes_ar: لا تشترك في Workers Paid؛ بعض النماذج مدفوعة.
+  quota_scope: provider
+  requires_key: true
+- name: huggingface
+  base_url: https://router.huggingface.co/v1
+  api_key_env: HF_TOKEN
+  enabled: false
+  priority: 60
+  rpm: 3
+  rpd: 10
+  models:
+  - name: meta-llama/Llama-3.1-8B-Instruct
+    strengths:
+    - writing
+    - simple
+    context_window: 8192
+    free: false
+    data_use: unknown
+    enabled: false
+  free_status: unverified
+  data_use: unknown
+  notes_ar: لم يتم إثبات المجانية؛ غير مفعّل.
+  quota_scope: model
+  requires_key: true
+- name: ollama
+  kind: local
+  base_url: http://127.0.0.1:11434/v1
+  enabled: true
+  priority: 20
+  rpm: 0
+  rpd: 0
+  models: []
+  free_status: free
+  data_use: no-training
+  notes_ar: محلي، لا تحميل تلقائي.
+  quota_scope: model
+  requires_key: false
+- name: zai
+  base_url: https://api.z.ai/api/paas/v4
+  api_key_env: ZAI_API_KEY
+  enabled: false
+  priority: 45
+  quota_scope: model
+  free_status: unverified
+  data_use: unknown
+  notes_ar: تحقق من الحصة والمجانية أولًا؛ طلب واحد متزامن.
+  rpm: 1
+  rpd: 30
+  max_concurrent: 1
+  models:
+  - name: glm-4.7-flash
+    free: true
+    enabled: false
+    data_use: unknown
+    strengths:
+    - reasoning
+    context_window: 8192
+    max_concurrent: 1
+  - name: glm-4.6v-flash
+    free: true
+    enabled: false
+    data_use: unknown
+    strengths:
+    - reasoning
+    context_window: 8192
+    max_concurrent: 1
+- name: cohere
+  kind: cloud
+  base_url: https://api.cohere.ai/compatibility/v1
+  api_key_env: COHERE_API_KEY
+  enabled: false
+  free_status: unverified
+  data_use: unknown
+  notes_ar: Cohere trial غير تجاري في بعض الخطط؛ لا تشغّله قبل التحقق من حدود التجربة وحظر الدفع.
+  priority: 38
+  rpm: 1
+  rpd: 10
+  quota_scope: model
+  requires_key: true
+  models:
+  - name: command-a-plus-05-2026
+    free: false
+    enabled: false
+    data_use: unknown
+    context_window: 8192
+    strengths:
+    - arabic
+    - translation
+    - writing
+catalog_version: 29

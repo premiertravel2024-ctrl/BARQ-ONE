@@ -1,0 +1,1 @@
+Private or user-supplied font files are intentionally not included. When updating your existing AI_Router_Agent project, its existing web/fonts/ge-ss-two-medium.otf remains in place. For a clean build, use a locally licensed copy or allow the documented fallback font.

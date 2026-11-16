@@ -1,0 +1,4 @@
+# Optional, only needed for Outlook delegated read-only OAuth.
+# Requires BARQ_MS_CLIENT_ID from a Microsoft Entra public-client app.
+msal>=1.30,<2
+httpx>=0.27,<1

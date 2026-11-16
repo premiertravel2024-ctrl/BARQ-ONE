@@ -1,0 +1,8 @@
+BARQ AI v2.9 — Validation summary
+Baseline v2.8.8: 292 Python tests passed + 65 subtests.
+After changes: 304 Python tests passed + 65 subtests (python -m pytest -q).
+API smoke: /health, /v1/free-audit, /v1/router/providers, /v1/brain/network/map -> HTTP 200 (offline).
+Offline routing benchmark: five synthetic request types, completed; not live provider verification.
+TS/TSX syntax: six changed files parsed/transpiled with TypeScript, no syntax diagnostics.
+NOT VERIFIED: full TypeScript type-check/Vite build (npm ci failure in this runtime), Windows PyInstaller, Windows Inno Setup, cloud APIs/keys/quotas.
+Conservative guard: new unverified cloud models disabled; no automatic payment/purchases.

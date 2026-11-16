@@ -1,0 +1,37 @@
+apps:
+  Chrome: [كروم, كرووم, جوجل كروم, google chrome, chrome]
+  Excel: [اكسل, إكسل, اكسيل, excel]
+  Word: [وورد, ورد, مايكروسوفت وورد, word]
+  PowerPoint: [باوربوينت, بوربوينت, powerpoint]
+  Notepad: [المفكرة, المفكره, نوت باد, notepad]
+  Calculator: [الحاسبة, الحاسبه, الاله الحاسبه, calculator, calc]
+  WhatsApp: [واتس, واتساب, whatsapp]
+  Code: [في اس كود, فيجوال ستوديو كود, visual studio code, vscode, vs code]
+  Telegram: [تيليجرام, تليجرام, telegram]
+  Discord: [ديسكورد, discord]
+  Spotify: [سبوتيفاي, spotify]
+  Firefox: [فايرفوكس, firefox]
+  Edge: [ايدج, مايكروسوفت ايدج, edge]
+  Photoshop: [فوتوشوب, الفوتوشوب, photoshop]
+  Settings: [الاعدادات, الاعدادات ويندوز, settings]
+  Control Panel: [لوحه التحكم, لوحة التحكم, control panel]
+  Task Manager: [مدير المهام, task manager]
+  Camera: [الكاميرا, كاميرا, camera]
+websites:
+  يوتيوب: https://www.youtube.com
+  جوجل: https://www.google.com
+  جيميل: https://mail.google.com
+  فيسبوك: https://www.facebook.com
+  واتساب ويب: https://web.whatsapp.com
+  تويتر: https://x.com
+  اكس: https://x.com
+  تيك توك: https://www.tiktok.com
+  نتفليكس: https://www.netflix.com
+  github: https://github.com
+known_folders:
+  downloads: [التحميلات, الداون لود, داونلودز, downloads]
+  documents: [المستندات, المستندات بتاعتي, documents]
+  desktop: [سطح المكتب, الديسكتوب, desktop]
+  pictures: [الصور, الصور بتاعتي, pictures]
+  videos: [الفيديوهات, الفيديو, videos]
+  music: [الموسيقى, الموسيقي, الاغاني, music]

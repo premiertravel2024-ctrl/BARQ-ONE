@@ -1,0 +1,100 @@
+TAP version 13
+# Subtest: parses multiline lucide imports, aliases, and types without local identifiers
+ok 1 - parses multiline lucide imports, aliases, and types without local identifiers
+  ---
+  duration_ms: 1.877133
+  type: 'test'
+  ...
+# Subtest: fails on unsupported icon name rather than allowing a later Windows build failure
+ok 2 - fails on unsupported icon name rather than allowing a later Windows build failure
+  ---
+  duration_ms: 1.895993
+  type: 'test'
+  ...
+# Subtest: does not report duplicate missing exports repeatedly
+ok 3 - does not report duplicate missing exports repeatedly
+  ---
+  duration_ms: 0.154514
+  type: 'test'
+  ...
+# Subtest: dynamic models must come from backend, not a hardcoded brand
+ok 4 - dynamic models must come from backend, not a hardcoded brand
+  ---
+  duration_ms: 17.846943
+  type: 'test'
+  ...
+# Subtest: provider UI loads disabled reason from backend response
+ok 5 - provider UI loads disabled reason from backend response
+  ---
+  duration_ms: 0.839347
+  type: 'test'
+  ...
+# Subtest: API JSON errors preserve server status
+ok 6 - API JSON errors preserve server status
+  ---
+  duration_ms: 1.191629
+  type: 'test'
+  ...
+# Subtest: validation errors retain the field and cause without echoing rejected input
+ok 7 - validation errors retain the field and cause without echoing rejected input
+  ---
+  duration_ms: 0.977045
+  type: 'test'
+  ...
+# Subtest: SSE streaming reconstructs UTF-8 split chunks and verifies done
+ok 8 - SSE streaming reconstructs UTF-8 split chunks and verifies done
+  ---
+  duration_ms: 3.959308
+  type: 'test'
+  ...
+# Subtest: store actions preserve chat identity and update only targeted messages
+ok 9 - store actions preserve chat identity and update only targeted messages
+  ---
+  duration_ms: 43.497518
+  type: 'test'
+  ...
+# Subtest: UI stylesheet is applied after existing styles, preserving the original app modules
+ok 10 - UI stylesheet is applied after existing styles, preserving the original app modules
+  ---
+  duration_ms: 1.163316
+  type: 'test'
+  ...
+# Subtest: settings navigation search is controlled and filters all groups
+ok 11 - settings navigation search is controlled and filters all groups
+  ---
+  duration_ms: 0.5102
+  type: 'test'
+  ...
+# Subtest: critical voice, send, and approval callbacks are unchanged
+ok 12 - critical voice, send, and approval callbacks are unchanged
+  ---
+  duration_ms: 0.335026
+  type: 'test'
+  ...
+# Subtest: desktop and mobile have access to workspace and model selection
+ok 13 - desktop and mobile have access to workspace and model selection
+  ---
+  duration_ms: 1.566776
+  type: 'test'
+  ...
+# Subtest: all studio actions remain addressable in the grouped rail
+ok 14 - all studio actions remain addressable in the grouped rail
+  ---
+  duration_ms: 0.647919
+  type: 'test'
+  ...
+# Subtest: the polish covers RTL, light theme, reduced motion and narrow screens
+ok 15 - the polish covers RTL, light theme, reduced motion and narrow screens
+  ---
+  duration_ms: 0.275216
+  type: 'test'
+  ...
+1..15
+# tests 15
+# suites 0
+# pass 15
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 378.012711
