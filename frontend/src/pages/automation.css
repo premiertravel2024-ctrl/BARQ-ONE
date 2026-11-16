@@ -35,3 +35,6 @@
 .barq-automation input:focus-visible,.barq-automation select:focus-visible,.barq-automation button:focus-visible{outline:2px solid #ff799b;outline-offset:2px}
 @media(max-width:850px){.ba-summary-grid,.ba-lower-grid{grid-template-columns:1fr}.ba-focus{grid-column:1}}
 @media(max-width:560px){.ba-hero{padding:17px;align-items:start}.ba-time{padding:9px;justify-content:center}.ba-time strong{font-size:1.1rem}.ba-time span{font-size:.59rem}.ba-location{gap:8px}.ba-location .ba-muted{flex-basis:100%}.ba-alarm-form{grid-template-columns:1fr}.ba-temp{gap:8px}.ba-temp>svg{width:32px}.ba-temp strong{font-size:3rem}.ba-weather-stats{gap:9px}}
+
+.ba-attribution a{color:#ffc5d7;text-decoration:underline;text-underline-offset:3px}
+.ba-attribution a:hover{color:#fff}

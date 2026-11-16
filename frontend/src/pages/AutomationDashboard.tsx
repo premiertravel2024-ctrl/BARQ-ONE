@@ -120,7 +120,7 @@ export function AutomationDashboard(){
     <div className="ba-card-top"><span><Cloud size={17}/>{ar?'حالة الطقس':'Weather'}</span><span>{ar?CITY_NAMES[city]:CITY_NAMES_EN[city]}</span></div>
     {weather?<><div className="ba-temp"><WeatherIcon size={45}/><strong dir="ltr">{weather.temperature}°</strong><div><b>{weatherLabel(weather.weather_code,ar)}</b><small>{ar?'المحسوسة':'Feels like'} {weather.feels_like}°</small></div></div>
      <div className="ba-weather-stats"><span><Sunrise size={15}/>{ar?'العظمى / الصغرى':'High / Low'} <b dir="ltr">{weather.high}° / {weather.low}°</b></span><span><Droplets size={15}/>{weather.humidity}%</span><span><Wind size={15}/>{weather.wind_kmh} km/h</span></div>
-     <small className="ba-attribution">Open-Meteo · {ar?'بيانات تقديرية متجددة':'Live estimate'}</small>
+     <small className="ba-attribution"><a href="https://open-meteo.com/" target="_blank" rel="noopener noreferrer">Open-Meteo</a> · {ar?'تقديرات الطقس':'Weather estimates'}</small>
     </>:<div className="ba-empty">{loading?(ar?'بنجيب حالة الطقس...':'Loading weather...'):(ar?'الطقس مش متاح دلوقتي.':'Weather unavailable.')}</div>}
    </section>
    <section className="ba-card ba-prayer-next">
@@ -138,7 +138,7 @@ export function AutomationDashboard(){
      {overview?.prayers.length?overview.prayers.map(p=><div className={'ba-prayer-item'+(next?.key===p.key&&new Date(next.at).toDateString()===new Date(p.at).toDateString()?' ba-current':'')} key={p.key}><span>{ar?p.label:PRAYER_NAMES[p.key]||p.key}</span><strong dir="ltr">{p.time}</strong></div>):
       <p className="ba-muted">{loading?(ar?'جاري التحميل':'Loading'):(ar?'لا توجد أوقات متاحة الآن':'No available times')}</p>}
     </div>
-    <small className="ba-attribution">{ar?'المصدر: AlAdhan · ممكن تختلف الدقائق عن مسجدك':'Source: AlAdhan · Check local mosque for any differences'}</small>
+    <small className="ba-attribution"><a href="https://aladhan.com/prayer-times-api" target="_blank" rel="noopener noreferrer">AlAdhan</a> · {ar?'ممكن تختلف الدقائق عن مسجدك':'Check local mosque for any differences'}</small>
    </section>
    <section className="ba-card">
     <div className="ba-section-head"><div><AlarmClock size={18}/><h3>{ar?'المنبّهات':'Alarms'}</h3></div><span>{alarms.length} / 30</span></div>

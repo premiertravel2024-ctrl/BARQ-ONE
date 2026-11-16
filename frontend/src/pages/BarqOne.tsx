@@ -23,7 +23,7 @@ export const sections=[
  ['monitor','مراقبة النظام','System Monitor',Activity],
  ['resources','توفير الموارد','Resource Saver',Shield],
  ['wallpapers','الخلفيات الحية','Live Wallpapers',Image],
- ['watch','غرفة المشاهدة','Watch Together',Radio],
+ ['watch','سينما برق','BARQ Cinema',Radio],
  ['music','غرفة الموسيقى','Music Room',Headphones],
  ['automation','الأتمتة','Automation',Timer],
  ['settings','الإعدادات','Settings',Settings2],
