@@ -10,6 +10,7 @@ import './barqMedia.css';
 import {ResourceSaver} from './ResourceSaver';
 import {Wallpapers} from './Wallpapers';
 import {WatchTogether} from './WatchTogether';
+import {AutomationDashboard} from './AutomationDashboard';
 
 export const sections=[
  ['center','مركز الأوامر','Command Center',LayoutDashboard],
@@ -339,9 +340,7 @@ export function BarqOne({page,providers,onVoice,onNavigate,onModels,onAssistantS
   {page==='wallpapers'&&<Wallpapers/>}
   {page==='watch'&&<WatchTogether mode="video"/>}
   {page==='music'&&<WatchTogether mode="music"/>}
-  {page==='automation'&&<section className="one-surface"><h2>{ar?'الروتينات والتذكيرات':'Routines and reminders'}</h2>
-   <button type="button" onClick={onAssistantSettings}><Settings2 size={17}/>{ar?'إعدادات المساعد الشخصي':'Personal assistant settings'}</button>
-  </section>}
+  {page==='automation'&&<AutomationDashboard/>}
   {page==='tools'&&<div className="one-panels"><ProviderList providers={providers} onSettings={onModels}/><RuntimeTools/></div>}
   {(page==='tools'||page==='library'||page==='installed')&&<OpenHub mode={page}/>}
  </section>;

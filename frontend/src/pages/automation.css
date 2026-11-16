@@ -1,0 +1,37 @@
+.barq-automation{display:flex;flex-direction:column;gap:15px;color:#f8eff5;min-width:0}
+.ba-hero{display:flex;justify-content:space-between;align-items:center;gap:16px;padding:22px 24px;border:1px solid #4a2f41;border-radius:19px;background:radial-gradient(circle at 88% 0%,#56213899,transparent 45%),linear-gradient(130deg,#221820,#131419)}
+.ba-hero h2{font-size:clamp(1.15rem,2.2vw,1.55rem);margin:5px 0}.ba-hero p{color:#bfaeba;font-size:.81rem;line-height:1.7;margin:0}
+.ba-kicker{font-size:.69rem;font-weight:800;letter-spacing:1.6px;color:#ff829e}
+.ba-time{padding:12px 16px;border:1px solid #624458;background:#221923;border-radius:15px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.ba-time strong{font-size:1.5rem;white-space:nowrap}.ba-time span{width:100%;font-size:.68rem;color:#c8afbd}
+.ba-location{display:flex;align-items:center;gap:11px;flex-wrap:wrap;padding:11px 15px;background:#1b1921;border:1px solid #3f3541;border-radius:13px}
+.ba-location-title{display:flex;align-items:center;gap:6px;color:#f3d9e5}.ba-location select{padding:8px 13px;border:1px solid #654052;background:#2a202c;color:#fff;border-radius:10px;min-height:38px;font:inherit}.ba-location .ba-muted{flex:1}
+.ba-icon-btn{display:flex;align-items:center;justify-content:center;min-width:37px;min-height:37px}
+.ba-card{background:linear-gradient(145deg,#1e1923,#16161d);border:1px solid #423440;border-radius:17px;min-width:0;padding:clamp(15px,2vw,23px);overflow:hidden}
+.ba-summary-grid{display:grid;grid-template-columns:1.1fr 1fr;gap:14px}
+.ba-card-top,.ba-section-head{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:16px}
+.ba-card-top>span:first-child,.ba-section-head>div{display:flex;align-items:center;gap:9px;font-weight:750}.ba-card-top>span:last-child,.ba-section-head>span{font-size:.71rem;color:#c19cba}
+.ba-weather{background:radial-gradient(circle at 3% 2%,#463047 0%,transparent 58%),linear-gradient(135deg,#26202d,#181720)}
+.ba-temp{display:flex;align-items:center;gap:15px;min-height:116px}.ba-temp>svg{color:#ffbd81}.ba-temp strong{font-size:clamp(2.8rem,6vw,4.5rem);font-weight:850;letter-spacing:-3px}.ba-temp>div{display:flex;flex-direction:column;gap:6px}.ba-temp b{font-size:.92rem}.ba-temp small,.ba-muted{font-size:.76rem;color:#b6a8b8;line-height:1.65}
+.ba-weather-stats{display:flex;align-items:center;gap:11px;flex-wrap:wrap;margin-top:15px;padding-top:13px;border-top:1px solid #58445a}.ba-weather-stats span{display:flex;align-items:center;gap:5px;font-size:.71rem;color:#e7d3dd}.ba-weather-stats svg{color:#ff8bab}
+.ba-attribution{display:block;color:#a695a9;font-size:.66rem;margin-top:15px}
+.ba-prayer-next{background:radial-gradient(circle at 5% 1%,#3a2c40 0%,transparent 60%),linear-gradient(135deg,#241e2a,#16171d)}
+.ba-prayer-name{font-size:1.35rem;font-weight:800;margin-top:28px}.ba-countdown{font-weight:900;letter-spacing:2px;font-size:clamp(2rem,5vw,3.5rem);margin:5px 0}.ba-prayer-at{display:inline-block;color:#fabbc9;padding:6px 13px;background:#3b2130;border-radius:10px;font-weight:700}
+.ba-empty{color:#b7a7b6;min-height:130px;display:flex;align-items:center;font-size:.85rem}
+.ba-lower-grid{display:grid;grid-template-columns:minmax(215px,.8fr) minmax(275px,1.2fr);gap:14px;align-items:start}
+.ba-section-head{margin-bottom:14px}.ba-section-head h3{font-size:.95rem;margin:0}.ba-prayer-list{display:grid;gap:7px}
+.ba-prayer-item{display:flex;justify-content:space-between;gap:9px;padding:11px 14px;border:1px solid #392f3c;border-radius:11px;background:#221d26;font-size:.84rem}.ba-prayer-item strong{white-space:nowrap}.ba-prayer-item.ba-current{border-color:#9c4664;background:#432735}
+.ba-alarm-form{display:grid;grid-template-columns:minmax(115px,.7fr) minmax(175px,1.3fr);gap:10px;align-items:end}.ba-alarm-form>label{display:grid;gap:6px;color:#d5bfd0;font-size:.74rem}
+.ba-alarm-form input:not([type=checkbox]){width:100%;min-height:40px;color:#fff;background:#14131b;border:1px solid #5b455a;border-radius:9px;padding:9px;font:inherit}
+.ba-alarm-form input[type=time]{direction:ltr;text-align:center}.ba-repeat{display:flex!important;align-items:center;gap:8px;font-size:.76rem!important}.ba-repeat input{accent-color:#ef557a}
+.ba-automation button,.barq-automation button{display:inline-flex;align-items:center;justify-content:center;gap:6px;background:#312331;border:1px solid #684257;border-radius:9px;color:#fff;min-height:38px;padding:7px 13px;cursor:pointer;font:inherit;font-size:.79rem}
+.barq-automation button:hover{border-color:#eb658a}.barq-automation button.ba-primary{background:linear-gradient(110deg,#b53961,#8d2c52);border-color:#c96585}.barq-automation button:disabled{opacity:.5;cursor:not-allowed}
+.ba-alarm-list{display:grid;gap:8px;max-height:300px;overflow:auto;margin-top:14px}
+.ba-alarm-item{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:11px 12px;background:#231e28;border:1px solid #3e3340;border-radius:11px}
+.ba-alarm-item>div:first-child{display:flex;align-items:center;gap:12px;flex-wrap:wrap}.ba-alarm-item b{font-size:1.1rem}.ba-alarm-item span{font-size:.79rem}.ba-alarm-item small{font-size:.69rem;color:#ab99a9}.ba-alarm-off{opacity:.6}.ba-alarm-actions{display:flex;gap:6px}.ba-alarm-actions button{padding:7px;min-width:34px;min-height:34px}
+.ba-note{display:flex;align-items:flex-start;gap:8px;margin:15px 0 0}
+.ba-focus{grid-column:1 / -1;display:grid;justify-content:center;text-align:center;gap:12px}.ba-focus>.ba-section-head{min-width:min(95vw,340px);margin:0}.ba-focus-clock{font-size:clamp(2.8rem,6vw,4.5rem);font-weight:900;letter-spacing:1px}.ba-focus-controls{display:flex;justify-content:center;align-items:center;flex-wrap:wrap;gap:8px}.ba-focus .ba-muted{margin:0}
+.ba-error{padding:12px;border:1px solid #9e394f;background:#391c2b;border-radius:11px;color:#ffe3e8}.ba-notice{padding:11px;border:1px solid #6f485d;background:#2d1b29;border-radius:11px;color:#ffcfda}
+.barq-automation input:focus-visible,.barq-automation select:focus-visible,.barq-automation button:focus-visible{outline:2px solid #ff799b;outline-offset:2px}
+@media(max-width:850px){.ba-summary-grid,.ba-lower-grid{grid-template-columns:1fr}.ba-focus{grid-column:1}}
+@media(max-width:560px){.ba-hero{padding:17px;align-items:start}.ba-time{padding:9px;justify-content:center}.ba-time strong{font-size:1.1rem}.ba-time span{font-size:.59rem}.ba-location{gap:8px}.ba-location .ba-muted{flex-basis:100%}.ba-alarm-form{grid-template-columns:1fr}.ba-temp{gap:8px}.ba-temp>svg{width:32px}.ba-temp strong{font-size:3rem}.ba-weather-stats{gap:9px}}
