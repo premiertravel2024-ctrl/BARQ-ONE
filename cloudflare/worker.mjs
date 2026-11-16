@@ -56,6 +56,30 @@ export default {
         return reply({error:"Room service temporarily unavailable",code:"ROOM_SERVER_ERROR"},503);
       }
     }
+    if(p.startsWith("/api/resolve/anghami/")&&request.method==="GET"){
+      // Safe, domain-restricted short-link resolver; only Anghami hosts, never arbitrary URLs.
+      const slug=p.split("/").at(-1)||"";
+      const headers={"content-type":"application/json; charset=utf-8","cache-control":"public,max-age=3600",
+                     "access-control-allow-origin":"*","x-content-type-options":"nosniff"};
+      const result=(data,status=200)=>new Response(JSON.stringify(data),{status,headers});
+      if(!/^[A-Za-z0-9_-]{5,60}$/.test(slug))return result({error:"Invalid share link"},400);
+      let next="https://open.anghami.com/"+slug;
+      try{
+        for(let i=0;i<5;i++){
+          const u=new URL(next);
+          if(u.protocol!=="https:"||!["open.anghami.com","play.anghami.com","www.anghami.com","anghami.com"].includes(u.hostname)||
+             u.username||u.password||u.port)return result({error:"Unexpected redirect"},422);
+          const match=u.pathname.match(/^\/(?:embed\/)?(song|album|playlist|artist)\/([0-9]{1,15})\/?$/);
+          if(match)return result({provider:"anghami",kind:match[1],id:match[2]});
+          const response=await fetch(u.toString(),{redirect:"manual",headers:{"Accept":"text/html"}});
+          if(response.status<300||response.status>=400)return result({error:"Short link could not be resolved"},422);
+          const destination=response.headers.get("Location");
+          if(!destination)return result({error:"Missing redirect"},422);
+          next=new URL(destination,u).toString();
+        }
+        return result({error:"Too many redirects"},422);
+      }catch(e){console.warn("Anghami short link resolution failed:",String(e));return result({error:"Anghami is unavailable"},503);}
+    }
     if(p.startsWith("/api/rooms/")&&request.method==="DELETE"){
       const id=safeRoom(p);if(!id)return reply({error:"Invalid room"},404);
       const token=(request.headers.get("Authorization")||"").replace(/^Bearer /,"");
@@ -154,8 +178,8 @@ export class RoomSession {
       await this.ctx.storage.put("track",data.value);
     }
     let output;
-    if(type==="chat")output={type,role,text:String(data.value||"").slice(0,500)};
-    else if(type==="reaction"||type==="typing")output={type,text:String(data.value||"").slice(0,40)};
+    if(type==="chat")output={type,role,text:String(data.text??data.value??"").slice(0,500)};
+    else if(type==="reaction"||type==="typing")output={type,text:String(data.text??data.value??"").slice(0,40)};
     else if(type==="subtitle")output={type,value:String(data.value||"").slice(0,400)};
     else output={type,value:data.value};
     const payload=JSON.stringify(output);

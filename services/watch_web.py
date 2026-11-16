@@ -168,7 +168,13 @@ document.getElementById('guestWrap').hidden=host;
 document.getElementById('joinPanel').hidden=host||paired;
 if(!host){video.controls=false;status.textContent='ادخل كود الغرفة';}
 function note(text){status.textContent=text;}
-function send(type,value){if(socket&&socket.readyState===WebSocket.OPEN){socket.send(JSON.stringify({type:type,value:value}));}}
+function send(type,value){if(socket&&socket.readyState===WebSocket.OPEN){
+ var data={type:type};
+ if(type==='chat'||type==='reaction'||type==='typing'){data.text=String(value||'');}
+ else data.value=value;
+ socket.send(JSON.stringify(data));
+ return true;
+}return false;}
 function addMessage(who,text){var box=document.getElementById('messages');var row=document.createElement('div');row.className='msg';var meta=document.createElement('small');meta.textContent=who+' · '+new Date().toLocaleTimeString();var span=document.createElement('span');span.textContent=text;row.append(meta,span);box.appendChild(row);if(box.childElementCount>150)box.firstElementChild.remove();box.scrollTop=box.scrollHeight;}
 function connect(code){
  var proto=location.protocol==='https:'?'wss:':'ws:';
@@ -183,7 +189,7 @@ function connect(code){
   if(packet.type==='peer-joined'){guestPresent=true;nearby=packet.connection==='lan';note('الشخص التاني اتصل');if(host&&localStream)queueRTC(makeOffer);}
   if(packet.type==='track'&&music&&!host)showTrack(packet.value);
   if(packet.type==='peer-left'){guestPresent=false;pendingIce=[];note('الشخص التاني خرج');if(peer){peer.close();peer=null;}}
-  if(packet.type==='chat'){addMessage(packet.role==='host'?'صاحب الغرفة':'الضيف',packet.text||'');}
+  if(packet.type==='chat'&&packet.text){addMessage(packet.role==='host'?'صاحب الغرفة':'الضيف',packet.text);}
   if(packet.type==='typing'){document.getElementById('typing').textContent=packet.text?'الشخص التاني بيكتب...':'';}
   if(packet.type==='reaction'){addMessage('تفاعل',packet.text||'');}
   if(packet.type==='offer'&&!host)queueRTC(async function(){if(peer){peer.close();peer=null;}var pc=makePeer();await pc.setRemoteDescription(packet.value);await drainIce();var answer=await pc.createAnswer();await pc.setLocalDescription(answer);send('answer',pc.localDescription);});
@@ -247,7 +253,10 @@ function providerLink(track){
   return {name:'Spotify',url:'https://open.spotify.com/'+track.kind+'/'+track.id,
           embed:'https://open.spotify.com/embed/'+track.kind+'/'+track.id};
  if(track.provider==='anghami'&&/^(song|album|playlist|artist)$/.test(track.kind)&&/^[0-9]{1,15}$/.test(track.id))
-  return {name:'أنغامي',url:'https://play.anghami.com/'+track.kind+'/'+track.id};
+  return {name:'أنغامي',url:'https://play.anghami.com/'+track.kind+'/'+track.id,
+          embed:'https://widget.anghami.com/'+track.kind+'/'+track.id};
+ if(track.provider==='anghami'&&track.kind==='share'&&/^[A-Za-z0-9_-]{5,60}$/.test(track.id))
+  return {name:'أنغامي',url:'https://open.anghami.com/'+track.id};
  return null;
 }
 function showTrack(track){
@@ -263,32 +272,52 @@ function showTrack(track){
   var frame=document.createElement('iframe');
   frame.src=provider.embed;
   frame.title=provider.name;
-  frame.style.cssText='width:100%;height:160px;border:0';
+  frame.style.cssText='width:100%;min-height:195px;height:clamp(195px,34vh,330px);border:0;border-radius:12px';
   frame.allow='autoplay; encrypted-media; fullscreen; picture-in-picture';
   panel.append(frame);
  }
  var link=document.createElement('a');
  link.href=provider.url;link.target='_blank';link.rel='noopener noreferrer';
- link.textContent='تشغيل في '+provider.name;
+ link.textContent=provider.embed?'فتح الأغنية في '+provider.name:'فتح رابط أنغامي في المتصفح';
  panel.append(link);
+ if(track.kind==='share'){
+  var hint=document.createElement('p');hint.className='sub';
+  hint.textContent='الرابط المختصر من أنغامي. لو مظهرش مشغّل هنا، افتحه من أنغامي أو انسخ رابط الأغنية الكامل.';
+  panel.append(hint);
+ }
 }
 if(host&&music){
- document.getElementById('musicService').onsubmit=function(event){
+ document.getElementById('musicService').onsubmit=async function(event){
   event.preventDefault();
   try{
-   if(!connected)throw Error();
-   var url=new URL(document.getElementById('musicServiceUrl').value);
-   if(url.protocol!=='https:'||url.username||url.password||url.port)throw Error();
+   if(!connected)throw Error('لازم الغرفة تكون متصلة الأول.');
+   var url=new URL(document.getElementById('musicServiceUrl').value.trim());
+   if(url.protocol!=='https:'||url.username||url.password||url.port)throw Error('استخدم رابط HTTPS من Spotify أو أنغامي.');
    var parts=url.pathname.split('/').filter(Boolean);
    if(parts[0]==='embed')parts.shift();
-   var track={provider:url.hostname==='open.spotify.com'?'spotify':url.hostname==='play.anghami.com'?'anghami':'',kind:parts[0],id:parts[1]};
-   if(parts.length!==2||!providerLink(track))throw Error();
+   var isShort=url.hostname==='open.anghami.com'&&parts.length===1&&/^[A-Za-z0-9_-]{5,60}$/.test(parts[0]);
+   var track=isShort?{provider:'anghami',kind:'share',id:parts[0]}:
+     {provider:url.hostname==='open.spotify.com'?'spotify':
+               ['play.anghami.com','www.anghami.com','anghami.com'].includes(url.hostname)?'anghami':'',
+      kind:parts[0],id:parts[1]};
+   if(!providerLink(track))throw Error('الرابط مش مدعوم. استخدم رابط أغنية رسمي من Spotify أو أنغامي.');
+   if(isShort){
+    note('جاري تحليل رابط أنغامي المختصر...');
+    try{
+     var response=await fetch('https://barq-one.ashraf-mohamed.workers.dev/api/resolve/anghami/'+encodeURIComponent(parts[0]),{mode:'cors'});
+     if(response.ok){
+      var expanded=await response.json();
+      if(providerLink(expanded))track=expanded;
+     }
+    }catch(e){/* If link cannot be resolved safely, offer official external link. */}
+   }
    loadVersion++;
    if(localStream){localStream.getTracks().forEach(function(t){t.stop();});localStream=null;}
    if(blobUrl){URL.revokeObjectURL(blobUrl);blobUrl=null;}
    officialTrack=track;showTrack(track);video.removeAttribute('src');video.load();
    send('track',track);
-  }catch(e){note('اتصل بالغرفة وحط رابط أصلي من Spotify أو أنغامي.');}
+   note(track.kind==='share'?'شاركنا رابط أنغامي المختصر، لكن المشغّل يحتاج رابط الأغنية الكامل.':'تمت مشاركة الأغنية؛ اضغط تشغيل على المشغّل الرسمي.');
+  }catch(e){note(e instanceof Error?e.message:'حصل خطأ في رابط الموسيقى.');}
  };
 }
 if(host){
@@ -350,7 +379,10 @@ if(host){
  document.getElementById('pauseRequest').onclick=function(){send('request-pause',true);};
  document.getElementById('seekRequest').onclick=function(){send('request-seek',30);};
 }
-function chat(){var input=document.getElementById('chatText'),msg=input.value.trim();if(!msg||!connected||socket.readyState!==WebSocket.OPEN)return;socket.send(JSON.stringify({type:'chat',text:msg}));addMessage(host?'أنا (المضيف)':'أنا (الضيف)',msg);input.value='';send('typing','');}
+function chat(){var input=document.getElementById('chatText'),msg=input.value.trim();if(!msg)return;
+ if(!send('chat',msg)){note('اتصال الغرفة مش جاهز، جرّب لما يظهر متصل.');return;}
+ addMessage(host?'أنا (المضيف)':'أنا (الضيف)',msg);input.value='';send('typing','');
+}
 document.getElementById('send').onclick=chat;
 document.getElementById('chatText').onkeydown=function(e){if(e.key==='Enter'){e.preventDefault();chat();}else send('typing','1');};
 document.querySelectorAll('.emoji').forEach(function(btn){btn.onclick=function(){send('reaction',btn.dataset.emoji);addMessage('أنا',btn.dataset.emoji);};});

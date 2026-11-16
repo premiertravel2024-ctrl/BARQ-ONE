@@ -637,6 +637,8 @@ def _music_track(value):
         return {"provider":provider,"kind":kind,"id":identifier}
     if provider=="anghami" and kind in ("song","album","playlist","artist") and re.fullmatch(r"[0-9]{1,15}",identifier):
         return {"provider":provider,"kind":kind,"id":identifier}
+    if provider=="anghami" and kind=="share" and re.fullmatch(r"[A-Za-z0-9_-]{5,60}",identifier):
+        return {"provider":provider,"kind":kind,"id":identifier}
     raise ValueError("Unsupported music link")
 
 

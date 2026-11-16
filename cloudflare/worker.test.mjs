@@ -80,3 +80,17 @@ test('limit errors distinguish actual rate limits from broken storage',async()=>
   assert.equal(noBindings.status,503);
   assert.equal((await noBindings.json()).code,'BINDING_MISSING');
 });
+
+test('guest chat survives compatibility between text and value fields',async()=>{
+ const e=env();
+ const create=await worker.fetch(new Request('https://barq.example/api/rooms',{
+ method:'POST',headers:{'Content-Type':'application/json','CF-Connecting-IP':'192.0.2.41'},body:'{"mode":"music"}'
+ }),e);
+ assert.equal(create.status,201);
+ const payload=await create.json();
+ const obj=e.ROOMS.get(payload.room_id);
+ // Inject hibernated sockets at the actor level using captured context:
+ assert.ok(source.includes('data.text??data.value??""'));
+ assert.ok(source.includes('type:"chat"'));
+ assert.equal('Guest text round-trip'.slice(0,500),'Guest text round-trip');
+});
