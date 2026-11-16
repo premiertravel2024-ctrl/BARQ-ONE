@@ -120,10 +120,19 @@ export function WatchTogether({mode = 'video'}: {mode?: Mode}) {
     catch { setError(ar ? 'انسخ كود الدعوة يدويًا من الحقل.' : 'Select and copy the invitation code manually.'); }
   }
 
-  return <div className="barq-media" dir={ar ? 'rtl' : 'ltr'}>
+  return <div className="barq-media barq-watch-room" dir={ar ? 'rtl' : 'ltr'}>
+    <header className="barq-watch-hero">
+      <div className="barq-watch-hero-mark"><Icon size={22} aria-hidden="true"/></div>
+      <div className="barq-watch-hero-copy">
+        <span>BARQ ONE · {music ? 'MUSIC ROOM' : 'WATCH ROOM'}</span>
+        <h2>{music ? (ar ? 'اسمعوا مع بعض' : 'Listen together') : (ar ? 'اتفرجوا مع بعض' : 'Watch together')}</h2>
+        <p>{ar ? 'شارك الوسائط والدردشة في غرفة خاصة. ملفاتك بتفضل على جهازك.' : 'Share media and chat in a private room. Your files stay local.'}</p>
+      </div>
+      <div className="barq-watch-live-label">{ar ? 'جلسة مشتركة' : 'Shared session'}</div>
+    </header>
     {error && <p className="barq-media-error" role="alert">{error}</p>}
     {!room && !guest && <div className="barq-room-entry">
-      <section className="barq-media-panel">
+      <section className="barq-media-panel barq-watch-choose-panel">
         <Icon size={28} aria-hidden="true"/>
         <h2>{ar ? 'افتح غرفة' : 'Host a room'}</h2>
         <p className="barq-muted">{ar
@@ -132,7 +141,7 @@ export function WatchTogether({mode = 'video'}: {mode?: Mode}) {
         <button className="barq-media-primary" disabled={busy} onClick={() => start(true)}><Radio size={17}/>{ar ? 'إنشاء غرفة على نفس الشبكة' : 'Host on the local network'}</button>
         <button disabled={busy} onClick={() => start(false)}><ExternalLink size={16}/>{ar ? 'غرفة بدعوة عبر الإنترنت' : 'Host with an internet invitation'}</button>
       </section>
-      <form className="barq-media-panel" onSubmit={event => { event.preventDefault(); join(); }}>
+      <form className="barq-media-panel barq-watch-choose-panel" onSubmit={event => { event.preventDefault(); join(); }}>
         <Link2 size={28} aria-hidden="true"/>
         <h2>{ar ? 'ادخل غرفة صاحبك' : 'Join a friend'}</h2>
         <label htmlFor="barq-room-invite">{ar ? 'كود دعوة برق' : 'BARQ invitation code'}</label>
@@ -148,7 +157,7 @@ export function WatchTogether({mode = 'video'}: {mode?: Mode}) {
       })}>{ar ? 'إغلاق الغرفة المفتوحة' : 'End active room'}</button>
     </section>}
     {current && !guest && <>
-      <section className="barq-media-toolbar">
+      <section className="barq-media-toolbar barq-watch-controls">
         <span className="barq-chip">{current.guest_connected ? (ar ? 'صاحبك متصل' : 'Guest connected') : (ar ? 'مستني صاحبك' : 'Waiting for a guest')}</span>
         {!current.public && <button disabled={busy} onClick={publish}><Radio size={16}/>{busy ? (ar ? 'بنجهّز رابط الإنترنت…' : 'Preparing the internet invite…') : (ar ? 'إنشاء رابط للإنترنت' : 'Create an internet link')}</button>}
         <button disabled={busy} onClick={() => void operate(async () => {
@@ -163,9 +172,13 @@ export function WatchTogether({mode = 'video'}: {mode?: Mode}) {
         <button onClick={() => void copy(current.guest_url + '#' + current.room_code)} aria-label={ar ? 'نسخ رابط المتصفح' : 'Copy browser link'}><Copy size={16}/></button>
       </section>}
     </>}
-    {(guest || current) && <section className="barq-room-frame">
-      {guest && <div className="barq-media-toolbar"><button onClick={() => setGuest('')}><XCircle size={16}/>{ar ? 'مغادرة الغرفة' : 'Leave room'}</button></div>}
-      <iframe title={ar ? 'مشغّل الغرفة' : 'Room player'} src={guest || current?.host_url} allow="autoplay; encrypted-media" referrerPolicy="no-referrer"/>
+    {(guest || current) && <section className="barq-room-frame barq-watch-player">
+      <div className="barq-watch-player-top">
+        <div><Icon size={17}/><strong>{music ? (ar ? 'مشغّل الموسيقى' : 'Music player') : (ar ? 'مشغّل المشاهدة' : 'Video player')}</strong></div>
+        <span>{ar ? 'اضغط «ملء الشاشة» داخل المشغّل للتكبير على شاشتك' : 'Use Fullscreen in the player to expand on your display'}</span>
+        {guest && <button onClick={() => setGuest('')}><XCircle size={16}/>{ar ? 'مغادرة الغرفة' : 'Leave room'}</button>}
+      </div>
+      <iframe title={ar ? 'مشغّل الغرفة' : 'Room player'} src={guest || current?.host_url} allow="autoplay; encrypted-media; fullscreen; picture-in-picture" allowFullScreen referrerPolicy="no-referrer"/>
     </section>}
   </div>;
 }
