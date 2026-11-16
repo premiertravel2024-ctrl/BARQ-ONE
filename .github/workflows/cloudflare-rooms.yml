@@ -1,0 +1,41 @@
+name: BARQ Rooms Cloudflare Deployment
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'cloudflare/**'
+      - 'wrangler.jsonc'
+      - '.github/workflows/cloudflare-rooms.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: barq-cloudflare-room
+  cancel-in-progress: true
+jobs:
+  deploy-rooms:
+    name: Validate and optionally deploy Cloudflare guest rooms
+    runs-on: ubuntu-latest
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Validate room worker
+        run: |
+          node --check cloudflare/worker.mjs
+          node --test cloudflare/worker.test.mjs
+      - name: Announce deployment not configured
+        if: ${{ env.CLOUDFLARE_API_TOKEN == '' || env.CLOUDFLARE_ACCOUNT_ID == '' }}
+        run: |
+          echo "::notice title=Cloudflare deployment pending::Set CLOUDFLARE_API_TOKEN and CLOUDFLARE_ACCOUNT_ID in repository Actions secrets; updated mobile room UI is NOT yet deployed."
+      - name: Publish updated mobile and guest rooms
+        if: ${{ env.CLOUDFLARE_API_TOKEN != '' && env.CLOUDFLARE_ACCOUNT_ID != '' }}
+        run: npx --yes wrangler@4 deploy --config wrangler.jsonc
+      - name: Verify deployed Durable Objects
+        if: ${{ env.CLOUDFLARE_API_TOKEN != '' && env.CLOUDFLARE_ACCOUNT_ID != '' }}
+        run: |
+          node -e "fetch('https://barq-one.ashraf-mohamed.workers.dev/health/rooms').then(async r => {const d=await r.json();if(!r.ok||d.rooms_ready!==true)throw Error('Durable Objects unavailable')}).catch(e=>{console.error(e);process.exit(1)})"
