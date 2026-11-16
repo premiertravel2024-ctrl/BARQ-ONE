@@ -1,0 +1,36 @@
+{
+  "name": "barq-one",
+  "main": "./cloudflare/worker.mjs",
+  "compatibility_date": "2026-11-16",
+  "workers_dev": true,
+  "rules": [
+    {
+      "type": "Text",
+      "globs": [
+        "**/*.html"
+      ],
+      "fallthrough": true
+    }
+  ],
+  "durable_objects": {
+    "bindings": [
+      {
+        "name": "ROOMS",
+        "class_name": "RoomSession"
+      },
+      {
+        "name": "RATE_LIMIT",
+        "class_name": "RateLimit"
+      }
+    ]
+  },
+  "migrations": [
+    {
+      "tag": "barq_rooms_v1",
+      "new_sqlite_classes": [
+        "RoomSession",
+        "RateLimit"
+      ]
+    }
+  ]
+}

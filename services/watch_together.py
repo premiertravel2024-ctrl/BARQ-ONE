@@ -170,7 +170,7 @@ def active_room() -> dict | None:
 
 
 def _managed_origin() -> str:
-    origin=os.environ.get("BARQ_WATCH_RELAY_URL","").strip().rstrip("/")
+    origin=os.environ.get("BARQ_WATCH_RELAY_URL","https://barq-one.ashraf-mohamed.workers.dev").strip().rstrip("/")
     if origin and not re.fullmatch(r"https://[A-Za-z0-9.-]+(?::[0-9]{1,5})?",origin):
         raise RuntimeError("عنوان خادم الغرف لازم يكون HTTPS.")
     return origin
@@ -183,7 +183,7 @@ class _NoRedirect(HTTPRedirectHandler):
 
 def _relay_request(origin: str,path: str,token: str,*,method: str,data=None):
     request=HttpRequest(origin+path,method=method,
-        headers={"Authorization":"Bearer "+token,"Content-Type":"application/json"},
+        headers={**({"Authorization":"Bearer "+token} if token else {}),"Content-Type":"application/json"},
         data=json.dumps(data).encode() if data is not None else None)
     with build_opener(_NoRedirect()).open(request,timeout=8) as result:
         return json.loads(result.read(16384))
@@ -191,8 +191,6 @@ def _relay_request(origin: str,path: str,token: str,*,method: str,data=None):
 
 def _publish_managed(room: Room,origin: str) -> dict:
     token=os.environ.get("BARQ_WATCH_RELAY_TOKEN","").strip()
-    if not token:
-        raise RuntimeError("خادم الغرف الثابت محتاج مفتاح إنشاء الغرف.")
     with _tunnel_setup_lock:
         with _lock:
             if _rooms.get(room.id) is not room:
