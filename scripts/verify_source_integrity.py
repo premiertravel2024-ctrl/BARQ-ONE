@@ -41,6 +41,7 @@ REQUIRED = (
     'frontend/public/audio/live-capture.js',
     'api_routes/watch.py', 'api_routes/lively.py', 'services/watch_together.py',
     'frontend/src/pages/WatchTogether.tsx', 'frontend/src/pages/Wallpapers.tsx',
+    'scripts/ensure_speaker_model.ps1', 'scripts/verify_speaker_model.py',
     'execution/__init__.py', 'execution/runner.py', 'execution/service.py',
     'execution/services.py', 'execution/doctor.py', 'execution/grants.py',
     'execution/known_folders.py', 'execution/recipes.py', 'execution/react_mission.py',

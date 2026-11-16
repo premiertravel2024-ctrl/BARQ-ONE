@@ -6,7 +6,7 @@ Set-StrictMode -Version Latest
 $root = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path
 $modelDir = Join-Path $root 'models\speaker'
 $file = Join-Path $modelDir 'wespeaker_en_voxceleb_resnet34_LM.onnx'
-$expected = 'E9848563DA86F263117134DFD7AD63C92355B37DE492B55E325400C9D9C39012'
+$verifier = Join-Path $PSScriptRoot 'verify_speaker_model.py'
 $urls = @(
   'https://github.com/k2-fsa/sherpa-onnx/releases/download/speaker-recongition-models/wespeaker_en_voxceleb_resnet34_LM.onnx',
   'https://huggingface.co/anujpatel863/Separate/resolve/c9b28337a09ccbf537f811a12ef2ee79b521c881/wespeaker_en_voxceleb_resnet34_LM.onnx'
@@ -15,11 +15,13 @@ New-Item -ItemType Directory -Force -Path $modelDir | Out-Null
 
 function Test-VerifiedSpeakerModel([string]$Path) {
   if (-not (Test-Path -LiteralPath $Path -PathType Leaf)) { return $false }
-  try {
-    return (Get-FileHash -Algorithm SHA256 -LiteralPath $Path).Hash.ToUpperInvariant() -eq $expected
-  } catch {
-    return $false
-  }
+  # Both PowerShell editions invoke the same Python verifier used by staging.
+  # Capture stderr as text so a bad existing file can recover via download.
+  $ErrorActionPreference = 'Continue'
+  $detail = & py -3.11 $verifier $Path 2>&1
+  if ($LASTEXITCODE -eq 0) { return $true }
+  if ($detail) { Write-Warning ($detail -join ' ') }
+  return $false
 }
 
 if (Test-VerifiedSpeakerModel $file) {

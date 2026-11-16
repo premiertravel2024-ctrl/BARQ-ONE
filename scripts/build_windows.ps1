@@ -113,12 +113,6 @@ Write-Host "Inno Setup detected: $compilerCheck" -ForegroundColor DarkGreen
 # Also run this check in staged builds, so direct stage invocations fail closed.
 Write-Host "`n==> Ensuring verified speaker recognition model" -ForegroundColor Cyan
 & (Join-Path $PSScriptRoot 'ensure_speaker_model.ps1')
-$speakerPath = Join-Path $root 'models/speaker/wespeaker_en_voxceleb_resnet34_LM.onnx'
-$speakerSha = 'E9848563DA86F263117134DFD7AD63C92355B37DE492B55E325400C9D9C39012'
-if (-not (Test-Path -LiteralPath $speakerPath -PathType Leaf) -or
-    (Get-FileHash -Algorithm SHA256 -LiteralPath $speakerPath).Hash.ToUpperInvariant() -ne $speakerSha) {
-  throw 'Verified speaker model missing or corrupt; release blocked.'
-}
 
 if (-not $StagedBuild) {
   if ($UseBundledUI) {
