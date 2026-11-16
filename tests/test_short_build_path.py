@@ -28,7 +28,11 @@ def short_paths(tmp_path, monkeypatch):
             yield Path(directory),base
         finally:
             for stage in allocated:
-                shutil.rmtree(stage)
+                    try:
+                        shutil.rmtree(stage)
+                    except FileNotFoundError:
+                        # Successful builds reclaim their own stage.
+                        pass
 
 
 def source_tree(parent):
@@ -60,9 +64,11 @@ def produce_artifacts(stage, valid=True):
 
 def test_staging_uses_fresh_snapshot_and_copies_verified_outputs(short_paths):
     parent,base=short_paths
+    stages = []
     source=source_tree(parent)
     def runner(command,cwd,check):
         stage=Path(cwd)
+        stages.append(stage)
         assert stage!=source
         assert command[-1]=='-StagedBuild'
         assert not (stage/'.buildvenv').exists()
@@ -74,6 +80,8 @@ def test_staging_uses_fresh_snapshot_and_copies_verified_outputs(short_paths):
         produce_artifacts(stage)
         return SimpleNamespace(returncode=0)
     output=build.run_build(source,base,runner=runner)
+    assert len(stages) == 1
+    assert not stages[0].exists()
     assert output.read_bytes()==b'new simulated installer'
     import zipfile
     with zipfile.ZipFile(source/'release/BARQ_Portable_2.5.3.zip') as archive:
