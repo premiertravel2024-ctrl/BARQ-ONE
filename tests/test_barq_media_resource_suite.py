@@ -46,6 +46,8 @@ def test_resource_saver_never_pauses_without_explicit_approval(monkeypatch):
 
 def test_lively_library_cannot_accept_path_traversal(monkeypatch,tmp_path):
     from api_routes import lively
+    # This regression covers the legacy Lively adapter, not BARQ's integrated player.
+    monkeypatch.setenv("BARQ_WALLPAPER_LEGACY", "1")
     root=tmp_path/"wallpapers"
     root.mkdir()
     good=root/"wall-01"
