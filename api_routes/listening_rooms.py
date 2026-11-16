@@ -94,12 +94,21 @@ async def room_socket(ws: WebSocket, code: str):
     host = ws.headers.get('host', '').lower()
     origin = ws.headers.get('origin', '')
     peer = ws.client.host if ws.client else ''
-    if host not in ('127.0.0.1:8000', 'localhost:8000', '127.0.0.1', 'localhost', 'testserver') or peer not in ('127.0.0.1', '::1', 'testclient'):
+    try:
+        hostname = urlsplit(f'//{host}').hostname
+    except ValueError:
+        hostname = None
+    if hostname not in ('127.0.0.1', 'localhost', '::1', 'testserver') or peer not in ('127.0.0.1', '::1', 'testclient'):
         await ws.close(code=1008)
         return
     if origin:
-        parsed = urlsplit(origin)
-        if parsed.hostname not in ('127.0.0.1', 'localhost'):
+        try:
+            parsed = urlsplit(origin)
+        except ValueError:
+            await ws.close(code=1008)
+            return
+        expected_scheme = 'https' if ws.url.scheme == 'wss' else 'http'
+        if parsed.scheme != expected_scheme or parsed.netloc.lower() != host:
             await ws.close(code=1008)
             return
     try:
@@ -111,10 +120,10 @@ async def room_socket(ws: WebSocket, code: str):
         await ws.close(code=1008)
         return
     client_id = secrets.token_hex(8)
-    await ws.accept()
     room.sockets[client_id] = ws
-    await _broadcast(room, _snapshot(room))
     try:
+        await ws.accept()
+        await _broadcast(room, _snapshot(room))
         while True:
             msg = await ws.receive_json()
             if not isinstance(msg, dict):
