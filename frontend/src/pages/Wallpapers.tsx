@@ -15,7 +15,20 @@ type Reply = {
   installer: 'idle' | 'running' | 'finished' | 'failed';
   can_install: boolean;
 };
-function Preview({item,native}:{item:Wallpaper;native:boolean}){const [failed,setFailed]=useState(false);const src='/v1/wallpapers/preview/'+encodeURIComponent(item.id);if(!item.preview_available||failed)return <Image size={50}/>;return native&&/^(mp4|webm)$/.test(item.type)?<video src={src+'#t=0.1'} muted playsInline preload="metadata" onError={()=>setFailed(true)}/>:<img alt="" src={src} loading="lazy" onError={()=>setFailed(true)}/>;}
+function Preview({item,native}:{item:Wallpaper;native:boolean}){
+  const [failed,setFailed]=useState(false),[ready,setReady]=useState(false);
+  useEffect(()=>{setFailed(false);setReady(false)},[item.id]);
+  const placeholder=<div className="bws-preview-placeholder" aria-hidden="true"><Image size={35}/><span>BARQ LIVE</span></div>;
+  const src='/v1/wallpapers/preview/'+encodeURIComponent(item.id);
+  if(!item.preview_available||failed)return placeholder;
+  if(native&&/^(mp4|webm)$/.test(item.type))return <div className="bws-preview-video">
+    {!ready&&placeholder}
+    <video src={src} className={ready?'ready':''} muted playsInline preload="metadata"
+      onLoadedMetadata={event=>{const video=event.currentTarget;if(Number.isFinite(video.duration)&&video.duration>0.7){try{video.currentTime=Math.min(.8,video.duration*.12)}catch{setReady(true)}}}}
+      onLoadedData={()=>setReady(true)} onSeeked={()=>setReady(true)} onError={()=>setFailed(true)}/>
+  </div>;
+  return <img alt="" src={src} loading="lazy" decoding="async" onError={()=>setFailed(true)}/>;
+}
 
 type CommandResult = {status: string; verified?: boolean};
 
@@ -178,7 +191,7 @@ export function Wallpapers({onOpenSettings}:{onOpenSettings?:()=>void}={}) {
       <small>{data.library.length} {ar?'خلفية':'wallpapers'}</small></div>
      {data.engine&&<div className="bws-active-strip">
       <span className={data.engine.running?'on':''}>{data.engine.running?<CheckCircle2 size={18}/>:<AlertCircle size={18}/>}</span>
-      <div><strong>{data.engine.running?(ar?'الخلفية الحالية شغالة':'Wallpaper active'):(ar?'مفيش خلفية شغالة':'Wallpaper stopped')}</strong><small>{data.engine.running?(featured?.title||''):(ar?'اختار خلفية واضغط تطبيق':'Choose a wallpaper and press Apply')}</small></div>
+      <div><strong>{data.engine.running?(ar?'الخلفية الحالية شغالة':'Wallpaper active'):(ar?'مفيش خلفية شغالة':'Wallpaper stopped')}</strong><small>{data.engine.running?((data.library.find(item=>item.id===data.engine?.wallpaper_id)?.title)||''):(ar?'اختار خلفية واضغط تطبيق. لو التشغيل اترفض، راجع الرسالة اللي هتظهر فوق.':'Choose a wallpaper and press Apply. If the engine refuses, check the message above.')}</small></div>
       <div className="bws-active-buttons"><button disabled={busy||!data.engine.running} onClick={()=>invoke('pause')}><Pause size={15}/>{ar?'إيقاف مؤقت':'Pause'}</button><button disabled={busy||!data.engine.running} onClick={()=>invoke('stop')}><Square size={15}/>{ar?'إيقاف':'Stop'}</button></div>
      </div>}
      <div className="bws-toolbar">
@@ -194,7 +207,7 @@ export function Wallpapers({onOpenSettings}:{onOpenSettings?:()=>void}={}) {
       </div>
       <div className="bws-wallpaper-text"><strong dir="auto">{item.title}</strong><small>{data.engine?.wallpaper_id===item.id&&data.engine.running?(ar?'شغالة دلوقتي':'Now playing'):(ar?'محفوظة في المكتبة':'Saved in library')}</small>
        <div className="bws-wallpaper-actions"><button disabled={busy} onClick={()=>invoke('apply',item.id)}><Play size={15}/>{ar?'تطبيق على الجهاز':'Apply to desktop'}</button>
-        {data.engine&&data.features?.remove_wallpaper&&<button className="bws-remove" disabled={busy} aria-label={(ar?'إزالة الخلفية ':'Remove wallpaper ')+item.title} title={ar?'إزالة من المكتبة':'Remove from library'} onClick={()=>setDeleteTarget(item)}><Trash2 size={16}/></button>}</div></div>
+        {data.engine&&data.features?.remove_wallpaper&&<button className="bws-remove" disabled={busy} aria-label={(ar?'إزالة الخلفية ':'Remove wallpaper ')+item.title} title={ar?'إزالة من المكتبة':'Remove from library'} onClick={()=>setDeleteTarget(item)}><Trash2 size={16}/><span>{ar?'إزالة':'Remove'}</span></button>}</div></div>
      </article>)}</div>:<div className="bws-empty"><Image size={30}/><strong>{data.library.length===0?(ar?'مكتبتك لسه فاضية':'Your library is empty'):(ar?'مفيش خلفيات مطابقة':'No matching wallpapers')}</strong><p>{ar?'ضيف ملف فيديو أو GIF من جهازك، أو غيّر البحث.':'Import a video or GIF, or adjust your filters.'}</p><button disabled={busy} onClick={addLocal}><Plus size={16}/>{ar?'إضافة خلفية':'Add wallpaper'}</button></div>}
     </section>
     <details className="bws-player-settings"><summary>{ar?'التحكم في تشغيل الخلفيات':'Playback controls'}</summary>

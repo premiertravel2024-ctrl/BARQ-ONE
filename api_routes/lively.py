@@ -210,13 +210,16 @@ def wallpaper_status(metrics: bool=True):
 
 @router.get("/preview/{wallpaper_id}")
 def wallpaper_preview(wallpaper_id:str):
-    _consent()
+    # Preview is read-only for an already user-picked media ID and requires no
+    # computer-control permission.  Import/apply/delete still require consent.
+    # A disabled control policy must not cause blank gallery thumbnails.
     if _native_enabled():
         from services.native_wallpaper import _file
         try:
             return FileResponse(_file(wallpaper_id))
         except (ValueError, OSError) as exc:
             raise HTTPException(404, "Wallpaper preview unavailable") from exc
+    _consent()
     folder=_wallpaper(wallpaper_id)
     for name in ("thumbnail.jpg","thumbnail.png","preview.jpg"):
         target=folder/name

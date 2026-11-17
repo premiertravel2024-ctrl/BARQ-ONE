@@ -119,3 +119,31 @@ def test_wallpaper_status_announces_safe_removal_capability(monkeypatch):
     response = lively.wallpaper_status(metrics=False)
     assert response["features"]["remove_wallpaper"] is True
     assert response["features"]["native_engine_handshake"] == 2
+
+
+def test_native_wallpaper_previews_do_not_need_computer_control(monkeypatch, tmp_path):
+    """Existing user-imported preview can render while device actions are disabled."""
+    from api_routes import lively
+    from services import native_wallpaper as native
+    monkeypatch.setattr(lively, "_native_enabled", lambda: True)
+    monkeypatch.setattr(lively, "_consent", lambda: (_ for _ in ()).throw(RuntimeError("No action permission")))
+    monkeypatch.setattr(native, "_folder", lambda: tmp_path)
+    media = tmp_path / "preview.gif"
+    media.write_bytes(b"GIF89a" + b"animation")
+    identifier = "b" * 24
+    native._save({identifier: {"path": str(media), "title": "preview"}})
+    response = lively.wallpaper_preview(identifier)
+    assert response.path == str(media)
+    # Deleting or applying wallpapers still performs action authorization.
+    with pytest.raises(RuntimeError, match="No action permission"):
+        lively.remove_wallpaper(identifier)
+
+
+def test_native_wallpaper_cards_show_media_preview_and_explicit_remove():
+    source = (ROOT / "frontend/src/pages/Wallpapers.tsx").read_text(encoding="utf-8")
+    style = (ROOT / "frontend/src/pages/wallpaperGallery.css").read_text(encoding="utf-8")
+    assert 'onLoadedMetadata=' in source
+    assert 'onLoadedData=' in source
+    assert 'onClick={()=>setDeleteTarget(item)}' in source
+    assert "data.features?.remove_wallpaper" in source
+    assert 'grid-template-columns:repeat(auto-fit' in style
