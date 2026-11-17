@@ -163,3 +163,6 @@
 @media(prefers-reduced-motion:reduce){
  .ops-shell button,.bs-card,.bm-player button,.bws-wallpaper{transition:none!important;animation:none!important}
 }
+
+.ops-stage > .ops-media-page:not([hidden]) { display:flex; flex:1; min-height:0; min-width:0; }
+.ops-media-page > .one-page { flex:1; min-width:0; }

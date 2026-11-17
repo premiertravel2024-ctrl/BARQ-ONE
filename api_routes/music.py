@@ -2,11 +2,20 @@ import os
 import sys
 from pathlib import Path
 from typing import Literal
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Query
 from fastapi.responses import FileResponse
 from pydantic import BaseModel
 from services import music_library as library
+from services.music_discovery import find_tracks
+from services.web_research import public_query
 router=APIRouter(prefix='/v1/music',tags=['personal-music'])
+
+@router.get('/discover')
+def discover(provider: Literal['spotify', 'anghami'], q: str = Query(min_length=2, max_length=100),
+             market: str = Query('SA', pattern=r'^[A-Z]{2}$')):
+    if len(q.strip()) < 2 or not public_query('search for ' + q + ' music'):
+        raise HTTPException(400, 'Enter a song, album, or artist name.')
+    return find_tracks(provider, q.strip().replace('"', ' '), market)
 
 @router.get('/library')
 def tracks():return {'tracks':library.tracks()}

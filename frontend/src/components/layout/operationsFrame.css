@@ -59,3 +59,22 @@
 
 /* Main navigation treats chat like every other destination. */
 
+
+.ops-header { background: var(--bg-surface); }
+.ops-header-actions button:hover { background: #ef527322; }
+.ops-rail { border-color: var(--border-color); }
+.ops-rail nav { gap: 4px; }
+.ops-rail nav button { min-height: 38px; border: 1px solid transparent; border-radius: 9px; }
+.ops-rail nav button i { border-radius: 7px; }
+.ops-rail nav button[aria-current='page'] { border-color: #d667823d; font-weight: 720; }
+.ops-rail nav button:is([data-section="watch"],[data-section="automation"]) { margin-block-start: 7px; }
+.ops-body { gap: clamp(7px,1vw,14px); }
+.ops-stage { border-radius: 15px; }
+.ops-header nav button, .ops-header-actions button { min-height: 37px; }
+@media (max-width: 730px) {
+ .ops-header nav { display: flex; gap: 0; margin-inline: auto 0; }
+ .ops-header nav button:not(.ops-mobile-chat) { display: none; }
+ .ops-header nav .ops-mobile-chat { padding-inline: 8px; }
+ .ops-rail nav button { min-height: 43px; }
+ .ops-stage { border-radius: 10px; }
+}

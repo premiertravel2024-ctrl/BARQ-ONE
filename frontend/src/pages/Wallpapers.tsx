@@ -1,3 +1,4 @@
+import {useAppView} from '../lib/appContext';
 import {useEffect, useRef, useState} from 'react';
 import {Download, ExternalLink, Heart, Image, Layers, Pause, Play, Plus, RefreshCw, Search, Shuffle, Square, Trash2, CheckCircle2, AlertCircle, Volume2} from 'lucide-react';
 import {requestJSON} from '../lib/backend';
@@ -15,12 +16,12 @@ type Reply = {
   installer: 'idle' | 'running' | 'finished' | 'failed';
   can_install: boolean;
 };
-function Preview({item,native}:{item:Wallpaper;native:boolean}){
+function Preview({item,native,active=true}:{item:Wallpaper;native:boolean;active?:boolean}){
   const [failed,setFailed]=useState(false),[ready,setReady]=useState(false);
-  useEffect(()=>{setFailed(false);setReady(false)},[item.id]);
+  useEffect(()=>{setFailed(false);setReady(false)},[item.id,active]);
   const placeholder=<div className="bws-preview-placeholder" aria-hidden="true"><Image size={35}/><span>BARQ LIVE</span></div>;
   const src='/v1/wallpapers/preview/'+encodeURIComponent(item.id);
-  if(!item.preview_available||failed)return placeholder;
+  if(!item.preview_available||failed||native&&!active)return placeholder;
   if(native&&/^(mp4|webm)$/.test(item.type))return <div className="bws-preview-video">
     {!ready&&placeholder}
     <video src={src} className={ready?'ready':''} muted playsInline preload="metadata"
@@ -35,6 +36,7 @@ type CommandResult = {status: string; verified?: boolean};
 export function Wallpapers({onOpenSettings}:{onOpenSettings?:()=>void}={}) {
   const ar = useApp(s => s.language) === 'ar';
   const [data, setData] = useState<Reply | null>(null);
+  const [previewId,setPreviewId]=useState<string>();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [permissionNeeded,setPermissionNeeded]=useState(false);
@@ -159,6 +161,7 @@ export function Wallpapers({onOpenSettings}:{onOpenSettings?:()=>void}={}) {
     return match&&(filter==='all'||(filter==='favorites'?favorites.includes(item.id):filter==='gif'?isGif(item):isVideo(item)));
   });
   const featured=(data?.library||[]).find(x=>x.id===data?.engine?.wallpaper_id)||(data?.library||[])[0];
+  useAppView('wallpapers',{mode:filter,item:data?.library.find(item=>item.id===data.engine?.wallpaper_id)?.title,count:data?.library.length,status:data?.engine?.running?'running':data?.installer});
   return <div className="barq-media barq-wallpaper-studio" dir={ar?'rtl':'ltr'}>
    <header className="bws-hero">
     <div className="bws-hero-copy">
@@ -204,8 +207,8 @@ export function Wallpapers({onOpenSettings}:{onOpenSettings?:()=>void}={}) {
        {([['all',ar?'الكل':'All'],['video',ar?'فيديو':'Videos'],['gif','GIF'],['favorites',ar?'المفضلة':'Favorites']] as const).map(([key,label])=><button type="button" key={key} aria-pressed={filter===key} onClick={()=>setFilter(key)}>{label}</button>)}
       </div>
      </div>
-     {list.length?<div className="bws-gallery">{list.map(item=><article key={item.id} className={'bws-wallpaper'+(data.engine?.wallpaper_id===item.id?' is-playing':'')}>
-      <div className="bws-thumb"><Preview item={item} native={!!data.engine}/>
+     {list.length?<div className="bws-gallery">{list.map(item=><article key={item.id} onPointerEnter={()=>setPreviewId(item.id)} onPointerLeave={()=>setPreviewId(undefined)} className={'bws-wallpaper'+(data.engine?.wallpaper_id===item.id?' is-playing':'')}>
+      <div className="bws-thumb"><Preview item={item} native={!!data.engine} active={previewId===item.id}/>
        <span className="bws-type">{isGif(item)?'GIF':isVideo(item)?'VIDEO':String(item.type).slice(0,12)}</span>
        <button type="button" className="bws-heart" aria-label={favorites.includes(item.id)?(ar?'إزالة من المفضلة':'Remove favorite'):(ar?'إضافة للمفضلة':'Add favorite')} aria-pressed={favorites.includes(item.id)} onClick={()=>toggleFavorite(item.id)}><Heart size={17} fill={favorites.includes(item.id)?'currentColor':'none'}/></button>
       </div>

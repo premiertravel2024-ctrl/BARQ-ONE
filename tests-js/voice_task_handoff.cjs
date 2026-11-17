@@ -6,7 +6,7 @@ const path=require('node:path');
 const ts=require('../frontend/node_modules/typescript');
 const source=fs.readFileSync(path.join(__dirname,'../frontend/src/components/chat/HandsFreeVoice.tsx'),'utf8');
 const compiled=ts.transpileModule(source,{compilerOptions:{module:ts.ModuleKind.CommonJS,jsx:ts.JsxEmit.ReactJSX,target:ts.ScriptTarget.ES2022}}).outputText;
-let receiver,refresh,statusSnapshot,speakerBusy=false,statusError;const saveSnapshots=[];const announcements=[];const sent=[],warnings=[],cleanups=[],lookups=[],sessions=[];
+let receiver,refresh,statusSnapshot,speakerBusy=false,statusError;const saveSnapshots=[];const announcements=[];const sent=[],warnings=[],cleanups=[],lookups=[],sessions=[],appActions=[];
 const state={activeId:'chat-1',streaming:false,chats:[{id:'chat-1',messages:[]}],
  selectChat:id=>{state.activeId=id},toast:(...v)=>warnings.push(v),newChat:()=>state.activeId,
  addMessage:(id,m)=>state.chats.find(c=>c.id===id).messages.push(m),
@@ -19,6 +19,7 @@ const hooks={useRef:v=>({current:v}),useState:v=>[typeof v==='function'?v():v,()
  useEffect:f=>{const cleanup=f();if(cleanup)cleanups.push(cleanup)}};
 class APIError extends Error{constructor(status){super(String(status));this.status=status;}}
 const mods={react:hooks,'react/jsx-runtime':{jsx:()=>null,jsxs:()=>null,Fragment:'fragment'},
+ '../../lib/appContext':{openAppSection:action=>appActions.push(action)},
  '../../lib/liveVoice':{LiveVoice:FakeVoice},'../../lib/localVoice':{LocalVoice:FakeVoice},
  '../../lib/backend':{APIError,requestJSON:async(path,{signal}={})=>{
   if(path==='/v1/voice/speaker')return new Promise(resolve=>lookups.push(resolve));
@@ -53,6 +54,11 @@ vm.runInNewContext(compiled,context);
  assert.equal(sessions.length,2);
  previous({type:'closed'});
  assert.equal(context.exports.isHandsFreeActive(),true,'a stale close cannot stop a newer session');
+ const appAction={type:'barq_app_action',app_action:{section:'music',mode:'anghami'}};
+ previous(appAction);
+ assert.equal(appActions.length,0,'stopped voice sessions must not navigate the current app');
+ receiver(appAction);
+ assert.deepEqual(appActions,[appAction.app_action]);
  const event={type:'chat_task_requested',text:'ابنيلي برنامج حسابات واديني exe',request_id:'request-1',conversation_id:'chat-1'};
  receiver(event);receiver(event);
  assert.deepEqual(sent,[['chat-1',event.text]],'duplicate handoff must not execute twice');

@@ -1,3 +1,6 @@
+import {useAppView} from '../lib/appContext';
+import type {OnePage} from '../lib/appNavigation';
+export type {OnePage} from '../lib/appNavigation';
 import {useEffect,useState} from 'react';
 import {Thermometer,MemoryStick,HardDrive,Activity,AudioLines,Cpu,Download,LayoutDashboard,LibraryBig,MessageSquare,Radio,Search,Settings2,Star,Terminal,Timer,Workflow,CircleDot,Package,Image,Shield,Headphones} from 'lucide-react';
 import {requestJSON,type RouterProvider} from '../lib/backend';
@@ -27,11 +30,10 @@ export const sections=[
  ['wallpapers','الخلفيات الحية','Live Wallpapers',Image],
  ['watch','سينما برق','BARQ Cinema',Radio],
  ['music','الموسيقى','Music',Headphones],
- ['stories','حكايات برق','BARQ Stories',LibraryBig],
+ ['stories','مكتبة القراءة','Reading Library',LibraryBig],
  ['automation','الأتمتة','Automation',Timer],
  ['settings','الإعدادات','Settings',Settings2],
-] as const;
-export type OnePage=typeof sections[number][0];
+] as const satisfies ReadonlyArray<readonly [OnePage, string, string, typeof Cpu]>;
 type Item={id:string;name:string;category:string;url:string;package:string|null;setup?:boolean;description_ar?:string;description_en?:string};
 type Job={id:string;item:string;action:string;status:string;detail:string};
 type Inventory={packages:Record<string,string>;setups?:Record<string,string>;checked:boolean};
@@ -99,6 +101,7 @@ function OpenHub({mode}:{mode:'library'|'installed'|'tools'}){
  const categories=[...new Set(items.map(item=>item.category))];
  const shown=items.filter(item=>(!category||item.category===category)&&(!onlyFavorites||stars.includes(item.id))&&
   (item.name+' '+item.id+' '+(item.description_ar||'')+' '+(item.description_en||'')).toLowerCase().includes(query.trim().toLowerCase()));
+ useAppView(mode,{item:detail?.name,count:catalog?shown.length:undefined,status:busy?'working':error?'unavailable':undefined});
  const chosen=items.filter(item=>selected.includes(item.id));
  function star(id:string){
   const next=stars.includes(id)?stars.filter(x=>x!==id):[...stars,id];setStars(next);
@@ -244,6 +247,7 @@ function MonitorPanel({full=false}:{full?:boolean}){
   {label:ar?'الذاكرة':'Memory',unit:'%',read:memory,icon:MemoryStick},
   {label:ar?'مساحة القرص المستخدمة':'Disk space used',unit:'%',read:v=>v?.disk_percent,icon:HardDrive},
  ];
+ useAppView('monitor',{status:error?'update unavailable':updated?'live readings':'loading'});
  return <section className="one-surface one-telemetry" dir={ar?'rtl':'ltr'}>
   <div className="one-section-head"><div><p className="one-eyebrow">BARQ / SYSTEM VITALS</p><h2>{ar?'نبض الجهاز':'System vitals'}</h2></div>
    <span className="one-telemetry-status" data-stale={error}>{error?(ar?'انقطع التحديث':'Update unavailable'):updated?(ar?'قراءات مباشرة':'Live readings'):(ar?'جاري قراءة الجهاز…':'Reading sensors…')}</span></div>
@@ -323,8 +327,9 @@ type Props={page:Exclude<OnePage,'chat'|'settings'>;providers:RouterProvider[];o
 export function BarqOne({page,providers,onVoice,onNavigate,onModels,onQuick}:Props){
  const ar=useApp(s=>s.language)==='ar';
  const title=sections.find(([key])=>key===page);
- return <section className="one-page">
-  {!['watch','music','wallpapers','stories'].includes(page)&&<header className="one-page-head"><div><h1>{title?.[ar?1:2]}</h1></div>
+ const PageIcon=title?.[3];
+ return <section className="one-page" data-page={page}>
+  {!['watch','music','wallpapers','stories'].includes(page)&&<header className="one-page-head"><div className="one-page-heading">{PageIcon&&<span className="one-page-heading-icon" aria-hidden="true"><PageIcon size={22}/></span>}<h1>{title?.[ar?1:2]}</h1></div>
    {page==='center'&&<button type="button" onClick={()=>onNavigate('voice')}><AudioLines size={17}/>{ar?'المساعد الصوتي':'Voice assistant'}</button>}</header>}
   {page==='center'&&<>
    <div className="one-quick-ribbon" aria-label={ar?'أوامر سريعة':'Quick commands'}>

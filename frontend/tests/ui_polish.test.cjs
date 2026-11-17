@@ -83,19 +83,17 @@ test('voice controller remains functional but has no floating overlay',()=>{
 });
 
 
-test('BARQ Stories is a real navigable application section, not a landing mockup',()=>{
+test('Reading Library opens a published edition in the in-app reader',()=>{
   const one=read('pages/BarqOne.tsx');
-  const stories=read('pages/BarqStories.tsx');
-  const library=read('pages/barqStoriesData.ts');
-  assert.match(one,/\['stories','حكايات برق','BARQ Stories'/);
+  const catalogue=read('pages/BarqStories.tsx');
+  const reader=read('pages/BookReader.tsx');
+  assert.match(one,/\['stories','مكتبة القراءة','Reading Library'/);
   assert.match(one,/page==='stories'&&<BarqStories\/>/);
-  assert.match(stories,/\/v1\/voice\/speak/);
-  assert.match(stories,/streamChat\(/);
-  assert.match(stories,/localStorage\.setItem/);
-  assert.match(stories,/saveStory\(/);
-  assert.match(library,/b-portal/);
+  assert.match(catalogue,/<BookReader /);
+  assert.doesNotMatch(catalogue,/streamChat|Create a story with BARQ/);
+  assert.match(reader,/\/v1\/reading\/books\//);
+  assert.match(reader,/localStorage\.setItem/);
 });
-
 
 test('wallpaper gallery supports applying and safe removal with confirmation',()=>{
  const ui=read('pages/Wallpapers.tsx');

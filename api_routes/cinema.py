@@ -34,3 +34,10 @@ def browse(kind:Literal['movie','tv']='movie',collection:Literal['popular','tren
 def details(kind:Literal['movie','tv'],identifier:int,language:Literal['ar-SA','en-US']='ar-SA'):
     if identifier<1: raise HTTPException(400,'Invalid title')
     return call(catalog.details,kind,identifier,language)
+
+
+@router.get('/providers/{kind}/{identifier}')
+def providers(kind: Literal['movie', 'tv'], identifier: int, region: str = Query('SA', pattern=r'^[A-Z]{2}$')):
+    if identifier < 1:
+        raise HTTPException(400, 'Invalid title')
+    return call(catalog.watch_providers, kind, identifier, region)

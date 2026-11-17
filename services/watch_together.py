@@ -702,7 +702,7 @@ async def signal_session(ws:WebSocket,room_id:str,*,hosted=False,ice_servers=Non
             await other.send_json({"type":"peer-joined","role":role,"connection":connection})
             await ws.send_json({"type":"peer-joined","role":"guest" if role=="host" else "host","connection":connection})
         allowed_host={"offer","ice","chat","typing","reaction","sync","settings","subtitle","track"}
-        allowed_guest={"answer","ice","chat","typing","reaction","request-pause","request-seek"}
+        allowed_guest={"answer","ice","chat","typing","reaction","request-pause","request-seek","request-media"}
         while not room.closed:
             text=await ws.receive_text()
             if len(text)>65536:

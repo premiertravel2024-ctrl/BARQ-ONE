@@ -1,3 +1,4 @@
+import {appPrompt,appSectionLabel,describeAppView,openAppSection,type AppAction,type AppEntry} from './appContext';
 import {confirmLaunch,resolveLaunch,isLaunchCommand} from './launcher';
 import {preparationStatus} from './agentOutcome';
 import {performTaskAction,retryTaskPlan as retryAgentPlan} from './taskActions';
@@ -73,6 +74,32 @@ export async function generate(id:string,retryCommandId?:string){
   current.setStreaming(true,assistantId);
   try{
   const last=messages.at(-1);
+  if(last?.role==='user'&&!last.attachments?.length&&last.content.length<=240&&
+     /^(?:(?:يا برق|برق|ممكن|لو سمحت|من فضلك|please)\s+)*(?:افتح|إفتح|روح|وديني|اعرض|ابحث|دور|هات|open|show|go to|find|search)/i.test(last.content.trim())){
+    const appDecision=await requestJSON<{action?:AppAction;search?:{catalogue:string;query:string}}>('/v1/app-context/command?'+new URLSearchParams({text:last.content}),{signal}).catch(()=>null);
+    if(signal.aborted)return;
+    const ar=current.language==='ar';
+    const reply=(content:string)=>current.addMessage(id,{id:uid(),role:'assistant',createdAt:Date.now(),model:'BARQ-AI/local',offline:true,content});
+    if(appDecision?.action&&openAppSection(appDecision.action)){
+      const label=appSectionLabel(appDecision.action.section);
+      reply(ar?'فتحت '+label+'.':'Opened '+label+'.');return;
+    }
+    if(appDecision?.search){
+      const {catalogue,query}=appDecision.search;
+      const result=await requestJSON<{status:string;items:AppEntry[]}>('/v1/app-context/search?'+new URLSearchParams({catalogue,q:query}),{signal}).catch(()=>null);
+      if(signal.aborted)return;
+      if(!result||result.status==='unavailable')reply(ar?'مصدر البحث ده مش متاح دلوقتي.':'This catalogue is currently unavailable.');
+      else if(!result.items.length)reply(ar?'مفيش نتائج مطابقة في الكتالوج ده.':'No matches in this catalogue.');
+      else reply((ar?'النتائج المتاحة':'Matching titles')+'\n'+result.items.map(item=>'- '+item.title+(item.label?' · '+item.label:'')).join('\n'));
+      return;
+    }
+  }
+  if(last?.role==='user'&&!last.attachments?.length&&
+     /^(?:(?:يا برق|برق)\s+)*(?:انا|أنا)?\s*(?:فاتح [اإأ]يه|كنت فاتح [اإأ]يه|في قسم [اإأ]يه|what (?:section|page) (?:am i|was i) (?:in|on))(?:\s+(?:جوه برق|في برق|in BARQ))?[؟?!]*$/i.test(last.content.trim())){
+    current.addMessage(id,{id:uid(),role:'assistant',createdAt:Date.now(),model:'BARQ-AI/local',offline:true,
+      content:describeAppView(current.language==='ar')});
+    return;
+  }
   const featureAction=last?.role==='user'&&!last.attachments?.length?exactDesktopFeatureCommand(last.content):null;
   if(featureAction){
     try{
@@ -356,7 +383,7 @@ export async function generate(id:string,retryCommandId?:string){
     const files=(latest?.role==='user'?latest.attachments||[]:[]).map(a=>({attachment:a,file:getAttachment(a.id)}));
     if(files.some(item=>!item.file))throw new Error('Some original attachments are no longer available. Please attach them again.');
     // Keep router diagnostics internal; the chat only presents the final answer.
-    for await (const event of streamChat(messages,current.selectedModel,current.options,signal,files as {attachment:UploadedAttachment;file:File}[],id)){
+    for await (const event of streamChat(messages,current.selectedModel,current.options,signal,files as {attachment:UploadedAttachment;file:File}[],id,appPrompt())){
       if(signal.aborted)break;
       // No visible routing chatter; diagnostics remain in message metadata.
       if(event.type==='model')useApp.getState().updateMessage(id,assistantId,{model:event.value.model,provider:event.value.provider,dataUse:event.value.data_use,attempts:event.value.attempts,offline:event.value.offline,cached:event.value.cached});

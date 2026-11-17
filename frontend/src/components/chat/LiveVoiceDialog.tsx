@@ -1,3 +1,4 @@
+import {openAppSection} from '../../lib/appContext';
 import {useCallback,useEffect,useRef,useState} from 'react';
 import {Modal} from '../ui/Modal';
 import {Button} from '../ui/Button';
@@ -98,6 +99,7 @@ export function LiveVoiceDialog({onClose,autoStart=false}:{onClose:()=>void;auto
     if(event.type==='input_text'){setVoiceWarning('');transcript.current.input=mergeLiveTranscript(transcript.current.input,event.text||'');setInput(transcript.current.input);}
     if(event.type==='verified_output_text'){transcript.current.output=event.text||'';setOutput(transcript.current.output);}
     if(event.type==='output_text'){transcript.current.output=mergeLiveTranscript(transcript.current.output,event.text||'');setOutput(transcript.current.output);}
+    if(event.type==='barq_app_action'&&event.app_action)openAppSection(event.app_action);
     if(event.type==='work_continue_requested'){
      const state=useApp.getState();const current=state.chats.find(c=>c.id===chat.current);
      const task=[...(current?.messages||[])].reverse().find(m=>m.agentTask?.kind==='coding')?.agentTask;

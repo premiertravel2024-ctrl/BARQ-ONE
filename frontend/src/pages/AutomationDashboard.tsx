@@ -1,3 +1,4 @@
+import {useAppView} from '../lib/appContext';
 import {useEffect, useState} from 'react';
 import {AlarmClock, Bell, CalendarDays, Check, Clock3, Cloud, CloudRain, CloudSun, Compass, Droplets, MapPin, Minus, Pause, Play, Plus, RefreshCw, Sun, Sunrise, Trash2, Wind} from 'lucide-react';
 import {requestJSON} from '../lib/backend';
@@ -101,6 +102,7 @@ export function AutomationDashboard(){
  const overcast=weather?(weather.weather_code>=51||weather.weather_code===45||weather.weather_code===48):false;
  const WeatherIcon=overcast?CloudRain:weather?.weather_code===0?Sun:CloudSun;
  const currentTime=new Intl.DateTimeFormat(ar?'ar-EG':'en-GB',{timeZone:overview?.timezone||'Asia/Riyadh',hour:'2-digit',minute:'2-digit'}).format(new Date(now));
+ useAppView('automation',{mode:focusActive?'focus timer':'dashboard',count:alarms.length,status:loading?'loading':error?'unavailable':undefined});
  return <div className="barq-automation" dir={ar?'rtl':'ltr'}>
   <header className="ba-hero">
    <div><span className="ba-kicker">BARQ ONE · DAILY HUB</span><h2>{ar?'يومك في مكان واحد':'Your day, in one place'}</h2><p>{ar?'الطقس، الصلاة، المنبّهات والتركيز — أدوات بسيطة من غير تعقيد.':'Weather, prayer times, alarms and focus — useful tools without clutter.'}</p></div>

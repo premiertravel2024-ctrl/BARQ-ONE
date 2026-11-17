@@ -136,3 +136,23 @@ def details(kind, identifier, language):
             'runtime':data.get('runtime'), 'seasons':data.get('number_of_seasons'),
             'cast':[{'name':c['name'],'character':c.get('character',''),'photo':image(c.get('profile_path'),'w185')} for c in data.get('credits',{}).get('cast',[])[:12]],
             'related':[title(r,kind) for r in data.get('recommendations',{}).get('results',[])[:12] if not r.get('adult')]}
+
+
+def watch_providers(kind, identifier, region):
+    """Provider listings are regional; only return a link on TMDB's own site."""
+    from urllib.parse import urlsplit
+    data = _fetch(f'{kind}/{identifier}/watch/providers', {})
+    available = data.get('results', {}).get(region, {})
+    link = available.get('link', '')
+    allowed_path = f'/{kind}/{identifier}'
+    try:
+        parsed = urlsplit(link)
+        if (parsed.scheme != 'https' or parsed.netloc not in ('www.themoviedb.org', 'themoviedb.org') or
+                not parsed.path.startswith((allowed_path + '/', allowed_path + '-'))):
+            link = ''
+    except ValueError:
+        link = ''
+    groups = {group: list(dict.fromkeys(
+        item['provider_name'] for item in available.get(group, []) if item.get('provider_name')
+    ))[:20] for group in ('flatrate', 'free', 'ads', 'rent', 'buy')}
+    return {'region': region, 'link': link, 'groups': groups}

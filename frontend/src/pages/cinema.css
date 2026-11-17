@@ -14,3 +14,42 @@
 .bc-provider-disclosure p{line-height:1.65;margin:9px 0}
 .bc-provider-disclosure button{border:1px solid #555d6a;padding:7px 10px;border-radius:8px;color:#b4bdc9}
 @media(max-width:700px){.barq-cinema .bc-tools .bc-icon-join{flex:0 0 46px}}
+
+.barq-cinema { padding: clamp(12px, 2.5vw, 26px); }
+.bc-top { gap: 18px; align-items: end; padding: 19px 20px; border: 1px solid #343748; border-radius: 17px; background: linear-gradient(130deg,#29202d,#1b1d26 62%); }
+.bc-top h1 { margin: 0 0 5px; font-size: clamp(1.55rem,4vw,2.6rem); line-height: 1.2; font-weight: 790; }
+.bc-top p { margin: 0; color: #bcc1d0; font-size: .86rem; }
+.bc-room-actions, .bc-discovery-toolbar, .bc-collection-head { display: flex; align-items: center; gap: 9px; flex-wrap: wrap; }
+.bc-room-actions .bc-primary { min-height: 44px; }
+.bc-join { display: inline-flex; justify-content: center; align-items: center; gap: 7px; min-height: 44px; border-radius: 10px; padding: 8px 12px; color: #ffe0ea; border: 1px solid #765165; background: #302432; font-size: .83rem; }
+.bc-join:hover, .bc-collection-head button:hover { background: #4b2e41; }
+.bc-discovery-toolbar { justify-content: space-between; margin-block: 15px 22px; padding-bottom: 10px; border-bottom: 1px solid #333744; }
+.bc-discovery-toolbar .bc-tabs { min-width: 0; margin: 0; padding: 0; border: 0; }
+.bc-discovery-toolbar .bc-tabs button { height: 44px; }
+.bc-discovery-toolbar .bc-search { min-height: 44px; }
+.bc-search:focus-within { border-color: #f28ca7; }
+.bc-collection-head { justify-content: space-between; }
+.bc-collection-head h3 { margin: 7px 0 12px; }
+.bc-collection-head button { padding: 7px 11px; border: 1px solid #615067; border-radius: 9px; color: #f2c2d2; font-size: .77rem; }
+.barq-cinema .bc-feature { min-height: clamp(290px,40vw,435px); }
+.barq-cinema .bc-feature h3 { margin-block: 9px; }
+.bc-image, .bc-tile { border-radius: 13px; }
+.bc-tile .bc-card-actions { margin-bottom: 4px; }
+.bc-tile .bc-card-actions button { min-height: 36px; width: 39px; }
+@media (max-width: 650px) {
+  .bc-top { padding: 14px; }
+  .bc-room-actions { width: 100%; }
+  .bc-room-actions button { flex: 1 1 auto; justify-content: center; }
+  .bc-discovery-toolbar { flex-direction: column-reverse; align-items: stretch; }
+  .bc-discovery-toolbar .bc-search { width: 100%; }
+  .bc-discovery-toolbar .bc-tabs { width: 100%; padding: 3px 2px 7px; }
+}
+
+.bc-availability { margin-block: 16px; padding: 12px; border: 1px solid #4d4357; border-radius: 12px; background: #241e2b; color: #fff0fa; }
+.bc-availability > div { display: flex; align-items: center; gap: 12px; justify-content: space-between; flex-wrap: wrap; }
+.bc-availability h3 { margin: 0; }
+.bc-availability select { padding: 7px 10px; color: #fff; background: #191622; border: 1px solid #66566d; border-radius: 8px; }
+.bc-availability ul { display: grid; gap: 5px; margin-block: 9px; }
+.bc-availability li { display: flex; gap: 8px; align-items: baseline; flex-wrap: wrap; font-size: .85rem; }
+.bc-availability li strong, .bc-availability small { color: #edb6cb; }
+.bc-availability small { display: block; margin-block: 5px 8px; }

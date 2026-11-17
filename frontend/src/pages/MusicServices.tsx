@@ -1,8 +1,10 @@
-import {FormEvent,useState} from 'react';
-import {ExternalLink,Headphones,Link2,Music2,Play} from 'lucide-react';
+import {FormEvent,useEffect,useRef,useState} from 'react';
+import {ExternalLink,Headphones,Music2,Play,Search,X} from 'lucide-react';
+import {requestJSON} from '../lib/backend';
 import './musicServices.css';
 
 type Provider='spotify'|'anghami';
+export type RoomTrack={provider:Provider;kind:string;id:string;title:string};
 type Embed={src:string;page:string;title:string;kind:string};
 const SPOTIFY_KINDS=new Set(['track','album','playlist','artist','episode','show']);
 const ANGHAMI_KINDS=new Set(['song','album','playlist','artist']);
@@ -30,49 +32,149 @@ async function resolveAnghami(raw:string):Promise<Embed|undefined>{
  if(data.provider!=='anghami'||!data.kind||!data.id)return;
  return officialEmbed('https://play.anghami.com/'+data.kind+'/'+data.id,'anghami');
 }
-export function MusicServices({provider,ar}:{provider:Provider;ar:boolean}){
- const [link,setLink]=useState('');
- const [embed,setEmbed]=useState<Embed>();
+type Release={kind:string;id:string;title:string;artist?:string;artwork?:string;alias?:string};
+const featured:Record<Provider,Release[]>={
+ spotify:[
+  {kind:'artist',id:'5abSRg0xN1NV3gLbuvX24M',title:'عمرو دياب',alias:'Amr Diab'},
+  {kind:'playlist',id:'37i9dQZF1DWYFV1CnuXO8v',title:'حب وغرام',artist:'Spotify'},
+  {kind:'track',id:'4ZXnE6NdKAQMaMzsDuFurd',title:'Single',artist:'عمرو دياب',alias:'Amr Diab'},
+ ],
+ anghami:[
+  {kind:'song',id:'102704',title:'تملى معاك',artist:'عمرو دياب',alias:'Tamally Maak Amr Diab'},
+  {kind:'artist',id:'75',title:'أنغام',alias:'Angham'},
+  {kind:'artist',id:'8163',title:'كايروكي',alias:'Cairokee'},
+  {kind:'album',id:'374',title:'تملى معاك',artist:'عمرو دياب',alias:'Tamally Maak Amr Diab'},
+ ],
+};
+const normalize=(value:string)=>value.toLocaleLowerCase().normalize('NFKD').replace(/[\u064b-\u065f\u0670\u0640]/g,'').replace(/[أإآ]/g,'ا').replace(/ى/g,'ي');
+const pageUrl=(provider:Provider,item:Release)=>(provider==='spotify'?'https://open.spotify.com/':'https://play.anghami.com/')+item.kind+'/'+item.id;
+const kindLabel=(kind:string,ar:boolean)=>({track:ar?'أغنية':'Track',song:ar?'أغنية':'Track',album:ar?'ألبوم':'Album',artist:ar?'فنان':'Artist',playlist:ar?'قائمة تشغيل':'Playlist'}[kind]||kind);
+const itemKey=(item:Release)=>item.kind+'/'+item.id;
+
+export function MusicServices({provider,ar,onSelected,onShare,roomOnly=false}:{provider:Provider;ar:boolean;onSelected?:(title:string)=>void;roomOnly?:boolean;onShare:(track:RoomTrack)=>void}){
+ const brand=provider==='spotify'?'Spotify':ar?'أنغامي':'Anghami';
+ const [query,setQuery]=useState('');
+ const [searched,setSearched]=useState('');
+ const [matches,setMatches]=useState<Release[]>([]);
  const [busy,setBusy]=useState(false);
+ const [indexUnavailable,setIndexUnavailable]=useState(false);
  const [error,setError]=useState('');
- async function openTrack(event:FormEvent<HTMLFormElement>){
-  event.preventDefault();setError('');setBusy(true);
+ const [selection,setSelection]=useState<{embed:Embed;title:string;artist?:string;track?:RoomTrack}>();
+ const pending=useRef<AbortController>();
+ const player=useRef<HTMLElement>(null);
+ useEffect(()=>()=>pending.current?.abort(),[]);
+
+ function select(item:Release){
+  const embed=officialEmbed(pageUrl(provider,item),provider);
+  if(!embed)return;
+  const shareable=provider==='anghami'||['track','album','playlist'].includes(item.kind);
+  const track=shareable?{provider,kind:item.kind,id:item.id,title:item.title}:undefined;
+  if(roomOnly&&!track){setError(ar?'اختار أغنية أو ألبوم أو قائمة تشغيل.':'Choose a track, album, or playlist.');return;}
+  setError('');
+  setSelection({embed,title:item.title,artist:item.artist,track});
+  onSelected?.(item.title);
+  if(roomOnly&&track){onShare(track);return;}
+  requestAnimationFrame(()=>player.current?.focus());
+ }
+
+ async function search(event:FormEvent<HTMLFormElement>){
+  event.preventDefault();
+  const value=query.trim();
+  if(value.length<2)return;
+  if(!/^https?:\/\//i.test(value)&&value.length>100){
+   setError(ar?'اكتب اسم أقصر للبحث.':'Enter a shorter search term.');return;
+  }
+  pending.current?.abort();
+  const abort=new AbortController();
+  pending.current=abort;
+  setError('');setIndexUnavailable(false);setBusy(true);
+  const isLink=/^https?:\/\//i.test(value);
+  if(!isLink){
+   const terms=normalize(value).split(/\s+/);
+   setSearched(value);
+   setMatches(featured[provider].filter(item=>{
+    const look=normalize([item.title,item.artist,item.alias].filter(Boolean).join(' '));
+    return terms.every(term=>look.includes(term));
+   }));
+  }
   try{
-   let match=officialEmbed(link,provider);
-   if(!match&&provider==='anghami')try{match=await resolveAnghami(link)}catch{/* Short URL service may be unavailable. */}
-   if(!match){
-    setEmbed(undefined);
-    setError(ar?'الرابط مش مدعوم للمشغّل الداخلي. استخدم رابط الأغنية أو الألبوم الكامل من التطبيق الرسمي. روابط أنغامي المختصرة محتاجة خدمة الغرف تكون شغّالة.':'Unsupported embed URL. Use the full official track or album link; Anghami short links need the room service.');
+   if(isLink){
+    const embed=officialEmbed(value,provider)||(provider==='anghami'?await resolveAnghami(value):undefined);
+    if(abort.signal.aborted)return;
+    if(!embed)throw new Error('Invalid link');
+    if(roomOnly){
+     const [,kind,id]=new URL(embed.page).pathname.split('/');
+     if(provider==='spotify'&&!['track','album','playlist'].includes(kind))throw new Error('Invalid link');
+     onShare({provider,kind,id,title:brand});return;
+    }
+    setSelection({embed,title:brand});
+    onSelected?.(brand);
+    requestAnimationFrame(()=>player.current?.focus());
     return;
    }
-   setEmbed(match);
-  }catch{setEmbed(undefined);setError(ar?'الرابط غير صحيح. انسخ رابط الأغنية الرسمي.':'Invalid link. Paste an official song URL.');}
-  finally{setBusy(false);}
+   const market=(navigator.language.match(/-([a-z]{2})$/i)?.[1]||'SA').toUpperCase();
+   const params=new URLSearchParams({provider,q:value,market});
+   const result=await requestJSON<{items:Release[];source:string}>('/v1/music/discover?'+params,{signal:abort.signal});
+   if(abort.signal.aborted)return;
+   setIndexUnavailable(result.source==='unavailable');
+   setMatches(local=>[...new Map([...local,...result.items].map(item=>[itemKey(item),item])).values()]);
+  }catch{
+   if(!abort.signal.aborted){
+    if(isLink)setError(ar?'الرابط مش مدعوم. جرّب البحث باسم الأغنية أو الفنان.':'That link is unsupported. Try a song or artist name.');
+    else setIndexUnavailable(true);
+   }
+  }finally{if(!abort.signal.aborted)setBusy(false);}
  }
- return <section className="bm-service" aria-label={provider==='spotify'?'Spotify player':'Anghami player'}>
-  <div className="bm-service-intro">
-    <span className="bm-service-icon"><Music2 size={23}/></span>
-    <div><span className="bm-service-kicker">BARQ MUSIC · {provider.toUpperCase()}</span>
-      <h3>{provider==='spotify'?'Spotify':'Anghami'}</h3>
-      <p>{ar?'شغّل من المشغّل الرسمي داخل برق؛ التسجيل والاشتراك والصلاحيات بتفضل تابعة للخدمة نفسها.':'Listen through the official player inside BARQ. Login, subscription and playback availability are controlled by the provider.'}</p>
-    </div>
-  </div>
-  <form className="bm-service-form" onSubmit={e=>void openTrack(e)}>
-    <label htmlFor={'barq-'+provider+'-url'}><Link2 size={17}/>{ar?'رابط الأغنية أو القائمة':'Track or playlist link'}</label>
-    <div><input id={'barq-'+provider+'-url'} type="url" inputMode="url" required dir="ltr" placeholder={provider==='spotify'?'https://open.spotify.com/track/...':'https://play.anghami.com/song/...'}
-      value={link} onChange={e=>setLink(e.target.value)}/>
-      <button disabled={busy||!link.trim()} type="submit"><Play size={16}/>{busy?(ar?'جاري الفتح':'Loading'):(ar?'فتح المشغّل':'Open player')}</button>
-    </div>
+
+ function clear(){
+  pending.current?.abort();
+  setQuery('');setSearched('');setMatches([]);setBusy(false);setError('');setIndexUnavailable(false);
+ }
+
+ const items=searched?matches:featured[provider];
+ const providerSearch=provider==='spotify'
+  ?'https://open.spotify.com/search/'+encodeURIComponent(searched)
+  :'https://www.google.com/search?q='+encodeURIComponent('site:play.anghami.com '+searched);
+ return <section className={roomOnly?"bm-service bm-service-compact":"bm-service"} data-provider={provider} aria-label={brand}>
+  {!roomOnly&&<header className="bm-service-intro">
+   <div className="bm-service-icon" aria-hidden="true"><Headphones size={28}/></div>
+   <div><h2>{brand}</h2><p>{ar?'ابحث باسم أغنية أو فنان أو ألبوم.':'Find a song, artist, or album by name.'}</p></div>
+  </header>}
+  <form className="bm-service-form" onSubmit={e=>void search(e)}>
+   <label htmlFor={'barq-'+provider+'-search'}>{ar?'البحث في ':'Search '}{brand}</label>
+   <div className="bm-service-search"><Search size={20} aria-hidden="true"/>
+    <input id={'barq-'+provider+'-search'} dir="auto" type="search" maxLength={650} value={query} onChange={e=>setQuery(e.target.value)}
+      placeholder={ar?'أغنية، فنان، ألبوم…':'Song, artist, album…'}/>
+    {query&&<button className="bm-search-clear" type="button" onClick={clear} aria-label={ar?'مسح البحث':'Clear search'}><X size={17}/></button>}
+    <button className="bm-search-submit" disabled={query.trim().length<2} type="submit">{ar?'ابحث':'Search'}</button>
+   </div>
   </form>
   {error&&<p className="bm-service-error" role="alert">{error}</p>}
-  {embed?<div className="bm-service-player">
-    <div className="bm-service-player-title"><span><Headphones size={16}/>{ar?'المشغّل الرسمي':'Official player'} · {embed.title}</span>
-      <a href={embed.page} target="_blank" rel="noopener noreferrer"><ExternalLink size={15}/>{ar?'افتح في الخدمة':'Open in service'}</a>
+  <div className={roomOnly?'bm-discovery bm-room-discovery':'bm-discovery'}>
+   <section className="bm-releases" aria-busy={busy}>
+    <h3>{searched?(ar?'نتائج البحث':'Search results'):(ar?'اختيارات للاستماع':'Featured picks')}</h3>
+    {busy&&<p className="bm-discovery-status" role="status">{ar?'جاري البحث…':'Searching…'}</p>}
+    {!busy&&searched&&!items.length&&<p className="bm-discovery-status">{ar?'مفيش نتائج للاسم ده.':'No results for this name.'}</p>}
+    {indexUnavailable&&<p className="bm-discovery-status" role="status">{ar?'البحث الموسّع مش متاح دلوقتي.':'Extended search is temporarily unavailable.'}</p>}
+    <div className="bm-release-list">
+     {items.map(item=><button type="button" className="bm-release" key={itemKey(item)} aria-pressed={selection?.embed.page===pageUrl(provider,item)} onClick={()=>select(item)}>
+      <span className="bm-release-art">{item.artwork?<img src={item.artwork} alt="" loading="lazy"/>:<Music2 size={19} aria-hidden="true"/>}</span>
+      <span className="bm-release-copy"><strong dir="auto">{item.title}</strong><small>{item.artist?item.artist+' · ':''}{kindLabel(item.kind,ar)}</small></span>
+      <Play size={17} aria-hidden="true"/>
+     </button>)}
     </div>
-    <iframe src={embed.src} title={embed.title+' '+embed.kind+' player'} allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
-      referrerPolicy="strict-origin-when-cross-origin" loading="lazy"/>
-  </div>:<div className="bm-service-empty"><Music2 size={35}/><strong>{ar?'موسيقاك جوا برق':'Your music, in BARQ'}</strong>
-    <p>{ar?'انسخ رابط من الخدمة واختر «فتح المشغّل» علشان يظهر هنا.':'Paste a supported service link to load its embedded player here.'}</p></div>}
-  <small className="bm-service-disclaimer">{ar?'الأغاني مش بيتم نسخها أو تحميلها من Spotify أو أنغامي. التشغيل ممكن يحتاج حساب وتفاعل من المستخدم.':'No music is downloaded or copied from Spotify or Anghami; playback may require login and user interaction.'}</small>
+    {searched&&<a className="bm-provider-link" href={providerSearch} target="_blank" rel="noopener noreferrer"><ExternalLink size={15}/>{provider==='spotify'?(ar?'بحث على Spotify':'Search on Spotify'):(ar?'نتائج أنغامي على الويب':'Anghami results on the web')}</a>}
+   </section>
+   {!roomOnly&&<section ref={player} tabIndex={-1} className="bm-service-player" aria-label={ar?'المشغّل الرسمي':'Official player'}>
+    {selection?<><div className="bm-service-player-title">
+     <div><strong dir="auto">{selection.title}</strong>{selection.artist&&<small dir="auto">{selection.artist}</small>}</div>
+     {selection.track&&<button type="button" className="bm-share-song" onClick={()=>onShare(selection.track!)}>{ar?'شارك في الغرفة':'Share in room'}</button>}
+     <a href={selection.embed.page} target="_blank" rel="noopener noreferrer"><ExternalLink size={15}/>{ar?'افتح في الخدمة':'Open in service'}</a>
+    </div>
+    <iframe key={selection.embed.src} src={selection.embed.src+(provider==='anghami'?'?theme=fulldark&layout=wide&lang='+(ar?'ar':'en'):'')} title={selection.embed.title+' '+selection.embed.kind+' player'}
+     allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" referrerPolicy="strict-origin-when-cross-origin"/>
+    </>:<div className="bm-service-empty"><Headphones size={30}/><p>{ar?'اختار نتيجة علشان تفتح المشغّل.':'Select a result to open the player.'}</p></div>}
+   </section>}
+  </div>
  </section>;
 }

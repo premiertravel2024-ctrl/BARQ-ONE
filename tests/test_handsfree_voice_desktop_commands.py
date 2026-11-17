@@ -1,3 +1,4 @@
+from voice.app_tools import LIVE_APP_TOOLS
 from voice.brain_bridge import LIVE_BARQ_TOOLS
 """Hands-free Gemini Live may use approved desktop tools, never by default."""
 import asyncio
@@ -77,7 +78,7 @@ def run_call(monkeypatch, *, voice_opt_in: bool, desktop_policy: bool):
     from voice.computer_tools import LIVE_COMPUTER_TOOLS
     from voice.live import LIVE_REPOSITORY_TOOLS
     # Repository review is a read-only UI handoff, NOT a desktop permission.
-    assert config[0]['tools']==LIVE_BARQ_TOOLS + LIVE_PUBLIC_TOOLS + LIVE_REPOSITORY_TOOLS + (LIVE_COMPUTER_TOOLS if allowed else [])
+    assert config[0]['tools']==LIVE_BARQ_TOOLS + LIVE_PUBLIC_TOOLS + LIVE_REPOSITORY_TOOLS + LIVE_APP_TOOLS + (LIVE_COMPUTER_TOOLS if allowed else [])
     assert 'prepare_github_repository' in str(config[0]['tools'])
     assert ('start_computer_task' in str(config[0]['tools'])) is allowed
     if voice_opt_in and desktop_policy:

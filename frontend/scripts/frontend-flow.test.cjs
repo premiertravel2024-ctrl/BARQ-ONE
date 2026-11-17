@@ -41,10 +41,16 @@ test('SSE streaming reconstructs UTF-8 split chunks and verifies done',async()=>
  'event: token\ndata: {"content":"تمام"}\n\nevent: done\ndata: {}\n\n';
  const encoded=new TextEncoder().encode(text);
  const stream=new ReadableStream({start(controller){const n=Math.floor(encoded.length/2);controller.enqueue(encoded.slice(0,n));controller.enqueue(encoded.slice(n));controller.close()}});
- const app=backend(async()=>new Response(stream,{status:200,headers:{'Content-Type':'text/event-stream'}}));
+ const uiContext='BARQ application context: Music';
+ const app=backend(async(_path,init)=>{
+  const body=JSON.parse(init.body);
+  assert.deepEqual(body.messages[0],{role:'system',content:uiContext});
+  assert.equal(body.messages[1].role,'user');
+  return new Response(stream,{status:200,headers:{'Content-Type':'text/event-stream'}});
+ });
  const msgs=[{id:'one',role:'user',content:'مرحبا',createdAt:1}];
  const opts={systemPrompt:'',localOnly:true,temperature:.7,maxTokens:128};
- const events=[];for await(const e of app.streamChat(msgs,'auto',opts,new AbortController().signal))events.push(e);
+ const events=[];for await(const e of app.streamChat(msgs,'auto',opts,new AbortController().signal,[],'chat-test',uiContext))events.push(e);
  assert.deepEqual(Array.from(events,e=>e.type),['model','token','done']);assert.equal(events[1].value,'تمام');
 });
 

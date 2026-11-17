@@ -289,6 +289,12 @@ def _embed_native_window(handle):
     user.FindWindowW.restype = wintypes.HWND
     user.FindWindowExW.argtypes = [wintypes.HWND, wintypes.HWND, wintypes.LPCWSTR, wintypes.LPCWSTR]
     user.FindWindowExW.restype = wintypes.HWND
+    user.GetWindowLongPtrW.restype = ctypes.c_ssize_t
+    user.SetWindowLongPtrW.restype = ctypes.c_ssize_t
+    user.SetWindowLongPtrW.argtypes = [wintypes.HWND, ctypes.c_int, ctypes.c_ssize_t]
+    GWL_EXSTYLE, WS_EX_TOOLWINDOW, WS_EX_APPWINDOW, WS_EX_NOACTIVATE = -20, 0x80, 0x40000, 0x08000000
+    extended = user.GetWindowLongPtrW(handle, GWL_EXSTYLE)
+    user.SetWindowLongPtrW(handle, GWL_EXSTYLE, (extended | WS_EX_TOOLWINDOW | WS_EX_NOACTIVATE) & ~WS_EX_APPWINDOW)
     progman = user.FindWindowW("Progman", None)
     if not progman:
         raise RuntimeError("Windows desktop shell not found")
@@ -306,9 +312,6 @@ def _embed_native_window(handle):
     if not worker.value:
         raise RuntimeError("Explorer WorkerW background was not found")
     GWL_STYLE, WS_CHILD, WS_VISIBLE, WS_POPUP = -16, 0x40000000, 0x10000000, 0x80000000
-    user.GetWindowLongPtrW.restype = ctypes.c_ssize_t
-    user.SetWindowLongPtrW.restype = ctypes.c_ssize_t
-    user.SetWindowLongPtrW.argtypes = [wintypes.HWND, ctypes.c_int, ctypes.c_ssize_t]
     style = user.GetWindowLongPtrW(handle, GWL_STYLE)
     user.SetWindowLongPtrW(handle, GWL_STYLE, (style | WS_CHILD | WS_VISIBLE) & ~WS_POPUP & ~0x00C00000)
     user.SetParent.argtypes = [wintypes.HWND, wintypes.HWND]
@@ -491,6 +494,7 @@ def engine_main(identifier, parent_pid):
             native = gui["window"].native
             if native is None:
                 raise RuntimeError("WebView2 native window is not yet available")
+            native.ShowInTaskbar = False
             handle = int(native.Handle.ToInt64())
             if not handle:
                 raise RuntimeError("Native wallpaper handle unavailable")
@@ -521,9 +525,10 @@ def engine_main(identifier, parent_pid):
                     pass
 
     try:
+        # Start off-screen; only successful WorkerW attachment moves the player onto the desktop.
         w = webview.create_window("BARQ integrated wallpaper",
             f"http://127.0.0.1:{port}/?key={token}",
-            width=1280, height=720, frameless=True, easy_drag=False,
+            width=1280, height=720, x=-32000, y=-32000, frameless=True, easy_drag=False,
             resizable=False, on_top=False)
         gui["window"] = w
         w.events.before_show += attach

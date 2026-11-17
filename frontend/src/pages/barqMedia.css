@@ -136,3 +136,25 @@
 @media(max-width:760px){.barq-music-hero{padding:22px;min-height:225px}.bma-vinyl{width:125px;height:125px}.bma-vinyl-center{width:46px;height:46px}.barq-music-app .barq-room-entry{grid-template-columns:1fr}.barq-music-app .barq-watch-player iframe{min-height:700px;height:810px}}
 @media(max-width:480px){.barq-music-hero{padding:16px;min-height:185px}.bma-vinyl{width:70px;height:70px;box-shadow:0 0 25px #c4427270}.bma-vinyl-center{width:31px;height:31px;border-width:3px}.bma-vinyl-center svg{width:16px}.bma-bars{display:none}.barq-music-hero .barq-watch-hero-copy h2{font-size:1.4rem}.barq-music-hero .barq-watch-hero-copy p{font-size:.73rem}.barq-music-app .barq-watch-choose-panel{min-height:0}.barq-music-app .barq-watch-player iframe{height:810px}}
 @media(prefers-reduced-motion:reduce){.bma-bars i{animation:none}}
+
+.barq-music-app .barq-music-hero { min-height:0; padding:14px 18px; }
+.barq-music-app .bma-vinyl { display:none; }
+.barq-music-providers { padding:12px; border:1px solid #423342; border-radius:14px; background:#19161e; }
+.barq-music-providers > div { display:flex; gap:8px; flex-wrap:wrap; }
+.barq-music-providers > div button { min-height:38px; padding:7px 15px; border:1px solid #644357; border-radius:8px; background:#27202c; }
+.barq-music-providers > div button[aria-pressed="true"] { background:#66314a; }
+.barq-music-providers .bm-service { margin-top:10px; }
+.bm-room-discovery { grid-template-columns:minmax(0,1fr); }
+.barq-cinema-player .barq-watch-player-top{position:relative;z-index:1;gap:8px}
+.barq-watch-player .barq-room-actions{flex-wrap:wrap;gap:6px}
+.barq-watch-player .barq-invite-options{position:relative}
+.barq-invite-options summary{cursor:pointer;padding:7px 9px;color:#f0ccdb}
+.barq-invite-options[open]{display:flex;gap:8px;align-items:center}
+.barq-invite-options a{display:inline-flex;gap:5px;align-items:center;padding:8px}
+.barq-watch-room .barq-cinema-player iframe{height:clamp(560px,79dvh,1000px);min-height:0}
+@media(max-width:620px){.barq-watch-room .barq-cinema-player iframe{height:690px}}
+
+.barq-room-track-status{display:flex;align-items:center;flex-wrap:wrap;gap:8px;padding:7px 12px;color:#d9c6d3;font-size:.78rem}
+.barq-room-track-status button{color:#f4c4d4;text-decoration:underline}
+.barq-music-app .barq-watch-player iframe{height:clamp(525px,67dvh,740px);min-height:0}
+.barq-music-app .barq-room-entry .barq-media-panel{min-height:0}
