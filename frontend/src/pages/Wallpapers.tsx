@@ -171,12 +171,16 @@ export function Wallpapers({onOpenSettings}:{onOpenSettings?:()=>void}={}) {
      </div>
      {data?.engine&&<span className={'bws-engine-state'+(data.engine.running?' bws-active':'')} aria-live="polite">{data.engine.running?(ar?'محرك برق أكد تشغيل الخلفية':'Wallpaper engine reports playback'):(ar?'مفيش خلفية شغالة حاليًا':'No wallpaper currently playing')}</span>}
     </div>
-    <div className="bws-feature-preview" aria-hidden="true">
-     {featured?<Preview item={featured} native={!!data?.engine}/>:<Image size={78}/>}
+    {featured&&<div className="bws-feature-preview" aria-hidden="true">
+     <Preview item={featured} native={!!data?.engine}/>
      <span className="bws-feature-badge">{ar?'خلفياتك الحية':'YOUR LIBRARY'}</span>
-    </div>
+    </div>}
    </header>
-   {error&&<div className="bws-error-wrap" role="alert"><p className="barq-media-error">{error}</p>{permissionNeeded&&onOpenSettings&&<button type="button" className="bws-permission-button" onClick={onOpenSettings}>{ar?'افتح إعدادات التحكم':'Open Computer Control settings'}</button>}</div>}
+   {error&&<div className="bws-error-wrap" role="alert"><p className="barq-media-error">{error}</p>
+      {error.includes('Wallpaper engine')||error.includes('WebView2')||error.includes('Desktop attachment')?<p className="bws-diagnostic">{ar?'محرك الخلفيات محتاج سطح مكتب Windows نشط وWebView2. جرّب ملف MP4 بترميز H.264؛ ولو ظهر سبب آخر في الرسالة، ده تشخيص المحرك الفعلي.':'The wallpaper engine requires an active Windows desktop and WebView2. Try H.264 MP4; the message above includes the engine’s reported error.'}</p>:null}
+      {permissionNeeded&&onOpenSettings&&<button type="button" className="bws-permission-button" onClick={onOpenSettings}>{ar?'افتح إعدادات التحكم':'Open Computer Control settings'}</button>}
+      <button className="bws-retry" type="button" disabled={busy} onClick={()=>void operate(async()=>{await refresh()})}><RefreshCw size={15}/>{ar?'إعادة فحص المحرك':'Retry engine check'}</button>
+    </div>}
    {notice&&<p className="bws-notice" role="status">{notice}</p>}
    {!data&&!error&&<p className="barq-muted" role="status">{ar?'بنفحص محرك الخلفيات…':'Checking wallpaper engine…'}</p>}
    {data&&!ready&&<section className="bws-setup">
