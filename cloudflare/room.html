@@ -229,6 +229,23 @@ body:not(.room-music) .room-chat .emoji{border-radius:9px;padding:6px 9px;min-wi
  body:not(.room-music) .chat-compose button{min-height:44px}
 }
 
+
+/* BARQ ONE unified cinema typography & distraction-free host/guest layout. */
+@import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800&display=swap');
+html,body,button,input,select,.panel,.msg,.chat-heading{font-family:'GE SS Two','Cairo',system-ui,sans-serif}
+body{background:#0f1115;color:#f5f1f5}
+.room-head{border-color:#ffffff19;background:#191d24;border-radius:16px}
+.grid{gap:12px;grid-template-columns:minmax(0,1fr) minmax(245px,290px)}
+.panel{background:#191d24;border:1px solid #ffffff18;box-shadow:none}
+.room-media-panel{min-width:0}
+.room-chat{border-radius:16px}
+.room-chat #messages{background:#111419;border-color:#ffffff16;scrollbar-width:thin}
+.source-options{gap:10px}
+.room-waiting-icon{font-size:.76rem;letter-spacing:.14em;font-weight:800;border-radius:14px}
+button{transition:background-color .16s ease,border-color .16s ease}
+button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid #ff789a;outline-offset:3px}
+@media(max-width:950px){.grid{grid-template-columns:1fr}.room-chat{position:static!important}}
+@media(prefers-reduced-motion:reduce){button{transition:none}}
 </style></head>
 <body><main><header class="room-head"><div><span class="room-eyebrow">BARQ ONE · SHARED ROOM</span><h1 id="roomTitle">سينما برق</h1><p class="room-head-note">شاركوا اللحظة، والملفات تفضل على جهاز صاحب الغرفة.</p></div><div id="status" class="status" role="status" aria-live="polite">جاري الاتصال...</div></header>
 <div id="joinPanel" class="panel" hidden><p>ادخل كود الغرفة اللي بعتهولك صاحبها</p><div class="row"><input id="code" maxlength="6" inputmode="numeric" placeholder="Room code"><button id="join">دخول</button></div></div>
@@ -249,12 +266,12 @@ body:not(.room-music) .room-chat .emoji{border-radius:9px;padding:6px 9px;min-wi
   <div class="music-now-art" aria-hidden="true"><span>♫</span></div>
   <strong id="musicNowTitle">اختار أغنية نسمعها سوا</strong><small id="musicNowSource">ملف صوتي من جهازك أو رابط رسمي</small>
   <div class="music-equalizer" aria-hidden="true"><i/><i/><i/><i/><i/><i/><i/><i/><i/></div>
- </div><video id="video" controls playsinline></video><div id="waitingOverlay" class="room-waiting" role="status" aria-live="polite"><span class="room-waiting-icon" aria-hidden="true">▶</span><strong id="waitingTitle">في انتظار الفيديو</strong><small id="waitingDescription">الفيديو هيظهر أول ما المضيف يشغّله</small></div><div id="captions" class="captions" dir="auto" aria-live="off"></div><div class="player-screen-actions" id="screenActions"><button type="button" id="fitMode" title="اختيار طريقة عرض الفيديو" aria-pressed="false">ملء الإطار</button><button type="button" id="enterFullscreen" title="عرض الفيديو على حجم الشاشة">⛶ ملء الشاشة</button></div></div>
- <div class="row room-guest-controls" id="guestWrap" hidden aria-label="أدوات المشاهدة"><span class="guest-tools-label">التحكم في المشاهدة</span><button id="resumePlayback" title="تشغيل الصوت والفيديو">▶ تشغيل بالصوت</button><button id="pauseRequest" title="طلب تشغيل أو إيقاف مؤقت">⏯ تشغيل / إيقاف</button><button id="seekRequest" title="طلب تقديم 30 ثانية">⏩ تقديم 30 ثانية</button></div>
+ </div><video id="video" controls playsinline></video><div id="waitingOverlay" class="room-waiting" role="status" aria-live="polite"><span class="room-waiting-icon" aria-hidden="true">BARQ</span><strong id="waitingTitle">في انتظار الفيديو</strong><small id="waitingDescription">الفيديو هيظهر أول ما المضيف يشغّله</small></div><div id="captions" class="captions" dir="auto" aria-live="off"></div><div class="player-screen-actions" id="screenActions"><button type="button" id="fitMode" title="اختيار طريقة عرض الفيديو" aria-pressed="false">ملء الإطار</button><button type="button" id="enterFullscreen" title="عرض الفيديو على حجم الشاشة">ملء الشاشة</button></div></div>
+ <div class="row room-guest-controls" id="guestWrap" hidden aria-label="أدوات المشاهدة"><span class="guest-tools-label">التحكم في المشاهدة</span><button id="resumePlayback" title="تشغيل الصوت والفيديو">تشغيل بالصوت</button><button id="pauseRequest" title="طلب تشغيل أو إيقاف مؤقت">تشغيل / إيقاف</button><button id="seekRequest" title="طلب تقديم 30 ثانية">تقديم 30 ثانية</button></div>
  <section id="officialMusic" hidden class="row"></section>
  <p class="sub" id="mediaNote" role="status"></p>
 </section>
-<aside class="panel room-chat"><div class="chat-heading"><h2>الدردشة <span class="chat-active-indicator" aria-hidden="true"></span></h2><span>لحظية · مش محفوظة</span></div><div id="messages" aria-live="polite"><p class="chat-empty" id="chatEmpty">مفيش رسايل لسه. ابدأوا كلامكم هنا ✨</p></div><div class="row chat-compose"><input id="chatText" maxlength="500" placeholder="اكتب رسالة..." aria-label="Chat message"><button id="send">إرسال</button></div><p class="sub" id="typing"></p><div id="emoji"><button class="emoji" data-emoji="❤️">❤️</button><button class="emoji" data-emoji="🔥">🔥</button><button class="emoji" data-emoji="😂">😂</button><button class="emoji" data-emoji="👏">👏</button></div><p class="sub room-chat-disclaimer">المحادثة مؤقتة ومش بتتسجل.</p></aside>
+<aside class="panel room-chat"><div class="chat-heading"><h2>الدردشة <span class="chat-active-indicator" aria-hidden="true"></span></h2><span>لحظية · مش محفوظة</span></div><div id="messages" aria-live="polite"><p class="chat-empty" id="chatEmpty">مفيش رسايل لسه. ابدأوا كلامكم هنا.</p></div><div class="row chat-compose"><input id="chatText" maxlength="500" placeholder="اكتب رسالة..." aria-label="Chat message"><button id="send">إرسال</button></div><p class="sub" id="typing"></p><p class="sub room-chat-disclaimer">المحادثة مؤقتة ومش بتتسجل.</p></aside>
 </div></main>
 <script>
 (function(){
@@ -559,6 +576,6 @@ function chat(){var input=document.getElementById('chatText'),msg=input.value.tr
 }
 document.getElementById('send').onclick=chat;
 document.getElementById('chatText').onkeydown=function(e){if(e.key==='Enter'){e.preventDefault();chat();}else if(Date.now()-typingAt>1000){typingAt=Date.now();send('typing','1');}};
-document.querySelectorAll('.emoji').forEach(function(btn){btn.onclick=function(){send('reaction',btn.dataset.emoji);addMessage('أنا',btn.dataset.emoji);};});
+
 })();
 </script></body></html>
