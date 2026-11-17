@@ -124,6 +124,19 @@ async function verifyPlayback(browser,mode){
   await guest.locator('#waitingOverlay').waitFor({state:'hidden'});
   await guest.locator('#resumePlayback').click();
   assert.equal(await guest.locator('#video').evaluate(media=>media.muted),false);
+  const guestComposer=guest.locator('#chatText');
+  await guestComposer.fill('أهلاً');
+  await guestComposer.press('Space');
+  await guestComposer.press('Space');
+  await guestComposer.pressSequentially('برق');
+  await guestComposer.press('Shift+Enter');
+  await guestComposer.pressSequentially('سطر تاني');
+  assert.equal(await guestComposer.inputValue(),'أهلاً  برق\nسطر تاني');
+  await guestComposer.press('Enter');
+  await host.waitForFunction(()=>document.querySelector('#messages .msg span')?.textContent==='أهلاً  برق\nسطر تاني');
+  await host.locator('#chatText').fill('رد المضيف');
+  await host.locator('#send').click();
+  await guest.locator('#messages .msg[data-mine="false"]').getByText('رد المضيف').waitFor();
   if(mode==='music'){
    for(const [name,link,selector] of [
     ['Anghami','https://play.anghami.com/song/102704','iframe[title="أنغامي"]'],
@@ -189,7 +202,10 @@ async function verifyPlayback(browser,mode){
    await page.locator('#chatToggle').click();
    assert.equal(await page.locator('#roomChat').isVisible(),true);
 
-   await page.locator('#chatText').fill('رسالة تجربة من الضيف');
+   await page.locator('#chatText').fill('رسالة');
+   await page.locator('#chatText').press('Space');
+   await page.locator('#chatText').pressSequentially('تجربة من الضيف');
+   assert.equal(await page.locator('#chatText').inputValue(),'رسالة تجربة من الضيف');
    await page.locator('#send').click();
    const packets=await page.evaluate(()=>window.__roomSent);
    assert.ok(packets.some(p=>p.type==='chat'&&p.text==='رسالة تجربة من الضيف'),

@@ -332,6 +332,30 @@ body.room-focus:not(.room-music) .grid{grid-template-columns:minmax(0,1fr)}
  #sources .file-picker{flex-wrap:wrap}
  #sources .file-name{flex-basis:100%}
 }
+
+.room-chat{padding:12px;font-style:normal}
+.room-chat .chat-heading{gap:8px;padding-bottom:8px}
+#chatPresence{display:flex;align-items:center;gap:5px;color:#abbbce}
+#chatPresence:before{content:"";width:6px;height:6px;border-radius:50%;background:#748297}
+#chatPresence[data-online="true"]:before{background:#67c999}
+#roomChat #messages{display:flex;flex-direction:column;align-items:flex-start;gap:7px;padding:8px}
+#roomChat .chat-empty{margin:auto;align-self:center;text-align:center;color:#aab6c8;font-size:.78rem}
+#roomChat .msg{width:fit-content;max-width:92%;padding:6px 9px;margin:0;border:1px solid #ffffff12;border-radius:9px;background:#242b36}
+#roomChat .msg[data-mine="true"]{align-self:flex-end;background:#392533;border-color:#6b3d53}
+#roomChat .msg small{font-size:.65rem;color:#bfb2bf;margin:0 0 2px;display:block}
+#roomChat .msg span{display:block;white-space:pre-wrap;unicode-bidi:plaintext;line-height:1.55}
+#roomChat .chat-compose{margin:8px 0 3px;gap:6px;align-items:flex-end}
+#roomChat #chatText{
+ flex:1;min-width:0;width:100%;min-height:37px;max-height:92px;resize:none;overflow:auto;
+ padding:7px 8px;border:1px solid #3c4655;border-radius:8px;background:#111419;color:#f5f5f5;
+ font:inherit;font-size:.88rem;line-height:1.45;outline:none;box-shadow:none;
+}
+#roomChat #chatText:focus{border-color:#65748a}
+#roomChat #send{min-height:37px;padding:6px 9px;flex:none}
+#roomChat #send:disabled{opacity:.55}
+#typing,#chatNotice{margin:0;font-size:.68rem;color:#aab6c8;line-height:1.4}
+#chatNotice:not(:empty){padding-top:4px}
+@media(max-width:700px){#roomChat #chatText{font-size:16px;min-height:42px}#roomChat #send{min-height:42px}}
 </style></head>
 <body><main><header class="room-head">
  <div><h1 id="roomTitle">غرفة المشاهدة</h1><p class="room-head-note">BARQ ONE</p></div>
@@ -361,7 +385,16 @@ body.room-focus:not(.room-music) .grid{grid-template-columns:minmax(0,1fr)}
  <section id="officialMusic" hidden class="row"></section>
  <p class="sub" id="mediaNote" role="status"></p>
 </section>
-<aside id="roomChat" class="panel room-chat" aria-label="دردشة الغرفة"><div class="chat-heading"><h2>الدردشة <span class="chat-active-indicator" aria-hidden="true"></span></h2><span>محادثة مؤقتة</span></div><div id="messages" aria-live="polite"><p class="chat-empty" id="chatEmpty">مفيش رسايل لسه. ابدأوا كلامكم هنا.</p></div><div class="row chat-compose"><input id="chatText" maxlength="500" placeholder="اكتب رسالة..." aria-label="اكتب رسالة"><button id="send">إرسال</button></div><p class="sub" id="typing"></p></aside>
+<aside id="roomChat" class="panel room-chat" aria-label="دردشة الغرفة">
+ <div class="chat-heading"><h2>دردشة الغرفة</h2><span id="chatPresence" data-online="false">جاري الاتصال</span></div>
+ <div id="messages" role="log" aria-label="الرسائل"><p class="chat-empty" id="chatEmpty">ابدأ الدردشة برسالة</p></div>
+ <p id="typing" role="status"></p>
+ <form id="chatForm" class="row chat-compose">
+  <textarea id="chatText" rows="1" dir="auto" maxlength="500" placeholder="اكتب رسالة…" aria-label="اكتب رسالة"></textarea>
+  <button id="send" type="submit" disabled>إرسال</button>
+ </form>
+ <p id="chatNotice" role="status"></p>
+</aside>
 </div></main>
 <script>
 (function(){
@@ -433,10 +466,15 @@ showWaiting(true,host?'جاهز للمشاهدة':'في انتظار المضي�
 var paired=params.get('paired')==='1';
 if(paired)document.body.classList.add('room-embedded');
 var turnServers=[],officialTrack=null,visibleTrackKey=null;
-var reconnectTimer=null,reconnectAttempts=0,lastCode='',leaving=false,typingAt=0;
+var reconnectTimer=null,reconnectAttempts=0,lastCode='',leaving=false,typingAt=0,typingTimer=null,remoteTypingTimer=null;
+var composer=document.getElementById('chatText');
+var sendButton=document.getElementById('send');
+var chatNotice=document.getElementById('chatNotice');
+var typingStatus=document.getElementById('typing');
 var heartbeat=setInterval(function(){if(connected)send('ping',null);},25000);
 window.addEventListener('pagehide',function(){
  leaving=true;clearInterval(heartbeat);clearTimeout(reconnectTimer);clearTimeout(recoveryTimer);
+ clearTimeout(typingTimer);clearTimeout(remoteTypingTimer);
  closePeer();if(socket)socket.close(1000);
 });
 window.addEventListener('online',function(){
@@ -465,7 +503,33 @@ function send(type,value){if(socket&&socket.readyState===WebSocket.OPEN){
  socket.send(JSON.stringify(data));
  return true;
 }return false;}
-function addMessage(who,text){var box=document.getElementById('messages');var empty=document.getElementById('chatEmpty');if(empty)empty.remove();var row=document.createElement('div');row.className='msg';var meta=document.createElement('small');meta.textContent=who+' · '+new Date().toLocaleTimeString();var span=document.createElement('span');span.textContent=text;row.append(meta,span);box.appendChild(row);if(box.childElementCount>150)box.firstElementChild.remove();box.scrollTop=box.scrollHeight;}
+function addMessage(who,text,mine){
+ var box=document.getElementById('messages');
+ var atEnd=box.scrollHeight-box.clientHeight-box.scrollTop<45;
+ var empty=document.getElementById('chatEmpty');
+ if(empty)empty.remove();
+ var row=document.createElement('div');row.className='msg';row.dataset.mine=String(Boolean(mine));
+ var meta=document.createElement('small');
+ meta.textContent=who+' · '+new Date().toLocaleTimeString('ar',{hour:'numeric',minute:'2-digit'});
+ var span=document.createElement('span');span.dir='auto';span.textContent=text;
+ row.append(meta,span);box.appendChild(row);
+ if(box.childElementCount>150)box.firstElementChild.remove();
+ if(atEnd||mine)box.scrollTop=box.scrollHeight;
+}
+function updateChatPresence(){
+ var label=document.getElementById('chatPresence');
+ label.dataset.online=String(connected&&guestPresent);
+ label.textContent=!connected?'جاري الاتصال':guestPresent?'الطرف التاني متصل':'في انتظار الطرف التاني';
+}
+function clearTyping(){
+ clearTimeout(typingTimer);
+ if(typingAt){send('typing','');typingAt=0;}
+}
+function showTyping(active){
+ clearTimeout(remoteTypingTimer);
+ typingStatus.textContent=active?'الطرف التاني بيكتب…':'';
+ if(active)remoteTypingTimer=setTimeout(function(){showTyping(false);},2500);
+}
 function connect(code){
  clearTimeout(reconnectTimer);lastCode=code||lastCode;code=lastCode;
  if(socket&&(socket.readyState===WebSocket.OPEN||socket.readyState===WebSocket.CONNECTING))return;
@@ -475,7 +539,7 @@ function connect(code){
  socket.onopen=function(){note('جاري تجهيز اتصال الغرفة…');};
  socket.onerror=function(){note('فشل اتصال الغرفة');};
  socket.onclose=function(event){
-  connected=false;guestPresent=false;pendingIce=[];
+  connected=false;guestPresent=false;pendingIce=[];updateChatPresence();showTyping(false);
   clearTimeout(recoveryTimer);
   var reconnectable=!leaving&&![1000,1008].includes(event.code);
   var streaming=reconnectable&&peer&&peer.connectionState==='connected';
@@ -494,12 +558,12 @@ function connect(code){
  };
  socket.onmessage=async function(event){
   var packet;try{packet=JSON.parse(event.data);}catch(e){return;}
-  if(packet.type==='ready'){connected=true;reconnectAttempts=0;document.getElementById('joinPanel').hidden=true;turnServers=Array.isArray(packet.ice_servers)?packet.ice_servers:[];if(music&&!host)showTrack(packet.track||null);note(host?'مستني الضيف يدخل':'مستني صاحب الغرفة يشغّل ملف');}
-  if(packet.type==='peer-joined'){guestPresent=true;nearby=packet.connection==='lan';note('الشخص التاني اتصل');if(host&&localStream)queueRTC(makeOffer);if(host&&music&&officialTrack)send('track',officialTrack);}
+  if(packet.type==='ready'){connected=true;updateChatPresence();reconnectAttempts=0;document.getElementById('joinPanel').hidden=true;turnServers=Array.isArray(packet.ice_servers)?packet.ice_servers:[];if(music&&!host)showTrack(packet.track||null);note(host?'مستني الضيف يدخل':'مستني صاحب الغرفة يشغّل ملف');}
+  if(packet.type==='peer-joined'){guestPresent=true;updateChatPresence();nearby=packet.connection==='lan';note('الشخص التاني اتصل');if(host&&localStream)queueRTC(makeOffer);if(host&&music&&officialTrack)send('track',officialTrack);}
   if(packet.type==='track'&&music&&!host)showTrack(packet.value);
-  if(packet.type==='peer-left'){guestPresent=false;pendingIce=[];note('الشخص التاني خرج');if(!host)showWaiting(true,'انقطع عرض الفيديو','في انتظار رجوع صاحب الغرفة');closePeer();}
+  if(packet.type==='peer-left'){guestPresent=false;pendingIce=[];updateChatPresence();showTyping(false);note('الشخص التاني خرج');if(!host)showWaiting(true,'انقطع عرض الفيديو','في انتظار رجوع صاحب الغرفة');closePeer();}
   if(packet.type==='chat'&&packet.text){addMessage(packet.role==='host'?'صاحب الغرفة':'الضيف',packet.text);}
-  if(packet.type==='typing'){document.getElementById('typing').textContent=packet.text?'الشخص التاني بيكتب...':'';}
+  if(packet.type==='typing')showTyping(Boolean(packet.text));
   if(packet.type==='reaction'){addMessage('تفاعل',packet.text||'');}
   if(packet.type==='offer'&&!host)queueRTC(async function(){
    closePeer();
@@ -832,13 +896,38 @@ if(host){
  document.getElementById('pauseRequest').onclick=function(){send('request-pause',true);};
  document.getElementById('seekRequest').onclick=function(){send('request-seek',30);};
 }
-function chat(){var input=document.getElementById('chatText'),msg=input.value.trim();if(!msg)return;
- if(host&&!guestPresent){note('الضيف مش متصل بعد؛ رسالتك لسه في خانة الكتابة.');return;}
- if(!send('chat',msg)){note('اتصال الغرفة مش جاهز، جرّب لما يظهر متصل.');return;}
- addMessage(host?'أنا (المضيف)':'أنا (الضيف)',msg);input.value='';send('typing','');
+function resizeComposer(){
+ composer.style.height='auto';
+ composer.style.height=Math.min(92,composer.scrollHeight+2)+'px';
+ sendButton.disabled=!composer.value.trim();
 }
-document.getElementById('send').onclick=chat;
-document.getElementById('chatText').onkeydown=function(e){if(e.key==='Enter'){e.preventDefault();chat();}else if(Date.now()-typingAt>1000){typingAt=Date.now();send('typing','1');}};
+function chat(){
+ var msg=composer.value.trim();
+ if(!msg)return;
+ if(host&&!guestPresent){chatNotice.textContent='مستني الضيف يتصل. رسالتك محفوظة هنا.';return;}
+ if(!send('chat',msg)){chatNotice.textContent='الاتصال لسه بيرجع. رسالتك محفوظة هنا.';return;}
+ addMessage('أنت',msg,true);
+ composer.value='';chatNotice.textContent='';
+ clearTyping();resizeComposer();
+}
+document.getElementById('chatForm').addEventListener('submit',function(event){
+ event.preventDefault();chat();
+});
+composer.addEventListener('keydown',function(event){
+ event.stopPropagation();
+ if(event.key==='Enter'&&!event.shiftKey&&!event.isComposing&&event.keyCode!==229){
+  event.preventDefault();
+  chat();
+ }
+});
+composer.addEventListener('input',function(){
+ resizeComposer();
+ if(!composer.value.trim()){clearTyping();return;}
+ if(Date.now()-typingAt>1000&&send('typing','1'))typingAt=Date.now();
+ clearTimeout(typingTimer);
+ typingTimer=setTimeout(clearTyping,1600);
+});
+composer.addEventListener('blur',clearTyping);
 
 })();
 </script></body></html>
