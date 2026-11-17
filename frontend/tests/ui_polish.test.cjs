@@ -36,8 +36,11 @@ test('BARQ ONE navigation retains model selection without mounting the removed w
   assert.match(sidebar,/<ModelSelector compact\/>/);
   assert.doesNotMatch(app,/<WorkspaceStudio/);
   assert.ok(sidebar.includes("sections.filter(([key])=>key!=='chat').map("));
-  assert.match(sidebar,/className="ops-standalone-chat"/);
-  assert.match(sidebar,/navigate\('chat'\)/);
+  // Chat now lives with the other top-level destinations; no duplicate standalone control.
+  assert.match(sidebar,/\['center','chat','library','tools','monitor'\]/);
+  assert.doesNotMatch(sidebar,/className="ops-standalone-chat"/);
+  assert.doesNotMatch(sidebar,/className="ops-more"/);
+  assert.match(sidebar,/onClick=\{\(\)=>navigate\(key\)\}/);
   const shell=read('pages/BarqOne.tsx');
   for(const section of ['chat','center','voice','mission','library','installed','tools','monitor','automation','settings'])
     assert.ok(shell.includes(`['${section}',`),section);
