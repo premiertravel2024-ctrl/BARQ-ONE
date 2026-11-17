@@ -1,0 +1,165 @@
+/* BARQ ONE — 2026 unified experience refresh.
+   Compact hierarchy, common spacing and accessible focus/hover states.
+   Imported after page styles to keep the underlying page logic intact. */
+:root{--barq-ui-rose:#f16a91;--barq-ui-border:rgba(255,255,255,.11);--barq-ui-surface:#191d24;--barq-ui-quiet:#aab3c1}
+.ops-shell,.ops-shell button,.ops-shell input,.ops-shell select,.ops-shell textarea{font-family:'GE SS Two','Cairo',Inter,system-ui,sans-serif}
+.ops-shell{letter-spacing:0}
+.ops-header{min-height:62px;padding-inline:clamp(12px,1.6vw,22px);gap:12px;background:#11141a}
+.ops-header nav{flex:1;justify-content:center;gap:3px;overflow-x:auto;min-width:0;scrollbar-width:none}
+.ops-header nav::-webkit-scrollbar{display:none}
+.ops-header nav button{padding:8px 12px;border-radius:10px;border:1px solid transparent;color:#aeb6c5;transition:background .16s ease,color .16s ease}
+.ops-header nav button[aria-current='page']{background:#ef6a8b20;border-color:#ed6e9452;color:#ffa8be;font-weight:800}
+.ops-header nav button:hover{color:#fff;background:#ffffff0c}
+.ops-header-actions{gap:6px}
+.ops-header-actions>button{width:35px;min-width:35px;height:35px;padding:7px;border-radius:10px}
+.ops-header-actions .ops-search{width:auto;min-width:0;padding-inline:11px}
+.ops-body{gap:12px;padding:12px}
+.ops-rail{border:1px solid var(--barq-ui-border);border-radius:18px;padding:12px 9px;scrollbar-width:thin}
+.ops-rail nav{gap:2px}
+.ops-rail nav button{min-height:38px;border-radius:10px;transition:background .14s ease;color:#aeb7c5}
+.ops-rail nav button i{border-radius:9px;background:#ffffff08}
+.ops-rail nav button[aria-current='page']{background:#f16a911a;color:#ff9eb8;font-weight:750}
+.ops-rail nav button[aria-current='page'] i{background:#f16a9120}
+.ops-rail-heading{margin-bottom:3px}
+.ops-stage{scrollbar-width:thin}
+.one-page{min-width:0}
+.one-page-head{margin-bottom:12px}
+.one-page-head h1{letter-spacing:0}
+.one-page button,.bm-player button,.bs-hub button,.barq-media button{transition:background-color .15s ease,border-color .15s ease,color .15s ease}
+.one-page :is(button,input,textarea,select):focus-visible{outline:2px solid #f16a91;outline-offset:2px}
+
+/* Music: one quiet header + small segmented navigation, not a dominant hero. */
+.bm-player{border:1px solid var(--barq-ui-border);border-radius:18px;overflow:hidden;background:#111419}
+.bm-header{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:14px;padding:16px 18px;border-bottom:1px solid var(--barq-ui-border);background:#171b22}
+.bm-header>div:first-child>span{font-size:.66rem;letter-spacing:.13em;color:#f58fab}
+.bm-header h2{font-size:clamp(1.12rem,2.2vw,1.5rem);line-height:1.5;margin:1px 0 0;font-weight:800}
+.bm-switch{display:flex;align-items:center;flex-wrap:wrap;gap:3px;background:#111419;border:1px solid var(--barq-ui-border);border-radius:12px;padding:4px}
+.bm-switch button{border-radius:8px;min-height:37px;padding:8px 12px;color:#b5beca;font-size:.78rem}
+.bm-switch button[aria-pressed='true']{color:#fff;background:#8e294b;border:1px solid #a74562}
+.bm-library{padding:18px}
+.bm-library-hero{min-height:105px;padding:18px 21px;border:1px solid var(--barq-ui-border);background:linear-gradient(120deg,#1a1e26,#20212b);border-radius:14px}
+.bm-library-hero h3{font-size:clamp(1.1rem,2.3vw,1.55rem);line-height:1.55}
+.bm-hero-art{width:82px;height:82px;border-radius:16px;transform:none;box-shadow:none}
+.bm-toolbar{margin:15px 0 9px}
+.bm-sidebar{padding:12px 17px}
+.bm-track{min-height:54px;border-bottom-color:#ffffff0c}
+.bm-track:hover{background:#ffffff07}
+.bm-dock{background:#1b2028;border-top:1px solid var(--barq-ui-border);padding:10px 16px}
+.bm-empty{padding:40px 12px}
+
+/* Shared music lounge, retaining LAN + online room workflows. */
+.barq-music-app{gap:12px}
+.barq-music-app .barq-watch-hero{padding:16px 19px;background:#191d24;border-color:var(--barq-ui-border);border-radius:14px}
+.barq-music-app .barq-watch-hero-mark{background:#95395c;box-shadow:none;width:42px;height:42px;min-width:42px;border-radius:12px}
+.barq-music-app .barq-watch-hero-copy h2{font-size:1.2rem}
+.barq-music-app .barq-watch-hero-copy p{max-width:72ch;color:var(--barq-ui-quiet)}
+.barq-music-app .bma-vinyl{display:none}
+.barq-music-app .barq-room-entry{grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.barq-music-app .barq-watch-choose-panel{padding:20px;min-height:195px;gap:8px;background:#191d24;border:1px solid var(--barq-ui-border);border-radius:15px;box-shadow:none}
+.barq-music-app .barq-watch-choose-panel>svg{width:38px;height:38px;padding:9px;background:#ed70941c;border-radius:10px}
+.barq-music-app .barq-watch-choose-panel h2{font-size:1.03rem;margin:0}
+.barq-music-app .barq-watch-choose-panel p{line-height:1.55;font-size:.78rem;margin:0 0 4px}
+.barq-music-app .barq-watch-choose-panel button{min-height:38px;padding:8px 12px;font-size:.79rem}
+.barq-music-app .barq-watch-controls,.barq-music-app .barq-room-share{border-radius:13px;background:#191d24;border-color:var(--barq-ui-border)}
+.barq-music-app .barq-watch-player{background:#111419;border-color:var(--barq-ui-border)}
+
+/* Stories: smaller featured banner, cleaner cards and unmistakable real-book shelf. */
+.bs-library{gap:22px}
+.bs-header{gap:10px}
+.bs-brand-mark{width:40px;height:40px;border-radius:11px}
+.bs-header-actions{gap:6px}
+.bs-muted-btn,.bs-outline,.bs-primary{border-radius:10px;min-height:39px;padding:8px 13px;box-shadow:none}
+.bs-hero{min-height:240px;grid-template-columns:minmax(0,1.25fr) minmax(190px,.75fr);border-radius:18px;border-color:var(--barq-ui-border);background:linear-gradient(115deg,#231b25,#151820)}
+.bs-hero:before{display:none}
+.bs-hero-text{padding:clamp(20px,3vw,31px);gap:9px}
+.bs-hero h1{font-size:clamp(1.9rem,3.5vw,3.05rem);line-height:1.23;letter-spacing:0}
+.bs-hero p{font-size:.82rem;line-height:1.75;max-width:54ch}
+.bs-hero-caption{margin-top:0}
+.bs-feature{background:radial-gradient(circle at center,#eb6e9130,transparent 64%)}
+.bs-feature-book{width:min(50%,150px);transform:rotate(-5deg);filter:drop-shadow(-7px 12px 12px #0007)}
+.bs-feature:hover .bs-feature-book{transform:translateY(-3px) rotate(-3deg)}
+.bs-feature-label{bottom:12px;inset-inline-end:12px;border-radius:9px;padding:7px 10px}
+.bs-title h2{font-size:clamp(1.18rem,2.1vw,1.45rem)}
+.bs-collection{gap:13px}
+.bs-grid{gap:12px;grid-template-columns:repeat(auto-fill,minmax(min(100%,170px),1fr))}
+.bs-card{border-radius:13px;background:#191d24}
+.bs-card:hover{transform:translateY(-2px)}
+.bs-card-cover .bs-cover{max-height:215px}
+.bs-card-copy{padding:12px;gap:6px}
+.bs-card-title{font-size:.88rem}
+.bs-filters{gap:6px}
+.bs-filters button{padding:7px 12px;min-height:35px;border-radius:9px}
+.bs-real-library{display:grid;gap:14px;padding:17px;background:#171b22;border:1px solid var(--barq-ui-border);border-radius:16px}
+.bs-real-heading{display:flex;justify-content:space-between;align-items:center;gap:12px}
+.bs-real-heading>div{min-width:0}
+.bs-real-heading span{font-size:.65rem;letter-spacing:.12em;color:#f38cab;font-weight:800}
+.bs-real-heading h3{font-size:1.1rem;font-weight:800;margin:4px 0}
+.bs-real-heading p{font-size:.76rem;line-height:1.7;color:#aeb6c3;margin:0}
+.bs-real-heading>svg{color:#ef7898;flex:none}
+.bs-real-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,275px),1fr));gap:11px}
+.bs-real-card{display:flex;align-items:stretch;min-width:0;gap:12px;padding:12px;border:1px solid #ffffff13;border-radius:13px;background:#1d222a}
+.bs-real-cover{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;flex:none;width:65px;min-height:104px;border:1px solid #e3688e36;border-radius:9px;background:linear-gradient(150deg,#642c46,#262434);color:#efacc1}
+.bs-real-cover small{font-size:.65rem;direction:ltr}
+.bs-real-copy{min-width:0;display:flex;flex-direction:column;align-items:flex-start;gap:4px}
+.bs-real-copy>span{font-size:.65rem;color:#e8a0b8}
+.bs-real-copy h4{font-weight:800;font-size:.87rem;color:#fff;margin:0;line-height:1.45}
+.bs-real-copy strong{font-size:.72rem;color:#ccd1dc}
+.bs-real-copy p{font-size:.7rem;line-height:1.55;color:#a7b0bf;margin:3px 0 6px}
+.bs-real-copy a{display:inline-flex;align-items:center;gap:7px;border:1px solid #f16a9150;border-radius:8px;background:#a7375433;color:#ffb7cb;padding:7px 10px;text-decoration:none;font-size:.71rem;margin-top:auto}
+.bs-real-copy a:hover{color:#fff;border-color:#ee7598}
+.bs-real-empty{font-size:.82rem;color:#a9b2bf}
+
+/* Wallpaper studio: remove dead preview when no imported media exists. */
+.bws-hero{min-height:185px;border-radius:16px;background:linear-gradient(120deg,#1a1e25,#171923);border-color:var(--barq-ui-border)}
+.bws-hero:not(:has(.bws-feature-preview)){grid-template-columns:1fr}
+.bws-hero-copy{padding:20px 23px;gap:10px}
+.bws-hero h2{font-size:clamp(1.35rem,2.5vw,1.92rem)}
+.bws-hero p{font-size:.78rem;max-width:65ch}
+.bws-feature-preview{max-height:220px;background:#151923}
+.bws-feature-preview:after{background:linear-gradient(90deg,#191d2440,transparent)}
+.bws-discovery{border-radius:16px;border-color:var(--barq-ui-border);padding:17px;gap:13px}
+.bws-gallery{gap:12px}
+.bws-wallpaper{border-radius:13px}
+.bws-thumb{height:150px}
+
+/* Cinema: less surface noise, all controls and type inherited from BARQ. */
+.barq-watch-room:not(.barq-music-app) .barq-watch-hero{padding:13px 17px;border-radius:14px;background:#191d24;border-color:var(--barq-ui-border)}
+.barq-watch-room:not(.barq-music-app) .barq-watch-controls{border-color:var(--barq-ui-border);background:#191d24}
+.barq-watch-room:not(.barq-music-app) .barq-watch-player{border-color:var(--barq-ui-border);background:#151920}
+.barq-watch-room:not(.barq-music-app) .barq-watch-player-top{background:#191d24}
+@media(max-width:1100px){
+ .ops-header nav button{padding:7px 9px;font-size:.72rem}
+ .bs-hero{grid-template-columns:minmax(0,1fr) minmax(160px,.62fr)}
+ .bm-header{align-items:flex-start}
+}
+@media(max-width:800px){
+ .ops-header nav{justify-content:flex-start}
+ .barq-music-app .barq-room-entry{grid-template-columns:1fr}
+ .barq-music-app .barq-watch-choose-panel{min-height:0}
+ .bs-hero{min-height:0;grid-template-columns:1fr}
+ .bs-feature{display:none}
+ .bm-header{padding:14px}
+ .bm-switch{width:100%}
+ .bws-hero{grid-template-columns:1fr}
+ .bws-feature-preview{height:155px}
+}
+@media(max-width:730px){
+ .ops-header nav{display:flex;max-width:calc(100vw - 195px);gap:2px;overflow-x:auto}
+ .ops-header nav button{font-size:.72rem;padding:8px}
+ .ops-header .ops-search{display:none}
+ .ops-body{padding:6px}
+ .bs-real-grid{grid-template-columns:1fr}
+}
+@media(max-width:520px){
+ .ops-header nav{max-width:calc(100vw - 135px)}
+ .ops-wordmark span:last-child{display:none}
+ .ops-brand{gap:2px}
+ .ops-header nav button{max-width:110px;overflow:hidden;text-overflow:ellipsis}
+ .bs-hero-text{padding:18px}
+ .bs-hero h1{font-size:1.85rem}
+ .bs-real-library{padding:12px}
+ .bm-library{padding:12px}
+}
+@media(prefers-reduced-motion:reduce){
+ .ops-shell button,.bs-card,.bm-player button,.bws-wallpaper{transition:none!important;animation:none!important}
+}
