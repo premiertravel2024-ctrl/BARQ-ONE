@@ -1,4 +1,5 @@
-import {AudioLines,Ellipsis,Menu,Copy,MessageSquare,PanelLeftClose,PanelLeftOpen,Pencil,Search,Settings2,Trash2,X} from 'lucide-react';
+import {useState} from 'react';
+import {AudioLines,Ellipsis,Menu,Copy,MessageSquare,PanelLeftClose,PanelLeftOpen,Pencil,Plus,Search,Settings2,Trash2,X} from 'lucide-react';
 import {useApp} from '../../store';
 import {sections,type OnePage} from '../../pages/BarqOne';
 import {ModelSelector} from '../chat/ModelSelector';
