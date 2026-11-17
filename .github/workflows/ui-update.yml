@@ -78,7 +78,8 @@ jobs:
         shell: pwsh
         run: |
           $compiler = & ./scripts/find_inno.ps1
-          if ($LASTEXITCODE -ne 0 -or !(Test-Path $compiler)) { throw 'Inno compiler unavailable' }
+          if ([string]::IsNullOrWhiteSpace($compiler) -or !(Test-Path -LiteralPath $compiler -PathType Leaf)) { throw "Inno compiler unavailable: $compiler" }
+          Write-Host "Using Inno compiler at $compiler"
           & $compiler ./scripts/installer_ui_update.iss
           if ($LASTEXITCODE -ne 0) { throw 'UI-only compilation failed' }
           $result = 'release/BARQ_UI_Update_2.41.0.exe'
