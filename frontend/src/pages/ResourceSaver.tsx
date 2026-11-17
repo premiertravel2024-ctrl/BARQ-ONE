@@ -1,3 +1,4 @@
+import {useAppView} from '../lib/appContext';
 import {useEffect,useMemo,useState} from 'react';
 import {Activity,RotateCcw,PauseCircle,ShieldAlert} from 'lucide-react';
 import {requestJSON} from '../lib/backend';
@@ -48,6 +49,7 @@ export function ResourceSaver(){
   }catch(e){setError(e instanceof Error?e.message:String(e))}
   finally{setBusy(false)}
  }
+ useAppView('resources',{mode,count:data?.paused.length,status:busy?'working':data?.status});
  return <div className="barq-media" dir={ar?'rtl':'ltr'}>
   <header className="barq-media-head"><div><h2>{ar?'توفير الموارد':'Resource Saver'}</h2><p>{ar?'مراقبة البرامج والإيقاف المؤقت القابل للاسترجاع، من غير حذف أو إنهاء إجباري.':'Monitor and temporarily pause approved optional apps without deleting them.'}</p></div>
    <span className="barq-chip"><ShieldAlert size={15}/>{ar?'العمليات المحمية لا يمكن إيقافها':'Critical processes protected'}</span></header>

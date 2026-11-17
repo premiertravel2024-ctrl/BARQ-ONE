@@ -1,3 +1,4 @@
+import {useAppView} from '../lib/appContext';
 import {useEffect, useRef, useState} from 'react';
 import {Download, ExternalLink, Heart, Image, Layers, Pause, Play, Plus, RefreshCw, Search, Shuffle, Square, Trash2, CheckCircle2, AlertCircle, Volume2} from 'lucide-react';
 import {requestJSON} from '../lib/backend';
@@ -159,6 +160,7 @@ export function Wallpapers({onOpenSettings}:{onOpenSettings?:()=>void}={}) {
     return match&&(filter==='all'||(filter==='favorites'?favorites.includes(item.id):filter==='gif'?isGif(item):isVideo(item)));
   });
   const featured=(data?.library||[]).find(x=>x.id===data?.engine?.wallpaper_id)||(data?.library||[])[0];
+  useAppView('wallpapers',{mode:filter,item:data?.library.find(item=>item.id===data.engine?.wallpaper_id)?.title,count:data?.library.length,status:data?.engine?.running?'running':data?.installer});
   return <div className="barq-media barq-wallpaper-studio" dir={ar?'rtl':'ltr'}>
    <header className="bws-hero">
     <div className="bws-hero-copy">

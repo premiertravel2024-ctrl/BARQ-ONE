@@ -1,3 +1,4 @@
+import {openAppSection} from '../../lib/appContext';
 import {useCallback,useEffect,useRef,useState} from 'react';
 import {LiveVoice,type VoiceEvent} from '../../lib/liveVoice';
 import {LocalVoice} from '../../lib/localVoice';
@@ -153,6 +154,7 @@ export function HandsFreeVoice(){
      state.selectChat(target);
      void submitChat(message.text).catch(e=>warn('تعذّر بدء المهمة',String(e)));
     }
+    if(message.type==='barq_app_action'&&message.app_action)openAppSection(message.app_action);
     if(message.type==='work_continue_requested'&&message.task_id){
      const state=useApp.getState();
      const target=state.chats.find(c=>c.id===linkedChat.current);

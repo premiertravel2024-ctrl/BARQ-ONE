@@ -3,7 +3,8 @@ import {FolderPlus,Heart,Headphones,ListMusic,Music2,Pause,Play,Plus,Repeat,Sear
 import {requestJSON} from '../lib/backend';
 import {useApp} from '../store';
 import {WatchTogether} from './WatchTogether';
-import {MusicServices} from './MusicServices';
+import {getMusicMode,useAppView} from '../lib/appContext';
+import {MusicServices,type RoomTrack} from './MusicServices';
 import './musicPlayer.css';
 type Track={id:string;title:string;artist:string;album:string;duration:number|null;artwork:boolean};
 type State={favorites:string[];recent:string[];playlists:{id:string;name:string;tracks:string[]}[];current:string;position:number;volume:number;shuffle:boolean;repeat:'off'|'all'|'one';queue:string[]};
@@ -12,9 +13,25 @@ function restore():State{try{const s=JSON.parse(localStorage.getItem('barq-music
 const clock=(n:number)=>Number.isFinite(n)?Math.floor(n/60)+':'+String(Math.floor(n%60)).padStart(2,'0'):'0:00';
 function Art({track}:{track?:Track}){const [failed,setFailed]=useState(false);useEffect(()=>setFailed(false),[track?.id]);return track?.artwork&&!failed?<img src={'/v1/music/art/'+track.id} alt="" loading="lazy" onError={()=>setFailed(true)}/>:<Music2 aria-hidden="true"/>;}
 export function MusicPlayer(){
- const ar=useApp(s=>s.language)==='ar';const [tracks,setTracks]=useState<Track[]>([]),[state,setState]=useState(restore),[view,setView]=useState('library'),[query,setQuery]=useState(''),[musicView,setMusicView]=useState<'local'|'spotify'|'anghami'|'room'>('local'),[playing,setPlaying]=useState(false),[busy,setBusy]=useState(false),[error,setError]=useState(''),[notice,setNotice]=useState(''),[duration,setDuration]=useState(0),[playlist,setPlaylist]=useState(''),[name,setName]=useState(''),[showQueue,setShowQueue]=useState(false);
+ const ar=useApp(s=>s.language)==='ar';const [tracks,setTracks]=useState<Track[]>([]),[state,setState]=useState(restore),[view,setView]=useState('library'),[query,setQuery]=useState(''),[musicView,setMusicView]=useState(getMusicMode),[playing,setPlaying]=useState(false),[busy,setBusy]=useState(false),[error,setError]=useState(''),[notice,setNotice]=useState(''),[duration,setDuration]=useState(0),[playlist,setPlaylist]=useState(''),[name,setName]=useState(''),[showQueue,setShowQueue]=useState(false);
  const audio=useRef<HTMLAudioElement>(null),wantPlay=useRef(false),lastSaved=useRef(0),latest=useRef(state);latest.current=state;
  const current=tracks.find(t=>t.id===state.current);
+ const [serviceItem,setServiceItem]=useState('');
+ const [roomTrack,setRoomTrack]=useState<RoomTrack>();
+ const [roomState,setRoomState]=useState('');
+ useAppView('music',{mode:musicView,item:musicView==='local'?current?.title:musicView==='room'?roomTrack?.title:serviceItem,
+  count:tracks.length,status:musicView==='local'&&current?(playing?'playing':'paused'):musicView==='room'?roomState:undefined});
+ useEffect(()=>{
+  const change=(event:Event)=>{
+   const mode=(event as CustomEvent<string>).detail;
+   if(mode==='spotify'||mode==='anghami'||mode==='room'||mode==='local'){
+    audio.current?.pause();setServiceItem('');setMusicView(mode);
+   }
+  };
+  window.addEventListener('barq-music-mode',change);
+  return()=>window.removeEventListener('barq-music-mode',change);
+ },[]);
+
  useEffect(()=>{let live=true;void requestJSON<{tracks:Track[]}>('/v1/music/library').then(d=>{if(live)setTracks(d.tracks);}).catch(e=>{if(live)setError(e.message);});return()=>{live=false;};},[]);
  useEffect(()=>{if(audio.current)audio.current.volume=state.volume;},[state.volume]);
  useEffect(()=>{const timer=setTimeout(()=>{try{localStorage.setItem('barq-music-state',JSON.stringify(state));}catch{setNotice(ar?'الحفظ المحلي مش متاح.':'Local persistence is unavailable.');}},600);return()=>clearTimeout(timer);},[state,ar]);
@@ -30,13 +47,13 @@ export function MusicPlayer(){
  function favorite(id:string){setState(s=>({...s,favorites:s.favorites.includes(id)?s.favorites.filter(x=>x!==id):[...s.favorites,id]}));}
  return <section className="bm-player" dir={ar?'rtl':'ltr'}>
   <header className="bm-header"><div><h2>{ar?'موسيقى برق':'BARQ Music'}</h2></div><div className="bm-switch"><button aria-pressed={musicView==='local'} onClick={()=>setMusicView('local')}><Music2 size={17}/>{ar?'مكتبتي':'Library'}</button>
-      <button aria-pressed={musicView==='spotify'} onClick={()=>{audio.current?.pause();setMusicView('spotify')}}>Spotify</button>
-      <button aria-pressed={musicView==='anghami'} onClick={()=>{audio.current?.pause();setMusicView('anghami')}}>{ar?'أنغامي':'Anghami'}</button>
+      <button aria-pressed={musicView==='spotify'} onClick={()=>{audio.current?.pause();setServiceItem('');setMusicView('spotify')}}>Spotify</button>
+      <button aria-pressed={musicView==='anghami'} onClick={()=>{audio.current?.pause();setServiceItem('');setMusicView('anghami')}}>{ar?'أنغامي':'Anghami'}</button>
       <button aria-pressed={musicView==='room'} onClick={()=>{audio.current?.pause();setMusicView('room')}}><Headphones size={17}/>{ar?'استماع سوا':'Listen together'}</button></div></header>
   <audio ref={audio} src={current?'/v1/music/stream/'+current.id:undefined} preload="metadata" onLoadedMetadata={()=>{const a=audio.current!;setDuration(Number.isFinite(a.duration)?a.duration:current?.duration||0);if(state.position>0&&state.position<a.duration)a.currentTime=state.position;if(wantPlay.current){wantPlay.current=false;void a.play().catch(()=>setError(ar?'اضغط تشغيل للسماح بالصوت.':'Press play to allow audio.'));}}} onPlay={()=>{setPlaying(true);if(current)setState(s=>({...s,recent:[current.id,...s.recent.filter(id=>id!==current.id)].slice(0,100)}));}} onPause={()=>setPlaying(false)} onSeeked={()=>{const a=audio.current;if(a)setState(s=>({...s,position:a.currentTime}));}} onTimeUpdate={()=>{const a=audio.current!;if(Date.now()-lastSaved.current>1000){lastSaved.current=Date.now();setState(s=>({...s,position:a.currentTime}));}}} onEnded={()=>step(1,true)} onError={()=>{setPlaying(false);setError(ar?'الملف مش متاح أو الترميز مش مدعوم. استورده تاني أو اختار ملف تاني.':'File unavailable or codec unsupported. Reimport or choose another file.');}}/>
   {error&&<p className="bm-error" role="alert">{error}</p>}{notice&&<p className="bm-notice" role="status">{notice}</p>}
-  <div hidden={musicView!=='room'}><WatchTogether mode="music"/></div>
-   {(musicView==='spotify'||musicView==='anghami')&&<MusicServices key={musicView} provider={musicView} ar={ar}/>}
+  <div hidden={musicView!=='room'}><WatchTogether mode="music" track={roomTrack} onRoomState={setRoomState}/></div>
+   {(musicView==='spotify'||musicView==='anghami')&&<MusicServices key={musicView} provider={musicView} ar={ar} onSelected={setServiceItem} onShare={track=>{setRoomTrack(track);setMusicView('room');}}/>}
   <div hidden={musicView!=='local'}>
    <div className={"bm-layout"+(showQueue?" bm-show-queue":"")}><aside className="bm-sidebar"><h3>{ar?'مكتبتك':'YOUR LIBRARY'}</h3>{[['library',ar?'كل الأغاني':'All tracks'],['favorites',ar?'المفضلة':'Favorites'],['recent',ar?'سمعتها مؤخرًا':'Recently played']].map(([id,label])=><button key={id} aria-pressed={view===id} onClick={()=>setView(id)}>{label}</button>)}<h3>{ar?'قوائم التشغيل':'PLAYLISTS'}</h3>{state.playlists.map(p=><div className="bm-playlist-row" key={p.id}><button aria-pressed={view==='playlist:'+p.id} onClick={()=>setView('playlist:'+p.id)}><ListMusic size={15}/>{p.name}</button><button aria-label={ar?'حذف القائمة':'Delete playlist'} onClick={()=>{setState(s=>({...s,playlists:s.playlists.filter(x=>x.id!==p.id)}));if(view==='playlist:'+p.id)setView('library');}}><X size={13}/></button></div>)}<form className="bm-create" onSubmit={e=>{e.preventDefault();if(!name.trim())return;const id=crypto.randomUUID();setState(s=>({...s,playlists:[...s.playlists,{id,name:name.trim(),tracks:[]}]}));setPlaylist(id);setName('');}}><input aria-label={ar?'اسم قائمة جديدة':'New playlist name'} value={name} maxLength={60} onChange={e=>setName(e.target.value)} placeholder={ar?'قائمة جديدة':'New playlist'}/><button aria-label={ar?'إنشاء':'Create'}><Plus size={16}/></button></form></aside>
    <main className="bm-library"><section className="bm-library-hero"><div><span>{ar?'صوتك الخاص':'YOUR OWN SOUNDTRACK'}</span><h3>{ar?'كل اللي بتحب تسمعه، في مكان واحد.':'Everything you love, in one place.'}</h3><p>{tracks.length} {ar?'أغنية في مكتبتك المحلية':'tracks in your local library'}</p><div><button disabled={busy} onClick={()=>void importMusic('files')}><Plus size={17}/>{ar?'أضف أغاني':'Import tracks'}</button><button disabled={busy} onClick={()=>void importMusic('folder')}><FolderPlus size={17}/>{ar?'أضف مجلد':'Import folder'}</button></div></div><div className="bm-hero-art"><Art track={current||tracks.find(t=>t.artwork)}/></div></section>

@@ -1,3 +1,4 @@
+from voice.app_tools import LIVE_APP_TOOLS
 from voice.brain_bridge import LIVE_BARQ_TOOLS
 """Regression tests for Gemini Live -> audited Windows computer control integration."""
 import asyncio
@@ -175,7 +176,7 @@ def test_live_websocket_tool_call_is_audited_and_tool_response_sent(monkeypatch)
     assert [c[0] for c in calls]==['config','dispatch','reply']
     from voice.public_tools import LIVE_PUBLIC_TOOLS
     from voice.live import LIVE_REPOSITORY_TOOLS
-    assert calls[0][1]['tools']==LIVE_BARQ_TOOLS + LIVE_PUBLIC_TOOLS + LIVE_REPOSITORY_TOOLS + tools.LIVE_COMPUTER_TOOLS
+    assert calls[0][1]['tools']==LIVE_BARQ_TOOLS + LIVE_PUBLIC_TOOLS + LIVE_REPOSITORY_TOOLS + LIVE_APP_TOOLS + tools.LIVE_COMPUTER_TOOLS
     assert calls[1][1:]==('open_on_computer',{'request':'افتح كروم'},'chat_1')
     response=calls[2][1][0]
     assert response.name=='ask_barq' and response.id=='call1' and response.response['status']=='approval_required'
@@ -211,7 +212,7 @@ def test_live_conversation_only_has_no_control_tools(monkeypatch):
         ws.send_json({'type':'end'})
     from voice.public_tools import LIVE_PUBLIC_TOOLS
     from voice.live import LIVE_REPOSITORY_TOOLS
-    assert len(captured)==1 and captured[0]['tools']==LIVE_BARQ_TOOLS + LIVE_PUBLIC_TOOLS + LIVE_REPOSITORY_TOOLS
+    assert len(captured)==1 and captured[0]['tools']==LIVE_BARQ_TOOLS + LIVE_PUBLIC_TOOLS + LIVE_REPOSITORY_TOOLS + LIVE_APP_TOOLS
     assert 'open_on_computer' not in str(captured[0]['tools'])
     assert 'start_computer_task' not in str(captured[0]['tools'])
     assert 'prepare_github_repository' in str(captured[0]['tools'])

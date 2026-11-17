@@ -10,8 +10,11 @@ import {RightPanel} from './components/layout/RightPanel';
 import {OperationsHeader,OperationsRail,ConversationHeader} from './components/layout/OperationsFrame';import {SettingsModal,shortcuts} from './components/layout/SettingsModal';
 import {EmptyState} from './components/chat/EmptyState';import {MessageList} from './components/chat/MessageList';import {BrainStatus} from './components/chat/BrainStatus';import {Composer} from './components/chat/Composer';
 import {HandsFreeVoice,isHandsFreeActive} from './components/chat/HandsFreeVoice';
-import {BarqOne,type OnePage} from './pages/BarqOne';
+import {BarqOne,sections,type OnePage} from './pages/BarqOne';
 import './styles/experienceRefresh.css';
+import {keepAppContextFresh,publishBookCatalogue,trackSection,type AppAction} from './lib/appContext';
+import {publishedBooks} from './pages/publishedBooks';
+import {originals} from './pages/barqStoriesData';
 import {VoiceResultsStrip} from './components/chat/VoiceResultsStrip';
 import {Modal} from './components/ui/Modal';import {Button} from './components/ui/Button';import {ToastViewport} from './components/ui/Toast';import {LauncherPalette} from './components/launcher/LauncherPalette';import {CommandPalette} from './components/ui/CommandPalette';import {Playground} from './pages/Playground';
 // Permission snapshot is kept up to date while the app is alive. We start
@@ -39,11 +42,37 @@ function openConsentedVoiceSession(){
 export default function App(){
  const theme=useApp(s=>s.theme),language=useApp(s=>s.language),id=useApp(s=>s.activeId),chat=useApp(s=>s.chats.find(c=>c.id===s.activeId)),newChat=useApp(s=>s.newChat),deleteChat=useApp(s=>s.deleteChat),setSidebarOpen=useApp(s=>s.setSidebarOpen),streaming=useApp(s=>s.streaming);
  const [onePage,setOnePage]=useState<OnePage>('center');
+ const [lastMedia,setLastMedia]=useState<'watch'|'music'>();
+ const media=onePage==='watch'||onePage==='music'?onePage:lastMedia;
+ useEffect(()=>{if(onePage==='watch'||onePage==='music')setLastMedia(onePage)},[onePage]);
  const [providers,setProviders]=useState<RouterProvider[]>([]);
  const [settingsTab,setSettingsTab]=useState<'general'|'models'|'voice'|'workspace'|'performance'|'assistant'>('general');const [settings,setSettings]=useState(false),[palette,setPalette]=useState(false),[shortcutsOpen,setShortcutsOpen]=useState(false),[deleteId,setDeleteId]=useState<string|null>(null),[prefill,setPrefill]=useState('');
  const [launcherOpen,setLauncherOpen]=useState(false),[launcherQuery,setLauncherQuery]=useState('');
  const [playground,setPlayground]=useState(window.location.pathname==='/playground');const t=useT();
  useEffect(()=>startDataSync(setProviders),[]);
+ useEffect(()=>keepAppContextFresh(),[]);
+ useEffect(()=>{
+  const names=Object.fromEntries(sections.map(([key,ar,en])=>[key,language==='ar'?ar:en]));
+  trackSection(playground?'playground':settings?'settings':onePage,{...names,playground:'Playground'});
+ },[onePage,playground,language,settings]);
+ useEffect(()=>{
+  publishBookCatalogue([
+   ...publishedBooks.map(book=>({title:book.title,label:book.author})),
+   ...originals.map(book=>({title:book.title,label:book.genre})),
+  ]);
+ },[]);
+ useEffect(()=>{
+  const open=(event:Event)=>{
+   const action=(event as CustomEvent<AppAction>).detail;
+   if(!action||!sections.some(([key])=>key===action.section))return;
+   setSettings(false);setPlayground(false);setOnePage(action.section as OnePage);
+   if(action.section==='settings')setSettingsTab('general');
+   if(action.section==='music'&&action.mode)window.dispatchEvent(new CustomEvent('barq-music-mode',{detail:action.mode}));
+  };
+  window.addEventListener('barq-app-navigate',open);
+  return()=>window.removeEventListener('barq-app-navigate',open);
+ },[]);
+
  useEffect(()=>{
   void refreshComputerVoiceConsent();
   const onFocus=()=>{void refreshComputerVoiceConsent()};
@@ -110,16 +139,18 @@ export default function App(){
   if(page==='settings'){setSettingsTab('general');setSettings(false);}
   setOnePage(page);setPlayground(false);
  };
+ const renderSection=(page:Exclude<OnePage,'chat'|'settings'>)=><BarqOne page={page} providers={providers} onVoice={openConsentedVoiceSession} onNavigate={navigateOne}
+   onModels={()=>{setSettingsTab('models');setSettings(true)}} onAssistantSettings={()=>{setSettingsTab('assistant');setSettings(true)}}
+   onQuick={command=>{navigateOne('chat');setPrefill(command)}}/>;
  return <div data-release-marker="v2.41.0-build-gated-ui" className="ops-shell" dir={language==='ar'?'rtl':'ltr'}>
   <OperationsHeader page={onePage} navigate={navigateOne} search={()=>setPalette(true)} settings={()=>navigateOne('settings')}/>
   <div className={playground?'hidden':'ops-body'} dir="ltr">
    <OperationsRail page={onePage} navigate={navigateOne} newChat={()=>{newChat();navigateOne('chat')}} onDelete={setDeleteId} onPlayground={openPlayground}/>
    <main className="ops-stage" dir={language==='ar'?'rtl':'ltr'} aria-label={language==='ar'?'مساحة التطبيق':'Application workspace'}>
+    {media&&<div hidden={onePage!==media} className="ops-media-page" key={media}>{renderSection(media)}</div>}
     {onePage==='settings'?<SettingsModal embedded open initialTab={settingsTab} onWorkspace={()=>navigateOne('chat')} onClose={()=>navigateOne('center')}/>
     :onePage!=='chat'?<>
-      <BarqOne page={onePage} providers={providers} onVoice={openConsentedVoiceSession} onNavigate={navigateOne}
-       onModels={()=>{setSettingsTab('models');setSettings(true)}} onAssistantSettings={()=>{setSettingsTab('assistant');setSettings(true)}}
-       onQuick={command=>{navigateOne('chat');setPrefill(command)}}/>
+      {onePage!=='watch'&&onePage!=='music'&&renderSection(onePage)}
       <VoiceResultsStrip/>
     </>:<>
       <ConversationHeader onDelete={()=>{if(id)setDeleteId(id)}} onVoice={()=>navigateOne('voice')} onNew={()=>{newChat();navigateOne('chat')}}/>

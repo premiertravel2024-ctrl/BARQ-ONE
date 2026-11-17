@@ -163,3 +163,13 @@
 @media(prefers-reduced-motion:reduce){
  .ops-shell button,.bs-card,.bm-player button,.bws-wallpaper{transition:none!important;animation:none!important}
 }
+
+.ops-header-actions .ops-ask-barq {
+ display:inline-flex; align-items:center; gap:6px; background:#302234; color:#ffc6de;
+}
+.ops-header-actions .ops-ask-barq:hover { background:#62334a; }
+@media(max-width:730px) {
+ .ops-ask-barq span { display:none; }
+}
+.ops-stage > .ops-media-page:not([hidden]) { display:flex; flex:1; min-height:0; min-width:0; }
+.ops-media-page > .one-page { flex:1; min-width:0; }

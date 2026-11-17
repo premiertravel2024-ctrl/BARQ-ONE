@@ -4,6 +4,7 @@ import {requestJSON} from '../lib/backend';
 import './musicServices.css';
 
 type Provider='spotify'|'anghami';
+export type RoomTrack={provider:Provider;kind:string;id:string;title:string};
 type Embed={src:string;page:string;title:string;kind:string};
 const SPOTIFY_KINDS=new Set(['track','album','playlist','artist','episode','show']);
 const ANGHAMI_KINDS=new Set(['song','album','playlist','artist']);
@@ -50,7 +51,7 @@ const pageUrl=(provider:Provider,item:Release)=>(provider==='spotify'?'https://o
 const kindLabel=(kind:string,ar:boolean)=>({track:ar?'أغنية':'Track',song:ar?'أغنية':'Track',album:ar?'ألبوم':'Album',artist:ar?'فنان':'Artist',playlist:ar?'قائمة تشغيل':'Playlist'}[kind]||kind);
 const itemKey=(item:Release)=>item.kind+'/'+item.id;
 
-export function MusicServices({provider,ar}:{provider:Provider;ar:boolean}){
+export function MusicServices({provider,ar,onSelected,onShare}:{provider:Provider;ar:boolean;onSelected:(title:string)=>void;onShare:(track:RoomTrack)=>void}){
  const brand=provider==='spotify'?'Spotify':ar?'أنغامي':'Anghami';
  const [query,setQuery]=useState('');
  const [searched,setSearched]=useState('');
@@ -58,7 +59,7 @@ export function MusicServices({provider,ar}:{provider:Provider;ar:boolean}){
  const [busy,setBusy]=useState(false);
  const [indexUnavailable,setIndexUnavailable]=useState(false);
  const [error,setError]=useState('');
- const [selection,setSelection]=useState<{embed:Embed;title:string;artist?:string}>();
+ const [selection,setSelection]=useState<{embed:Embed;title:string;artist?:string;track?:RoomTrack}>();
  const pending=useRef<AbortController>();
  const player=useRef<HTMLElement>(null);
  useEffect(()=>()=>pending.current?.abort(),[]);
@@ -66,7 +67,9 @@ export function MusicServices({provider,ar}:{provider:Provider;ar:boolean}){
  function select(item:Release){
   const embed=officialEmbed(pageUrl(provider,item),provider);
   if(!embed)return;
-  setSelection({embed,title:item.title,artist:item.artist});
+  const shareable=provider==='anghami'||['track','album','playlist'].includes(item.kind);
+  setSelection({embed,title:item.title,artist:item.artist,track:shareable?{provider,kind:item.kind,id:item.id,title:item.title}:undefined});
+  onSelected(item.title);
   requestAnimationFrame(()=>player.current?.focus());
  }
 
@@ -96,6 +99,7 @@ export function MusicServices({provider,ar}:{provider:Provider;ar:boolean}){
     if(abort.signal.aborted)return;
     if(!embed)throw new Error('Invalid link');
     setSelection({embed,title:brand});
+    onSelected(brand);
     requestAnimationFrame(()=>player.current?.focus());
     return;
    }
@@ -155,6 +159,7 @@ export function MusicServices({provider,ar}:{provider:Provider;ar:boolean}){
    <section ref={player} tabIndex={-1} className="bm-service-player" aria-label={ar?'المشغّل الرسمي':'Official player'}>
     {selection?<><div className="bm-service-player-title">
      <div><strong dir="auto">{selection.title}</strong>{selection.artist&&<small dir="auto">{selection.artist}</small>}</div>
+     {selection.track&&<button type="button" className="bm-share-song" onClick={()=>onShare(selection.track!)}>{ar?'شارك في الغرفة':'Share in room'}</button>}
      <a href={selection.embed.page} target="_blank" rel="noopener noreferrer"><ExternalLink size={15}/>{ar?'افتح في الخدمة':'Open in service'}</a>
     </div>
     <iframe key={selection.embed.src} src={selection.embed.src+(provider==='anghami'?'?theme=fulldark&layout=wide&lang='+(ar?'ar':'en'):'')} title={selection.embed.title+' '+selection.embed.kind+' player'}

@@ -58,3 +58,8 @@
 @media (prefers-reduced-motion: reduce) { .bm-release { transition: none; } }
 
 .bm-player > .bm-service { margin-block-start: 10px; }
+.bm-service .bm-share-song { padding: 7px 10px; color: var(--provider); border: 1px solid currentColor; border-radius: 8px; min-height: 38px; font-size: .78rem; }
+.bm-service .bm-share-song:hover { background: var(--provider-tint); }
+.barq-room-track-selection { display:flex; align-items:center; flex-wrap:wrap; gap:12px; margin-block:8px; }
+.barq-room-track-selection div { display:grid; gap:3px; }
+.barq-room-track-selection small, .barq-room-track-selection [role="status"] { color:#c1b8cc; font-size:.8rem; }

@@ -1,13 +1,14 @@
 import {useEffect,useMemo,useRef,useState,type ChangeEvent} from 'react';
-import {ArrowLeft,ArrowRight,BookOpen,Check,ChevronLeft,ChevronRight,Clock3,Headphones,Heart,Minus,Pause,Play,Plus,Search,Sparkles,Square,Upload,WandSparkles,X} from 'lucide-react';
+import {ArrowLeft,ArrowRight,Bookmark,BookOpen,Check,ChevronLeft,ChevronRight,Clock3,Headphones,Heart,Minus,Pause,Play,Plus,Search,Sparkles,Square,Upload,WandSparkles,X} from 'lucide-react';
 import {streamChat} from '../lib/backend';
 import {useApp,uid,type Message} from '../store';
 import {Modal} from '../components/ui/Modal';
 import {originals,type BarqStory,type StoryChapter,type StoryMood} from './barqStoriesData';
-import {publishedBooks} from './publishedBooks';
+import {useAppView} from '../lib/appContext';
+import {publishedBooks,type PublishedBook} from './publishedBooks';
 import './barqStories.css';
 
-type Shelf={stories:BarqStory[];favorites:string[];progress:Record<string,number>};
+type Shelf={stories:BarqStory[];favorites:string[];progress:Record<string,number>;bookmarks:Record<string,number[]>};
 const KEY='barq-stories-v1';
 const genres=[
  ['الكل','All'],['سلاسل مصرية','Egyptian series'],['روايات مصرية','Egyptian books'],['روايات عالمية','World literature'],
@@ -21,8 +22,9 @@ function readShelf():Shelf{
   const data=JSON.parse(localStorage.getItem(KEY)||'{}') as Partial<Shelf>;
   return {stories:(Array.isArray(data.stories)?data.stories:[]).filter(s=>s&&typeof s.id==='string'&&typeof s.title==='string'&&Array.isArray(s.chapters)&&s.chapters.every(c=>typeof c.body==='string'&&typeof c.title==='string')).slice(0,80),
    favorites:(Array.isArray(data.favorites)?data.favorites:[]).filter((x):x is string=>typeof x==='string'),
-   progress:data.progress&&typeof data.progress==='object'?data.progress:{}};
- }catch{return {stories:[],favorites:[],progress:{}}}
+   progress:data.progress&&typeof data.progress==='object'?data.progress:{},
+   bookmarks:data.bookmarks&&typeof data.bookmarks==='object'?data.bookmarks:{}};
+ }catch{return {stories:[],favorites:[],progress:{},bookmarks:{}}}
 }
 function Cover({story,mini=false}:{story:BarqStory;mini?:boolean}){
  return <div className={'bs-cover bs-'+story.mood+(mini?' bs-mini':'')} aria-hidden="true">
@@ -48,6 +50,10 @@ export function BarqStories(){
  const [query,setQuery]=useState(''),[genre,setGenre]=useState('الكل'),[opened,setOpened]=useState<string|null>(null);
  const [creating,setCreating]=useState(false),[idea,setIdea]=useState(''),[ideaGenre,setIdeaGenre]=useState('فانتازيا');
  const [error,setError]=useState(''),[notice,setNotice]=useState(''),[busy,setBusy]=useState(false);
+ const [series,setSeries]=useState<PublishedBook>();
+ const [readerTheme,setReaderTheme]=useState<'night'|'paper'>(()=>{
+  try{return localStorage.getItem('barq-reader-theme')==='paper'?'paper':'night';}catch{return 'night';}
+ });
  const [font,setFont]=useState(19),[speaking,setSpeaking]=useState(false),[paused,setPaused]=useState(false);
  const fileInput=useRef<HTMLInputElement>(null),reader=useRef<HTMLElement>(null);
  const abortAI=useRef<AbortController|null>(null),abortSpeech=useRef<AbortController|null>(null);
@@ -59,13 +65,25 @@ export function BarqStories(){
  const terms=searchable(query.trim()).split(/\s+/);
  const includes=(...parts:string[])=>terms.every(term=>searchable(parts.join(' ')).includes(term));
  const matches=items.filter(x=>(genre==='الكل'||(genre==='مكتبتي'?x.source!=='original'||shelf.favorites.includes(x.id):x.genre===genre))&&includes(x.title,x.summary,x.author));
- const recents=items.filter(s=>(shelf.progress[s.id]||0)>0);
+ const recents=items.filter(s=>Object.hasOwn(shelf.progress,s.id));
  const realMatches=publishedBooks.filter(book=>{
   const visible=genre==='الكل'||genre===book.category||genre===book.genre||
    (genre==='سلاسل مصرية'&&book.series)||(genre==='مكتبتي'&&shelf.favorites.includes(book.id));
   return visible&&includes(book.title,book.author,book.description,book.genre);
  });
  const label=(a:string,b:string)=>ar?a:b;
+ const bookmarks=book&&Array.isArray(shelf.bookmarks[book.id])?shelf.bookmarks[book.id]:[];
+ useAppView('stories',{mode:book?'reader':series?'series':'catalogue',item:book?.title||series?.title,
+  count:book?currentIndex+1:realMatches.length,status:speaking?(paused?'narration paused':'narrating'):undefined});
+ function toggleBookmark(){
+  if(!book)return;
+  setShelf(previous=>({...previous,bookmarks:{...previous.bookmarks,
+   [book.id]:bookmarks.includes(currentIndex)?bookmarks.filter(index=>index!==currentIndex):[...bookmarks,currentIndex]}}));
+ }
+ function changeTheme(){
+  const next=readerTheme==='night'?'paper':'night';setReaderTheme(next);
+  try{localStorage.setItem('barq-reader-theme',next);}catch{/* Reading stays available. */}
+ }
  useEffect(()=>{try{localStorage.setItem(KEY,JSON.stringify(shelf))}catch{setError('مش قادر أحفظ المكتبة محليًا. راجع المساحة المتاحة على الجهاز.')}},[shelf]);
  useEffect(()=>()=>{abortAI.current?.abort();abortSpeech.current?.abort();playingAudio.current?.pause()},[]);
  function stopVoice(){
@@ -74,7 +92,7 @@ export function BarqStories(){
   if(active){active.pause();active.dispatchEvent(new Event('ended'));playingAudio.current=null;}
   setSpeaking(false);setPaused(false);
  }
- function openBook(id:string){stopVoice();setError('');setOpened(id);}
+ function openBook(id:string){stopVoice();setError('');setOpened(id);setShelf(previous=>Object.hasOwn(previous.progress,id)?previous:{...previous,progress:{...previous.progress,[id]:0}});}
  function changeChapter(delta:number){
   if(!book)return;stopVoice();const next=Math.min(book.chapters.length-1,Math.max(0,currentIndex+delta));
   setShelf(prev=>({...prev,progress:{...prev.progress,[book.id]:next}}));reader.current?.scrollTo({top:0,behavior:'smooth'});
@@ -176,7 +194,8 @@ export function BarqStories(){
       <div className="bs-real-grid">{realMatches.map(novel=><article className="bs-real-card bs-published-card" key={novel.id} data-genre={novel.genre}>
        <div className="bs-real-cover" aria-hidden="true"><span>{novel.series?label('سلسلة','Series'):novel.year||label('رواية','Novel')}</span><BookOpen size={24}/><strong>{novel.title.split(' / ')[0]}</strong><small>{novel.author}</small></div>
        <div className="bs-real-copy"><span>{novel.genre}</span><h4 dir="auto">{novel.title}</h4><strong dir="auto">{novel.author}</strong><p>{novel.description}</p>
-        <div className="bs-published-actions"><a href={novel.url} title={novel.publisher} target="_blank" rel="noopener noreferrer">{novel.series?label('أعداد السلسلة','Browse issues'):novel.store?label('صفحة الكتاب','Book page'):label('افتح الكتاب','Open book')}<ArrowLeft size={15}/></a>
+        <div className="bs-published-actions">{novel.series?<button className="bs-series-open" type="button" onClick={()=>setSeries(novel)}>{label('أعداد السلسلة','Browse issues')}<ArrowLeft size={15}/></button>:
+         <a href={novel.url} title={novel.publisher} target="_blank" rel="noopener noreferrer">{novel.store?label('صفحة الكتاب','Book page'):label('افتح الكتاب','Open book')}<ArrowLeft size={15}/></a>}
          <button className="bs-favorite" type="button" aria-label={label('احفظ ','Save ')+novel.title} aria-pressed={shelf.favorites.includes(novel.id)} onClick={()=>fav(novel.id)}><Heart size={17} fill={shelf.favorites.includes(novel.id)?'currentColor':'none'}/></button></div></div>
       </article>)}</div>
      </section>}
@@ -190,14 +209,18 @@ export function BarqStories(){
      </div>
     </article>)}</div>:realMatches.length?null:<div className="bs-empty"><BookOpen size={32}/><strong>{label('مفيش حكايات مطابقة','No stories found')}</strong><p>{label('جرّب تصنيف أو بحث مختلف.','Try another search or category.')}</p></div>}
    </section></div>
-  :<section className="bs-reader" ref={reader}>
+  :<section className="bs-reader" data-reader-theme={readerTheme} ref={reader}>
     <aside className="bs-reader-sidebar"><Cover story={book}/><div className="bs-book-about"><span>{book.genre}</span><h2>{book.title}</h2><p>{book.summary}</p>
      <div className="bs-book-actions"><button onClick={()=>fav(book.id)} aria-pressed={shelf.favorites.includes(book.id)}><Heart size={16} fill={shelf.favorites.includes(book.id)?'currentColor':'none'}/>{label('المفضلة','Favorite')}</button></div>
-    </div><div className="bs-chapters"><h3>{label('الفصول','Chapters')}</h3>{book.chapters.map((c,i)=><button type="button" key={i} aria-current={i===currentIndex?'step':undefined} onClick={()=>{stopVoice();setShelf(prev=>({...prev,progress:{...prev.progress,[book.id]:i}}))}}><span>{String(i+1).padStart(2,'0')}</span>{c.title}</button>)}</div>
+    </div><div className="bs-chapters"><h3>{label('الفصول','Chapters')}</h3>{book.chapters.map((c,i)=><button type="button" key={i} aria-current={i===currentIndex?'step':undefined} onClick={()=>{stopVoice();setShelf(prev=>({...prev,progress:{...prev.progress,[book.id]:i}}))}}><span>{String(i+1).padStart(2,'0')}</span>{c.title}{bookmarks.includes(i)&&<Bookmark size={14} fill="currentColor" aria-label={label('عليه علامة','Bookmarked')}/>}</button>)}</div>
    </aside>
    <div className="bs-reader-main">
     <div className="bs-reader-toolbar"><span><BookOpen size={16}/>{label('وضع القراءة','READING MODE')}</span>
      <div><button type="button" disabled={font<=15} onClick={()=>setFont(f=>f-1)} aria-label={label('تصغير الخط','Decrease font size')}><Minus size={17}/></button><span>{font}px</span><button type="button" disabled={font>=25} onClick={()=>setFont(f=>f+1)} aria-label={label('تكبير الخط','Increase font size')}><Plus size={17}/></button></div></div>
+    <div className="bs-reading-options">
+     <button type="button" onClick={toggleBookmark} aria-pressed={bookmarks.includes(currentIndex)}><Bookmark size={16} fill={bookmarks.includes(currentIndex)?'currentColor':'none'}/>{label('علّم الفصل','Bookmark chapter')}</button>
+     <button type="button" onClick={changeTheme}>{readerTheme==='night'?label('ورق فاتح','Light paper'):label('قراءة ليلية','Night reading')}</button>
+    </div>
     <div className="bs-article"><div className="bs-chapter-label">{label('الفصل','CHAPTER')} {String(currentIndex+1).padStart(2,'0')} / {book.chapters.length}</div>
      <h1>{chapter?.title}</h1><div className="bs-chapter-decoration">✦ ━━━ ✦</div>
      <div className="bs-prose" lang="ar" dir="rtl" style={{fontSize:font+'px'}}>{chapter?.body.split(/\n\s*\n/g).map((paragraph,i)=><p key={i}>{paragraph}</p>)}</div>
@@ -214,6 +237,18 @@ export function BarqStories(){
     <div className="bs-voice-hint">{label('التشغيل بيحتاج ضبط خدمة الصوت في برق.','Requires BARQ voice service to be configured.')}</div>
    </aside>
    </section>}
+  <Modal open={!!series} onClose={()=>setSeries(undefined)} title={series?.title||''}>
+   {series&&<section className="bs-series-detail" dir={ar?'rtl':'ltr'}>
+    <strong>{series.author}</strong><p>{series.description}</p>
+    {!!series.issues?.length&&<>
+     <h3>{label('ابدأ من أول عدد','Start with the first issues')}</h3>
+     <ol>{series.issues.map(issue=><li key={issue.number}>
+      <a href={issue.url} target="_blank" rel="noopener noreferrer"><span>{issue.number}</span>{issue.title}<ArrowLeft size={15}/></a>
+     </li>)}</ol>
+    </>}
+    <a className="bs-primary" href={series.url} target="_blank" rel="noopener noreferrer">{label('كل الأعداد عند الناشر','All issues at the publisher')}</a>
+   </section>}
+  </Modal>
   <Modal open={creating} onClose={()=>{if(!busy)setCreating(false)}} title={label('اصنع حكايتك مع برق','Create a story with BARQ')} wide>
    <form className="bs-create-modal" onSubmit={e=>{e.preventDefault();void create()}}><div className="bs-create-icon"><WandSparkles size={27}/></div>
     <p>{label('اختار نوع الحكاية واحكي لبرق فكرتك. هيكتب الفصل الأول وتقدر تختار مسار الفصول اللي بعده.','Pick a genre and describe your idea. BARQ writes chapter one and offers choices for what happens next.')}</p>

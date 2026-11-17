@@ -1,3 +1,4 @@
+import {useAppView} from '../lib/appContext';
 import {useEffect,useState} from 'react';
 import {Thermometer,MemoryStick,HardDrive,Activity,AudioLines,Cpu,Download,LayoutDashboard,LibraryBig,MessageSquare,Radio,Search,Settings2,Star,Terminal,Timer,Workflow,CircleDot,Package,Image,Shield,Headphones} from 'lucide-react';
 import {requestJSON,type RouterProvider} from '../lib/backend';
@@ -99,6 +100,7 @@ function OpenHub({mode}:{mode:'library'|'installed'|'tools'}){
  const categories=[...new Set(items.map(item=>item.category))];
  const shown=items.filter(item=>(!category||item.category===category)&&(!onlyFavorites||stars.includes(item.id))&&
   (item.name+' '+item.id+' '+(item.description_ar||'')+' '+(item.description_en||'')).toLowerCase().includes(query.trim().toLowerCase()));
+ useAppView(mode,{item:detail?.name,count:catalog?shown.length:undefined,status:busy?'working':error?'unavailable':undefined});
  const chosen=items.filter(item=>selected.includes(item.id));
  function star(id:string){
   const next=stars.includes(id)?stars.filter(x=>x!==id):[...stars,id];setStars(next);
@@ -244,6 +246,7 @@ function MonitorPanel({full=false}:{full?:boolean}){
   {label:ar?'الذاكرة':'Memory',unit:'%',read:memory,icon:MemoryStick},
   {label:ar?'مساحة القرص المستخدمة':'Disk space used',unit:'%',read:v=>v?.disk_percent,icon:HardDrive},
  ];
+ useAppView('monitor',{status:error?'update unavailable':updated?'live readings':'loading'});
  return <section className="one-surface one-telemetry" dir={ar?'rtl':'ltr'}>
   <div className="one-section-head"><div><p className="one-eyebrow">BARQ / SYSTEM VITALS</p><h2>{ar?'نبض الجهاز':'System vitals'}</h2></div>
    <span className="one-telemetry-status" data-stale={error}>{error?(ar?'انقطع التحديث':'Update unavailable'):updated?(ar?'قراءات مباشرة':'Live readings'):(ar?'جاري قراءة الجهاز…':'Reading sensors…')}</span></div>

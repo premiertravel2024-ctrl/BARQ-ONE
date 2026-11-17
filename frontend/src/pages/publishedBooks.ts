@@ -1,13 +1,13 @@
-type PublishedBook={
+export type PublishedBook={
  id:string;title:string;author:string;category:string;genre:string;
- publisher:string;url:string;description:string;year?:number;series?:boolean;store?:boolean;
+ publisher:string;url:string;description:string;year?:number;series?:boolean;store?:boolean;issues?:{number:number;title:string;url:string}[];
 };
-const series=(id:string,title:string,author:string,genre:string,url:string,description:string):PublishedBook=>({
- id,title,author,genre,url,description,category:'روايات مصرية',publisher:'روايات مصرية للجيب',series:true,
+const series=(id:string,title:string,author:string,genre:string,url:string,description:string,issues?:PublishedBook['issues']):PublishedBook=>({
+ id,title,author,genre,url,description,issues,category:'روايات مصرية',publisher:'روايات مصرية للجيب',series:true,
 });
 export const publishedBooks:PublishedBook[]=[
- series('paranormal','ما وراء الطبيعة','أحمد خالد توفيق','رعب','https://rewayatmasreya.com/collections/ma-waraa-al-tabia-ahmed-khaled-tawfik','حكايات رفعت إسماعيل مع الأساطير والظواهر الخارقة.'),
- series('impossible','رجل المستحيل','نبيل فاروق','مغامرة','https://rewayatmasreya.com/collections/ragol-al-mostaheel-nabil-farouk','أدهم صبري في مهمات المخابرات والمطاردات.'),
+ series('paranormal','ما وراء الطبيعة','أحمد خالد توفيق','رعب','https://rewayatmasreya.com/collections/ma-waraa-al-tabia-ahmed-khaled-tawfik','حكايات رفعت إسماعيل مع الأساطير والظواهر الخارقة.', [{"number": 1, "title": "مصاص الدماء وأسطورة الرجل الذئب", "url": "https://rewayatmasreya.com/products/مصاص-الدماء-وأسطورة-الرجل-الذئب-1-ما-ورا"}, {"number": 2, "title": "أسطورة النداهة", "url": "https://rewayatmasreya.com/products/أسطورة-النداهة-2-ما-وراء-الطبيعة"}, {"number": 3, "title": "أسطورة وحش البحيرة", "url": "https://rewayatmasreya.com/products/أسطورة-وحش-البحيرة-3-ما-وراء-الطبيعة"}]),
+ series('impossible','رجل المستحيل','نبيل فاروق','مغامرة','https://rewayatmasreya.com/collections/ragol-al-mostaheel-nabil-farouk','أدهم صبري في مهمات المخابرات والمطاردات.', [{"number": 1, "title": "الاختفاء الغامض", "url": "https://rewayatmasreya.com/products/الاختفاء-الغامض-1-رجل-المستحيل"}, {"number": 2, "title": "سباق الموت", "url": "https://rewayatmasreya.com/products/سباق-الموت-2-رجل-المستحيل"}, {"number": 3, "title": "قناع الخطر", "url": "https://rewayatmasreya.com/products/قناع-الخطر-3-سلسلة-رجل-المستحيل"}]),
  series('future','ملف المستقبل','نبيل فاروق','خيال علمي','https://rewayatmasreya.com/collections/malaf-al-mostaqbal','نور الدين وفريقه في مغامرات علمية وألغاز مستقبلية.'),
  series('fantasia','فانتازيا','أحمد خالد توفيق','فانتازيا','https://rewayatmasreya.com/collections/فانتازيا','عبير تستكشف عوالم الأدب والتاريخ والخيال.'),
  series('safari','سافاري','أحمد خالد توفيق','مغامرة','https://rewayatmasreya.net/series/سافاري/','طبيب مصري يواجه أمراضًا وألغازًا في مغامراته بأفريقيا.'),

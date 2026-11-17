@@ -1,3 +1,4 @@
+from voice.app_tools import LIVE_APP_TOOLS
 from voice.brain_bridge import LIVE_BARQ_TOOLS
 """Opt-in natural voice contract: no wake word, no tools by default; actions with consent."""
 import asyncio
@@ -77,7 +78,7 @@ def test_open_conversation_two_realtime_audio_replies_and_policy_gate(
     from voice.live import LIVE_REPOSITORY_TOOLS
     # Public info and repository *preview* tools are available in every call;
     # only audited desktop-control tools require both explicit permissions.
-    assert cfg['tools']==LIVE_BARQ_TOOLS + LIVE_PUBLIC_TOOLS + LIVE_REPOSITORY_TOOLS + (LIVE_COMPUTER_TOOLS if tools_allowed else [])
+    assert cfg['tools']==LIVE_BARQ_TOOLS + LIVE_PUBLIC_TOOLS + LIVE_REPOSITORY_TOOLS + LIVE_APP_TOOLS + (LIVE_COMPUTER_TOOLS if tools_allowed else [])
     assert 'prepare_github_repository' in str(cfg['tools'])
     assert ('open_on_computer' in str(cfg['tools'])) is tools_allowed
     assert cfg['realtime_input_config']['automatic_activity_detection']['silence_duration_ms']==900

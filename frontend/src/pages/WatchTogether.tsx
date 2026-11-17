@@ -1,8 +1,10 @@
-import {useEffect, useRef, useState} from 'react';
+import {useCallback, useEffect, useRef, useState} from 'react';
 import {Copy, ExternalLink, Headphones, Link2, Radio, Video, XCircle} from 'lucide-react';
 import {requestJSON} from '../lib/backend';
 import {useApp} from '../store';
 import {Modal} from '../components/ui/Modal';
+import {useAppView} from '../lib/appContext';
+import type {RoomTrack} from './MusicServices';
 import {CinemaDiscovery} from './CinemaDiscovery';
 
 type Mode = 'video' | 'music';
@@ -18,6 +20,7 @@ type Room = {
 };
 
 const joinPrefix = 'BARQ-';
+function WatchContext({status}:{status:string}){useAppView('watch',{mode:'room',status});return null;}
 const post = (body: unknown): RequestInit => ({method: 'POST', body: JSON.stringify(body)});
 
 function parseInvite(value: string) {
@@ -30,7 +33,7 @@ function parseInvite(value: string) {
   return {guest_url, code};
 }
 
-export function WatchTogether({mode = 'video'}: {mode?: Mode}) {
+export function WatchTogether({mode = 'video',track,onRoomState}: {mode?: Mode;track?:RoomTrack;onRoomState?:(status:string)=>void}) {
   const ar = useApp(s => s.language) === 'ar';
   const [room, setRoom] = useState<Room | null>(null);
   const [guest, setGuest] = useState('');
@@ -41,6 +44,47 @@ export function WatchTogether({mode = 'video'}: {mode?: Mode}) {
   const [joinOpen, setJoinOpen] = useState(false);
   const [hostOpen, setHostOpen] = useState(false);
   const current = room?.mode === mode ? room : null;
+  const frame=useRef<HTMLIFrameElement>(null);
+  const pendingShare=useRef('');
+  const sharedSelection=useRef(false);
+  const [trackStatus,setTrackStatus]=useState('');
+  const roomStatus=guest?'guest':current?(current.guest_connected?'guest connected':'waiting for guest'):'no active room';
+  useEffect(()=>onRoomState?.(roomStatus),[roomStatus,onRoomState]);
+  useEffect(()=>{setTrackStatus('');pendingShare.current='';sharedSelection.current=false;},[track,current?.room_id]);
+  useEffect(()=>{
+    if(!current||!track||guest)return;
+    const origin=new URL(current.host_url,window.location.href).origin;
+    const onResult=(event:MessageEvent)=>{
+      if(event.origin!==origin||event.source!==frame.current?.contentWindow||
+         event.data?.type!=='barq-room-track-result'||!pendingShare.current||event.data.id!==pendingShare.current)return;
+      pendingShare.current='';
+      sharedSelection.current=event.data.ok===true;
+      setTrackStatus(event.data.ok
+        ?(ar?'الأغنية ظهرت في الغرفة. كل مشارك يقدر يشغّلها عنده.':'The track is in the room. Each participant can play it.')
+        :(ar?'استنى لحد ما الغرفة تتصل واضغط مشاركة تاني.':'Wait for the room connection, then retry sharing.'));
+    };
+    window.addEventListener('message',onResult);
+    return()=>window.removeEventListener('message',onResult);
+  },[ar,current?.host_url,track,guest]);
+  const sendTrack=useCallback(()=>{
+    if(!frame.current?.contentWindow||!current||!track||guest||pendingShare.current||sharedSelection.current)return;
+    const id=crypto.randomUUID();
+    pendingShare.current=id;
+    setTrackStatus(ar?'جاري إرسال الاختيار للمشغّل…':'Sending the selection to the player…');
+    frame.current.contentWindow.postMessage({type:'barq-room-track',id,track:{
+      provider:track.provider,kind:track.kind,id:track.id,
+    }},new URL(current.host_url,window.location.href).origin);
+    window.setTimeout(()=>{
+      if(pendingShare.current!==id)return;
+      pendingShare.current='';
+      setTrackStatus(ar?'المشغّل لسه ما أكدش المشاركة. جرّب تاني.':'The player has not confirmed the share. Please retry.');
+    },4500);
+  },[ar,current?.host_url,track,guest]);
+  useEffect(()=>{
+    if(!track||!current||guest)return;
+    const timer=window.setTimeout(sendTrack,1000);
+    return()=>window.clearTimeout(timer);
+  },[track,current?.room_id,guest,sendTrack]);
   const roomId = room?.room_id;
   const mutation = useRef(0);
   const busyRef = useRef(false);
@@ -151,6 +195,11 @@ export function WatchTogether({mode = 'video'}: {mode?: Mode}) {
         <button className="bc-primary" type="submit" disabled={busy||!invite.trim()}>{ar?'دخول الغرفة':'Join room'}</button>
       </form>
     </Modal>}
+    {music&&track&&<section className="barq-media-panel barq-room-track-selection">
+      <div><strong dir="auto">{track.title}</strong><small>{track.provider==='spotify'?'Spotify':'Anghami'}</small></div>
+      {current&&!guest&&<button type="button" disabled={sharedSelection.current} onClick={sendTrack}>{sharedSelection.current?(ar?'اتشارك':'Shared'):(ar?'شارك الاختيار':'Share selection')}</button>}
+      <span role="status">{trackStatus||(!current?(ar?'افتح غرفة علشان تشارك الاختيار.':'Host a room to share this selection.'):'')}</span>
+    </section>}
     {error && <p className="barq-media-error" role="alert">{error}</p>}
     {!room && !guest && music && <div className="barq-room-entry">
       <section className={'barq-media-panel barq-watch-choose-panel'+(music?' bma-choose':'')}>
@@ -194,13 +243,14 @@ export function WatchTogether({mode = 'video'}: {mode?: Mode}) {
         <button onClick={() => void copy(current.guest_url + '#' + current.room_code)} aria-label={ar ? 'نسخ رابط المتصفح' : 'Copy browser link'}><Copy size={16}/></button>
       </section>}
     </>}
+    {!music&&(guest||current)&&<WatchContext status={roomStatus}/>}
     {(guest || current) && <section className="barq-room-frame barq-watch-player">
       <div className="barq-watch-player-top">
         <div><Icon size={17}/><strong>{music ? (ar ? 'مشغّل الموسيقى' : 'Music player') : (ar ? 'مشغّل المشاهدة' : 'Video player')}</strong></div>
         {!music && <span>{ar ? 'ملء الشاشة من داخل المشغّل' : 'Fullscreen inside player'}</span>}
         {guest && <button onClick={() => setGuest('')}><XCircle size={16}/>{ar ? 'مغادرة الغرفة' : 'Leave room'}</button>}
       </div>
-      <iframe title={ar ? 'مشغّل الغرفة' : 'Room player'} src={guest || current?.host_url} allow="autoplay; encrypted-media; fullscreen; picture-in-picture" allowFullScreen referrerPolicy="no-referrer"/>
+      <iframe ref={frame} title={ar ? 'مشغّل الغرفة' : 'Room player'} src={guest || current?.host_url} allow="autoplay; encrypted-media; fullscreen; picture-in-picture" allowFullScreen referrerPolicy="no-referrer"/>
     </section>}
   </div>;
 }

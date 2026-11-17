@@ -59,3 +59,15 @@
   .bs-hub .bs-catalog-hero { grid-template-columns: 1fr; gap: 5px; }
   .bs-hero-books { min-height: 122px; }
 }
+
+.bs-reading-options { display:flex; justify-content:flex-end; gap:7px; flex-wrap:wrap; padding: 4px 10px; }
+.bs-reading-options button, .bs-series-open { display:inline-flex; align-items:center; gap:6px; padding:6px 9px; min-height:36px; border-radius:8px; border:1px solid #745666; color:#ffd5e4; }
+.bs-reading-options button[aria-pressed="true"] { background:#72344f; }
+.bs-reader[data-reader-theme="paper"] .bs-article { background:#eee2cd;color:#2d221f;border-radius:12px; }
+.bs-reader[data-reader-theme="paper"] .bs-prose { color:#332923; }
+.bs-reader[data-reader-theme="paper"] .bs-chapter-label { color:#733548; }
+.bs-series-detail { display:grid; gap:12px; }
+.bs-series-detail ol { display:grid; gap:5px; }
+.bs-series-detail li a { display:flex; gap:9px; align-items:center; padding:8px 10px; border:1px solid #725568; border-radius:8px; }
+.bs-series-detail li span { color:#f5b4cf; }
+.bs-series-detail > a { justify-self:start; }

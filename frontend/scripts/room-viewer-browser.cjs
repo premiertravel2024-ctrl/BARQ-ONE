@@ -17,11 +17,13 @@ fs.mkdirSync(pictures,{recursive:true});
    page.on('pageerror',e=>pageErrors.push(e.message));
    await page.addInitScript(()=>{
     window.__roomSent=[];
+    window.__roomOpenCount=0;
     class FakeSocket{
      static OPEN=1;
      static CONNECTING=0;
      readyState=0;
-     constructor(url){this.url=url;setTimeout(()=>{
+     constructor(url){this.url=url;window.__roomSocket=this;setTimeout(()=>{
+       window.__roomOpenCount++;
        this.readyState=FakeSocket.OPEN;
        this.onopen?.();
        this.onmessage?.({data:JSON.stringify({type:'ready',ice_servers:[]})});
@@ -61,6 +63,12 @@ fs.mkdirSync(pictures,{recursive:true});
       'connected guest must be able to send chat without peer-joined');
    assert.equal(await page.locator('#chatText').inputValue(),'');
    assert.equal(await page.getByText('رسالة تجربة من الضيف').count(),1);
+   await page.evaluate(()=>{
+    window.__roomSocket.readyState=3;
+    window.__roomSocket.onclose({code:1006});
+   });
+   await page.waitForFunction(()=>window.__roomOpenCount===2);
+   await page.waitForFunction(()=>document.getElementById('status')?.textContent.includes('مستني'));
    assert.deepEqual(pageErrors,[],'room page errors');
    await page.screenshot({path:path.join(pictures,'room-guest-'+label+'.png'),fullPage:true});
    await page.close();

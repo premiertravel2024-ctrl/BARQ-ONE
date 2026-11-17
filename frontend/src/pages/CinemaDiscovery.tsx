@@ -1,5 +1,6 @@
 import {useCallback,useEffect,useState} from 'react';
 import {Bookmark,Clapperboard,Heart,KeyRound,Play,Search,Star,UsersRound} from 'lucide-react';
+import {useAppView} from '../lib/appContext';
 import {requestJSON} from '../lib/backend';
 import {Modal} from '../components/ui/Modal';
 import './cinema.css';
@@ -10,6 +11,35 @@ type Page={results:Title[];page:number;total_pages:number;total_results:number;f
 const key=(t:Title)=>t.kind+':'+t.id;
 function saved(name:string):Title[]{try{const a=JSON.parse(localStorage.getItem(name)||'[]');return Array.isArray(a)?a.filter(x=>x&&typeof x.id==='number'&&['movie','tv'].includes(x.kind)&&typeof x.title==='string'):[];}catch{return [];}}
 function Poster({item}:{item:Title}){const [failed,setFailed]=useState(false);return <span className="bc-image">{item.poster&&!failed?<img src={item.poster} alt="" loading="lazy" onError={()=>setFailed(true)}/>:<Clapperboard size={32}/>}<span className="bc-score"><Star size={12}/>{item.rating===null?'—':item.rating.toFixed(1)}</span></span>;}
+const markets=[['SA','السعودية','Saudi Arabia'],['EG','مصر','Egypt'],['AE','الإمارات','UAE'],['GB','بريطانيا','UK'],['US','أمريكا','US']];
+type Availability={link:string;groups:Record<string,string[]>};
+function WhereToWatch({title,ar}:{title:Title;ar:boolean}){
+ const [region,setRegion]=useState('SA');
+ const [data,setData]=useState<Availability>();
+ const [error,setError]=useState(false);
+ useEffect(()=>{
+  const controller=new AbortController();
+  setData(undefined);setError(false);
+  void requestJSON<Availability>('/v1/cinema/providers/'+title.kind+'/'+title.id+'?region='+region,{signal:controller.signal})
+   .then(setData).catch(()=>{if(!controller.signal.aborted)setError(true);});
+  return()=>controller.abort();
+ },[title.id,title.kind,region]);
+ const labels:Record<string,string>={flatrate:ar?'اشتراك':'Subscription',free:ar?'مجاني':'Free',ads:ar?'بإعلانات':'With ads',rent:ar?'إيجار':'Rent',buy:ar?'شراء':'Buy'};
+ const groups=data?.groups?Object.entries(data.groups).filter(([group,items])=>labels[group]&&items.length):[];
+ return <section className="bc-availability">
+  <div><h3>{ar?'فين تتفرج؟':'Where to watch'}</h3>
+   <select aria-label={ar?'بلد المشاهدة':'Watch region'} value={region} onChange={event=>setRegion(event.target.value)}>
+    {markets.map(([code,arabic,english])=><option key={code} value={code}>{ar?arabic:english}</option>)}
+   </select>
+  </div>
+  {error?<p role="status">{ar?'تعذّر تحميل المنصات.':'Provider listings are unavailable.'}</p>:!data?<p role="status">{ar?'جاري تحميل المنصات…':'Loading providers…'}</p>:!groups.length?
+    <p>{ar?'مفيش منصات مدرجة للبلد ده.':'No providers are listed for this region.'}</p>:
+    <><ul>{groups.map(([group,items])=><li key={group}><strong>{labels[group]}</strong><span>{items.join(' · ')}</span></li>)}</ul>
+     <small>{ar?'بيانات المشاهدة من':'Availability data by'} <a href="https://www.justwatch.com/" target="_blank" rel="noopener noreferrer">JustWatch</a></small>
+     {data.link&&<a className="bc-join" href={data.link} target="_blank" rel="noopener noreferrer">{ar?'شوف خيارات المشاهدة':'View watch options'}</a>}
+    </>}
+ </section>;
+}
 export function CinemaDiscovery({ar,onRoom,onJoin,roomActive}:{ar:boolean;onRoom:()=>void;onJoin:()=>void;roomActive:boolean}){
  const [tab,setTab]=useState('home'),[kind,setKind]=useState<'movie'|'tv'>('movie'),[collection,setCollection]=useState('popular');
  const [query,setQuery]=useState(''),[search,setSearch]=useState(''),[genre,setGenre]=useState(''),[year,setYear]=useState(''),[rating,setRating]=useState('0');
@@ -20,6 +50,7 @@ export function CinemaDiscovery({ar,onRoom,onJoin,roomActive}:{ar:boolean;onRoom
  const [selected,setSelected]=useState<Title>(),[detail,setDetail]=useState<Detail>(),[detailError,setDetailError]=useState('');
  const language=ar?'ar-SA':'en-US',local=tab==='favorites'||tab==='watchlist';
  const home=tab==='home'&&!search;
+ useAppView('watch',{mode:tab,item:selected?.title,count:result?.total_results,status:configured===false?'catalogue setup required':busy?'loading':error?'unavailable':undefined});
  const close=useCallback(()=>setSelected(undefined),[]);
  useEffect(()=>{const t=setTimeout(()=>setSearch(query.trim()),350);return()=>clearTimeout(t);},[query]);
  useEffect(()=>{void requestJSON<{configured:boolean}>('/v1/cinema/status').then(d=>{setConfigured(d.configured);}).catch(e=>setError(String(e)));},[retry]);
@@ -80,6 +111,6 @@ export function CinemaDiscovery({ar,onRoom,onJoin,roomActive}:{ar:boolean;onRoom
   {(!busy||local)&&!home&&<>{result?.filtered_page&&<p className="bc-muted">{ar?'التصفية على صفحة نتائج البحث الحالية؛ تقدر تكمل باقي الصفحات.':'Filters apply to this search page. Continue browsing subsequent pages.'}</p>}{cards(shown)}{!shown.length&&(local||!error&&configured)&&<p className="bc-state">{ar?'مفيش عناوين هنا لسه. جرّب بحث تاني أو ضيف لقائمتك.':'No titles here. Try another search or save a title.'}</p>}{!local&&result&&result.total_pages>1&&<div className="bc-pagination"><button disabled={page<=1} onClick={()=>setPage(v=>v-1)}>{ar?'السابق':'Previous'}</button><span>{page} / {result.total_pages}</span><button disabled={page>=result.total_pages} onClick={()=>setPage(v=>v+1)}>{ar?'التالي':'Next'}</button></div>}</>}
   
   <Modal open={setup} onClose={()=>setSetup(false)} title={ar?'ربط بيانات المكتبة':'Connect catalogue'}><form onSubmit={async e=>{e.preventDefault();setSaving(true);setSetupError('');try{await requestJSON('/v1/cinema/setup',{method:'POST',body:JSON.stringify({token:token.trim()})});setToken('');setSetup(false);setRetry(v=>v+1);}catch(e){setSetupError(e instanceof Error?e.message:String(e));}finally{setSaving(false);}}}><p>{ar?'لو مكتبة الأفلام مش متفعّلة، أدخل رمز الربط الخاص بمكتبتك واضغط تحقق واحفظ. الرمز بيُحفظ محليًا، ومش بيظهر في الواجهة.':'To activate movie discovery, enter your catalogue access credential and choose Verify and save. It stays in your secure local settings.'}</p><input className="bc-token" type="password" autoComplete="off" value={token} onChange={e=>setToken(e.target.value)} aria-label={ar?'مفتاح مصدر المكتبة':'Catalogue API credential'} required/>{setupError&&<p role="alert">{setupError.replace(/TMDB_READ_TOKEN|TMDB/gi,ar?'خدمة المكتبة':'catalogue service')}</p>}<button className="bc-primary" disabled={saving}>{saving?(ar?'بنتحقق…':'Verifying…'):(ar?'تحقق واحفظ':'Verify and save')}</button></form></Modal>
-  <Modal open={!!selected} onClose={close} title={selected?.title||''} wide bodyClassName="bc-detail"><div dir={ar?'rtl':'ltr'}>{selected?.backdrop&&<img className="bc-detail-backdrop" src={selected.backdrop} alt=""/>}<p>{detail?.genre_names.join(' · ')}</p><p>{selected?.overview|| (ar?'الوصف مش متاح باللغة دي.':'No synopsis available in this language.')}</p>{detailError&&<p role="alert">{detailError}</p>}{!detail&&!detailError&&<p role="status">{ar?'بنجيب التفاصيل…':'Loading details…'}</p>}{detail&&<><p>{detail.runtime?`${detail.runtime} ${ar?'دقيقة':'min'}`:''}{detail.seasons?`${detail.seasons} ${ar?'مواسم':'seasons'}`:''}</p><h3>{ar?'طاقم التمثيل':'Cast'}</h3><div className="bc-cast">{detail.cast.map((c,i)=><div key={i}>{c.photo&&<img src={c.photo} alt="" loading="lazy"/>}<strong>{c.name}</strong><small>{c.character}</small></div>)}</div><h3>{ar?'ممكن يعجبك':'You may also like'}</h3>{cards(detail.related,true)}</>}{selected&&actions(selected)}<button className="bc-primary" onClick={()=>{close();onRoom();}}><Play size={16}/>{ar?'افتح غرفة لملفك':'Open room for your media'}</button></div></Modal>
+  <Modal open={!!selected} onClose={close} title={selected?.title||''} wide bodyClassName="bc-detail"><div dir={ar?'rtl':'ltr'}>{selected?.backdrop&&<img className="bc-detail-backdrop" src={selected.backdrop} alt=""/>}<p>{detail?.genre_names.join(' · ')}</p><p>{selected?.overview|| (ar?'الوصف مش متاح باللغة دي.':'No synopsis available in this language.')}</p>{detailError&&<p role="alert">{detailError}</p>}{!detail&&!detailError&&<p role="status">{ar?'بنجيب التفاصيل…':'Loading details…'}</p>}{detail&&<><p>{detail.runtime?`${detail.runtime} ${ar?'دقيقة':'min'}`:''}{detail.seasons?`${detail.seasons} ${ar?'مواسم':'seasons'}`:''}</p><h3>{ar?'طاقم التمثيل':'Cast'}</h3><div className="bc-cast">{detail.cast.map((c,i)=><div key={i}>{c.photo&&<img src={c.photo} alt="" loading="lazy"/>}<strong>{c.name}</strong><small>{c.character}</small></div>)}</div><h3>{ar?'ممكن يعجبك':'You may also like'}</h3>{cards(detail.related,true)}</>}{selected&&<WhereToWatch key={key(selected)} title={selected} ar={ar}/>} {selected&&actions(selected)}<button className="bc-primary" onClick={()=>{close();onRoom();}}><Play size={16}/>{ar?'افتح غرفة لملفك':'Open room for your media'}</button></div></Modal>
  </section>;
 }

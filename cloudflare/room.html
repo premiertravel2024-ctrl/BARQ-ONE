@@ -393,15 +393,16 @@ function connect(code){
  var proto=location.protocol==='https:'?'wss:':'ws:';
  var url=paired?proto+'//'+location.host+'/join-signal/'+encodeURIComponent(roomId):proto+'//'+location.host+'/signal/'+encodeURIComponent(roomId)+'?role='+role+'&token='+encodeURIComponent(token)+'&code='+encodeURIComponent(code||'');
  socket=new WebSocket(url);
- socket.onopen=function(){note('الغرفة متصلة');connected=true;reconnectAttempts=0;};
+ socket.onopen=function(){note('جاري تجهيز اتصال الغرفة…');};
  socket.onerror=function(){note('فشل اتصال الغرفة');};
- socket.onclose=function(event){connected=false;guestPresent=false;pendingIce=[];note('اتصال الغرفة اتقطع');if(!host&&!paired)document.getElementById('joinPanel').hidden=false;if(peer){peer.close();peer=null;}
+ socket.onclose=function(event){connected=false;guestPresent=false;pendingIce=[];note('اتصال الغرفة اتقطع');if(!host){showWaiting(true,'الاتصال اتقطع','الفيديو هيكمل من عرض المضيف لما الاتصال يرجع');video.srcObject=null;}if(peer){peer.close();peer=null;}
  if(!leaving&&![1000,1008].includes(event.code)&&reconnectAttempts<5){var delay=Math.min(15000,1000*Math.pow(2,reconnectAttempts++));note('الاتصال اتقطع؛ بنحاول نرجع الغرفة…');reconnectTimer=setTimeout(function(){connect(lastCode);},delay);}
+ else if(!host&&!paired&&!leaving)document.getElementById('joinPanel').hidden=false;
  };
  socket.onmessage=async function(event){
   var packet;try{packet=JSON.parse(event.data);}catch(e){return;}
-  if(packet.type==='ready'){turnServers=Array.isArray(packet.ice_servers)?packet.ice_servers:[];if(music&&packet.track)showTrack(packet.track);note(host?'مستني الضيف يدخل':'مستني صاحب الغرفة يشغّل ملف');}
-  if(packet.type==='peer-joined'){guestPresent=true;nearby=packet.connection==='lan';note('الشخص التاني اتصل');if(host&&localStream)queueRTC(makeOffer);}
+  if(packet.type==='ready'){connected=true;reconnectAttempts=0;document.getElementById('joinPanel').hidden=true;turnServers=Array.isArray(packet.ice_servers)?packet.ice_servers:[];if(music&&!host)showTrack(packet.track||null);note(host?'مستني الضيف يدخل':'مستني صاحب الغرفة يشغّل ملف');}
+  if(packet.type==='peer-joined'){guestPresent=true;nearby=packet.connection==='lan';note('الشخص التاني اتصل');if(host&&localStream)queueRTC(makeOffer);if(host&&music&&officialTrack)send('track',officialTrack);}
   if(packet.type==='track'&&music&&!host)showTrack(packet.value);
   if(packet.type==='peer-left'){guestPresent=false;pendingIce=[];note('الشخص التاني خرج');if(!host)showWaiting(true,'انقطع عرض الفيديو','في انتظار رجوع صاحب الغرفة');if(peer){peer.close();peer=null;}}
   if(packet.type==='chat'&&packet.text){addMessage(packet.role==='host'?'صاحب الغرفة':'الضيف',packet.text);}
@@ -508,7 +509,27 @@ function showTrack(track){
   panel.append(hint);
  }
 }
+function shareOfficialTrack(track){
+ if(!connected||!providerLink(track)||!send('track',track))return false;
+   loadVersion++;
+   if(localStream){localStream.getTracks().forEach(function(t){t.stop();});localStream=null;}
+   if(blobUrl){URL.revokeObjectURL(blobUrl);blobUrl=null;}
+   officialTrack=track;showTrack(track);video.removeAttribute('src');video.load();
+   note(track.kind==='share'?'شاركنا رابط أنغامي المختصر، لكن المشغّل يحتاج رابط الأغنية الكامل.':'تمت مشاركة الأغنية؛ اضغط تشغيل على المشغّل الرسمي.');
+ return true;
+}
 if(host&&music){
+ window.addEventListener('message',function(event){
+  var origin;
+  try{origin=new URL(event.origin);}catch(e){return;}
+  if(window.parent===window||event.source!==window.parent||
+     !['http:','https:'].includes(origin.protocol)||!['localhost','127.0.0.1','[::1]'].includes(origin.hostname)||
+     event.data?.type!=='barq-room-track'||typeof event.data.id!=='string')return;
+  var candidate=event.data.track;
+  var allowed=candidate&&providerLink(candidate);
+  var ok=Boolean(allowed&&shareOfficialTrack({provider:candidate.provider,kind:candidate.kind,id:candidate.id}));
+  event.source.postMessage({type:'barq-room-track-result',id:event.data.id,ok:ok},event.origin);
+ });
  document.getElementById('musicService').onsubmit=async function(event){
   event.preventDefault();
   try{
@@ -535,12 +556,7 @@ if(host&&music){
      }
     }catch(e){/* If link cannot be resolved safely, offer official external link. */}
    }
-   loadVersion++;
-   if(localStream){localStream.getTracks().forEach(function(t){t.stop();});localStream=null;}
-   if(blobUrl){URL.revokeObjectURL(blobUrl);blobUrl=null;}
-   officialTrack=track;showTrack(track);video.removeAttribute('src');video.load();
-   send('track',track);
-   note(track.kind==='share'?'شاركنا رابط أنغامي المختصر، لكن المشغّل يحتاج رابط الأغنية الكامل.':'تمت مشاركة الأغنية؛ اضغط تشغيل على المشغّل الرسمي.');
+   shareOfficialTrack(track);
   }catch(e){note(e instanceof Error?e.message:'حصل خطأ في رابط الموسيقى.');}
  };
 }

@@ -1,5 +1,5 @@
 import {useState} from 'react';
-import {AudioLines,Ellipsis,Menu,Copy,PanelLeftClose,PanelLeftOpen,Pencil,Plus,Search,Settings2,Trash2,X} from 'lucide-react';
+import {AudioLines,Ellipsis,Menu,MessageSquare,Copy,PanelLeftClose,PanelLeftOpen,Pencil,Plus,Search,Settings2,Trash2,X} from 'lucide-react';
 import {useApp} from '../../store';
 import {sections,type OnePage} from '../../pages/BarqOne';
 import {ModelSelector} from '../chat/ModelSelector';
@@ -22,6 +22,7 @@ export function OperationsHeader({page,navigate,search,settings}:Actions){
    })}
   </nav>
   <div className="ops-header-actions">
+   {page!=='chat'&&<button className="ops-ask-barq" type="button" onClick={()=>navigate('chat')} aria-label={ar?'اسأل برق':'Ask BARQ'}><MessageSquare size={16}/><span>{ar?'اسأل برق':'Ask BARQ'}</span></button>}
    <button className="ops-search" type="button" onClick={search} aria-label={ar?'البحث':'Search'}><Search size={14}/><span>{ar?'بحث سريع':'Quick search'}</span><kbd dir="ltr">Ctrl K</kbd></button>
    <button type="button" onClick={settings} aria-label={ar?'الإعدادات':'Settings'}><Settings2 size={16}/></button>
   </div>

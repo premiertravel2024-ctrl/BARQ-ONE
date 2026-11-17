@@ -1,3 +1,4 @@
+import {appPrompt} from './appContext';
 /** One audited gateway for calls from the React UI to the local FastAPI backend.
  * No secret keys are sent to the browser, and no tools are run by this file.
  */
@@ -57,6 +58,8 @@ export async function *streamChat(messages:Message[],model:string,options:{syste
  attachments:{attachment:UploadedAttachment;file:File}[]=[],conversationId=''):AsyncGenerator<StreamEvent>{
  const combined: Array<{role:Role|'system';content:string}> = taskMessages(messages);
  if(options.systemPrompt.trim())combined.unshift({role:'system',content:options.systemPrompt.slice(0,8000)});
+ const uiContext=conversationId?appPrompt():'';
+ if(uiContext)combined.unshift({role:'system',content:uiContext});
  const evidence:string[]=[];
  const visualAnswers:Array<{filename:string;text:string;model:string;local:boolean}>=[];
  let hasOtherDocuments=false;

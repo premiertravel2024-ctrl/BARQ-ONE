@@ -44,3 +44,12 @@
   .bc-discovery-toolbar .bc-search { width: 100%; }
   .bc-discovery-toolbar .bc-tabs { width: 100%; padding: 3px 2px 7px; }
 }
+
+.bc-availability { margin-block: 16px; padding: 12px; border: 1px solid #4d4357; border-radius: 12px; background: #241e2b; color: #fff0fa; }
+.bc-availability > div { display: flex; align-items: center; gap: 12px; justify-content: space-between; flex-wrap: wrap; }
+.bc-availability h3 { margin: 0; }
+.bc-availability select { padding: 7px 10px; color: #fff; background: #191622; border: 1px solid #66566d; border-radius: 8px; }
+.bc-availability ul { display: grid; gap: 5px; margin-block: 9px; }
+.bc-availability li { display: flex; gap: 8px; align-items: baseline; flex-wrap: wrap; font-size: .85rem; }
+.bc-availability li strong, .bc-availability small { color: #edb6cb; }
+.bc-availability small { display: block; margin-block: 5px 8px; }
