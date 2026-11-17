@@ -63,3 +63,10 @@
 .barq-room-track-selection { display:flex; align-items:center; flex-wrap:wrap; gap:12px; margin-block:8px; }
 .barq-room-track-selection div { display:grid; gap:3px; }
 .barq-room-track-selection small, .barq-room-track-selection [role="status"] { color:#c1b8cc; font-size:.8rem; }
+
+.bm-service-compact{padding:12px;gap:9px;border-radius:12px;background:#181b23}
+.bm-room-discovery{grid-template-columns:minmax(0,1fr)}
+.bm-room-discovery .bm-release-list{grid-template-columns:repeat(auto-fit,minmax(min(100%,210px),1fr));max-height:235px;overflow:auto}
+.bm-room-discovery .bm-release{justify-content:stretch;min-height:46px}
+.bm-room-discovery .bm-release-art{width:32px;height:32px}
+.bm-room-discovery .bm-release-copy{text-align:start}

@@ -135,11 +135,11 @@ export function MusicServices({provider,ar,onSelected,onShare,roomOnly=false}:{p
  const providerSearch=provider==='spotify'
   ?'https://open.spotify.com/search/'+encodeURIComponent(searched)
   :'https://www.google.com/search?q='+encodeURIComponent('site:play.anghami.com '+searched);
- return <section className="bm-service" data-provider={provider} aria-label={brand}>
-  <header className="bm-service-intro">
+ return <section className={roomOnly?"bm-service bm-service-compact":"bm-service"} data-provider={provider} aria-label={brand}>
+  {!roomOnly&&<header className="bm-service-intro">
    <div className="bm-service-icon" aria-hidden="true"><Headphones size={28}/></div>
    <div><h2>{brand}</h2><p>{ar?'ابحث باسم أغنية أو فنان أو ألبوم.':'Find a song, artist, or album by name.'}</p></div>
-  </header>
+  </header>}
   <form className="bm-service-form" onSubmit={e=>void search(e)}>
    <label htmlFor={'barq-'+provider+'-search'}>{ar?'البحث في ':'Search '}{brand}</label>
    <div className="bm-service-search"><Search size={20} aria-hidden="true"/>

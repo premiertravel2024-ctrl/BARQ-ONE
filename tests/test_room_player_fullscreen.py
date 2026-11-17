@@ -59,7 +59,10 @@ def test_theater_viewer_uses_full_size_stage_and_clear_media_waiting_state():
     assert 'class="row room-guest-controls"' in page
     assert 'body:not(.room-music) #videoStage>video' in page
     assert 'height:100%;max-height:none' in page
-    assert 'video.srcObject=event.streams[0];showWaiting(false)' in page
+    assert 'stream.addTrack(event.track)' in page
+    assert "video.addEventListener('playing'" in page
+    assert 'video.videoWidth>0' in page
+    assert 'id="retryMedia"' in page
 
 
 def test_guest_chat_does_not_depend_on_host_only_peer_joined_event():
