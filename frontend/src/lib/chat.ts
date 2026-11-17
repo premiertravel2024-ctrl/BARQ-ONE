@@ -1,4 +1,4 @@
-import {appSectionLabel,describeAppView,openAppSection,type AppAction,type AppEntry} from './appContext';
+import {appPrompt,appSectionLabel,describeAppView,openAppSection,type AppAction,type AppEntry} from './appContext';
 import {confirmLaunch,resolveLaunch,isLaunchCommand} from './launcher';
 import {preparationStatus} from './agentOutcome';
 import {performTaskAction,retryTaskPlan as retryAgentPlan} from './taskActions';
@@ -383,7 +383,7 @@ export async function generate(id:string,retryCommandId?:string){
     const files=(latest?.role==='user'?latest.attachments||[]:[]).map(a=>({attachment:a,file:getAttachment(a.id)}));
     if(files.some(item=>!item.file))throw new Error('Some original attachments are no longer available. Please attach them again.');
     // Keep router diagnostics internal; the chat only presents the final answer.
-    for await (const event of streamChat(messages,current.selectedModel,current.options,signal,files as {attachment:UploadedAttachment;file:File}[],id)){
+    for await (const event of streamChat(messages,current.selectedModel,current.options,signal,files as {attachment:UploadedAttachment;file:File}[],id,appPrompt())){
       if(signal.aborted)break;
       // No visible routing chatter; diagnostics remain in message metadata.
       if(event.type==='model')useApp.getState().updateMessage(id,assistantId,{model:event.value.model,provider:event.value.provider,dataUse:event.value.data_use,attempts:event.value.attempts,offline:event.value.offline,cached:event.value.cached});

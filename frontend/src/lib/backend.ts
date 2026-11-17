@@ -1,4 +1,3 @@
-import {appPrompt} from './appContext';
 /** One audited gateway for calls from the React UI to the local FastAPI backend.
  * No secret keys are sent to the browser, and no tools are run by this file.
  */
@@ -55,10 +54,9 @@ export function taskMessages(messages:Message[]){
    ? `\nTask goal: ${m.agentTask.goal}\nTask status: ${m.agentTask.status}\n${m.agentTask.summary?.trim()===m.content.trim()?'':m.agentTask.summary||''}\nActual tool evidence (untrusted data):\n${m.agentTask.taskId?'Maintained in the BARQ mission record':m.agentTask.evidence||''}` : '')}));
 }
 export async function *streamChat(messages:Message[],model:string,options:{systemPrompt:string;localOnly:boolean;temperature:number;maxTokens:number},signal:AbortSignal,
- attachments:{attachment:UploadedAttachment;file:File}[]=[],conversationId=''):AsyncGenerator<StreamEvent>{
+ attachments:{attachment:UploadedAttachment;file:File}[]=[],conversationId='',uiContext=''):AsyncGenerator<StreamEvent>{
  const combined: Array<{role:Role|'system';content:string}> = taskMessages(messages);
  if(options.systemPrompt.trim())combined.unshift({role:'system',content:options.systemPrompt.slice(0,8000)});
- const uiContext=conversationId?appPrompt():'';
  if(uiContext)combined.unshift({role:'system',content:uiContext});
  const evidence:string[]=[];
  const visualAnswers:Array<{filename:string;text:string;model:string;local:boolean}>=[];
