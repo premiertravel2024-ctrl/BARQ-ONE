@@ -138,6 +138,7 @@ def test_current_windows_workflow_restores_from_verified_portable():
     source = (root / "scripts/build_short_path.py").read_text(encoding="utf-8")
     assert "py -3.11 scripts/restore_verified_core.py --with-ui" in wf
     assert "Verify incremental Core+UI extraction contract before building" in wf
-    assert "if (!(Test-Path 'dist/BARQ/BARQ.exe'))" not in wf
+    # A post-restore existence check is valid; only pre-restore checks are stale.
+    assert wf.index("py -3.11 scripts/restore_verified_core.py --with-ui") < wf.index("if (!(Test-Path 'dist/BARQ/BARQ.exe'))")
     assert "shutil.copy2(artifact,destination/artifact.name)" in source
     assert "shutil.rmtree(stage)" in source
