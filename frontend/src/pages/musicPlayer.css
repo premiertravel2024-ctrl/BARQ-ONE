@@ -30,3 +30,9 @@
 .bm-player .bm-play{width:39px;height:39px}
 @media(max-width:880px){.bm-dock{grid-template-columns:minmax(130px,1fr) minmax(190px,2fr)}.bm-dock .bm-volume{display:none}}
 @media(max-width:650px){.bm-header{padding:13px;align-items:stretch}.bm-switch{width:100%;overflow-x:auto;flex-wrap:nowrap}.bm-switch button{flex:none}.bm-sidebar{padding:10px;gap:5px}.bm-library{padding:11px}.bm-library-hero{padding:12px;min-height:95px}.bm-library-hero h3{font-size:1.08rem}.bm-toolbar{margin:10px 0}.bm-dock{grid-template-columns:1fr;padding:12px;gap:9px}.bm-dock-title{display:flex}.bm-dock .bm-volume{display:none}.bm-transport{width:100%}.bm-album{display:none}}
+
+/* Expand the real queue on demand; keep the secondary Now Playing column hidden by default. */
+.bm-player .bm-show-queue .bm-now{display:block!important;grid-column:1/-1;border:1px solid #ffffff18;border-radius:12px;background:#181c22;padding:14px 18px;margin:0 16px 14px}
+.bm-player .bm-show-queue .bm-cover{display:none!important}
+.bm-player .bm-show-queue .bm-now h3:first-child{display:none}
+.bm-player .bm-show-queue .bm-now h4,.bm-player .bm-show-queue .bm-now p{display:none}
