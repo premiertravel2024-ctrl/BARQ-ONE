@@ -1,11 +1,10 @@
 import {useEffect} from 'react';
 import {notifyUI} from './uiEvents';
-import type {OnePage} from '../pages/BarqOne';
+import type {AppAction,AppSection} from './appNavigation';
+export type {AppAction,AppSection} from './appNavigation';
 
-export type AppSection=OnePage|'playground';
 export type AppView={mode?:string;item?:string;count?:number;status?:string};
 export type AppEntry={title:string;label?:string};
-export type AppAction={section:AppSection;mode?:string|null};
 type Snapshot={section:AppSection;previous?:AppSection;current_view?:AppView;previous_view?:AppView;books:AppEntry[]};
 const views=new Map<AppSection,AppView>();
 let section:AppSection='center';

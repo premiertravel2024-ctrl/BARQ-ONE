@@ -76,16 +76,16 @@ export async function generate(id:string,retryCommandId?:string){
   const last=messages.at(-1);
   if(last?.role==='user'&&!last.attachments?.length&&last.content.length<=240&&
      /^(?:(?:يا برق|برق|ممكن|لو سمحت|من فضلك|please)\s+)*(?:افتح|إفتح|روح|وديني|اعرض|ابحث|دور|هات|open|show|go to|find|search)/i.test(last.content.trim())){
-    const decision=await requestJSON<{action?:AppAction;search?:{catalogue:string;query:string}}>('/v1/app-context/command?'+new URLSearchParams({text:last.content}),{signal}).catch(()=>null);
+    const appDecision=await requestJSON<{action?:AppAction;search?:{catalogue:string;query:string}}>('/v1/app-context/command?'+new URLSearchParams({text:last.content}),{signal}).catch(()=>null);
     if(signal.aborted)return;
     const ar=current.language==='ar';
     const reply=(content:string)=>current.addMessage(id,{id:uid(),role:'assistant',createdAt:Date.now(),model:'BARQ-AI/local',offline:true,content});
-    if(decision?.action&&openAppSection(decision.action)){
-      const label=appSectionLabel(decision.action.section);
+    if(appDecision?.action&&openAppSection(appDecision.action)){
+      const label=appSectionLabel(appDecision.action.section);
       reply(ar?'فتحت '+label+'.':'Opened '+label+'.');return;
     }
-    if(decision?.search){
-      const {catalogue,query}=decision.search;
+    if(appDecision?.search){
+      const {catalogue,query}=appDecision.search;
       const result=await requestJSON<{status:string;items:AppEntry[]}>('/v1/app-context/search?'+new URLSearchParams({catalogue,q:query}),{signal}).catch(()=>null);
       if(signal.aborted)return;
       if(!result||result.status==='unavailable')reply(ar?'مصدر البحث ده مش متاح دلوقتي.':'This catalogue is currently unavailable.');

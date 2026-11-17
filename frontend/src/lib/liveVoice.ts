@@ -1,4 +1,4 @@
-import type {AppAction} from './appContext';
+import type {AppAction} from './appNavigation';
 import {acquireSpeechGlow} from './speechGlow';
 export type VoiceEvent={app_action?:AppAction;elapsedMs?:number;request_id?:string;conversation_id?:string;cards?:Array<{label:string;kind?:string;url?:string;extension?:string;description?:string}>;spoken_ar?:string;needs_approval?:boolean;matches?:Array<{repository:string;url:string;description:string;stars:number}>;task_id?:string;chat_id?:string;type:string;level?:number;text?:string;message?:string;code?:string;data?:string;status?:string;tool?:string;computer_enabled?:boolean;candidate_id?:string;approval_token?:string;label?:string;url?:string};
 export type VoiceHistory=Array<{role:string;content:string}>;

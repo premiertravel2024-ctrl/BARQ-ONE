@@ -1,4 +1,6 @@
 import {useAppView} from '../lib/appContext';
+import type {OnePage} from '../lib/appNavigation';
+export type {OnePage} from '../lib/appNavigation';
 import {useEffect,useState} from 'react';
 import {Thermometer,MemoryStick,HardDrive,Activity,AudioLines,Cpu,Download,LayoutDashboard,LibraryBig,MessageSquare,Radio,Search,Settings2,Star,Terminal,Timer,Workflow,CircleDot,Package,Image,Shield,Headphones} from 'lucide-react';
 import {requestJSON,type RouterProvider} from '../lib/backend';
@@ -31,8 +33,7 @@ export const sections=[
  ['stories','مكتبة القراءة','Reading Library',LibraryBig],
  ['automation','الأتمتة','Automation',Timer],
  ['settings','الإعدادات','Settings',Settings2],
-] as const;
-export type OnePage=typeof sections[number][0];
+] as const satisfies ReadonlyArray<readonly [OnePage, string, string, typeof Cpu]>;
 type Item={id:string;name:string;category:string;url:string;package:string|null;setup?:boolean;description_ar?:string;description_en?:string};
 type Job={id:string;item:string;action:string;status:string;detail:string};
 type Inventory={packages:Record<string,string>;setups?:Record<string,string>;checked:boolean};
