@@ -274,6 +274,7 @@ var music=params.get('mode')==='music';
 var blobUrl=null,guestPresent=false,loadVersion=0,rtcQueue=Promise.resolve();
 if(music){
  document.body.classList.add('room-music');
+ document.getElementById('waitingOverlay').hidden=true;
  document.getElementById('musicNow').hidden=false;
  document.getElementById('sourceTitle').textContent='اختار الأغنية';
  document.getElementById('sourceHint').textContent='شغّل من جهازك أو استخدم رابط صوت مباشر أو Spotify وأنغامي.';

@@ -37,6 +37,7 @@ def test_fullscreen_expands_stage_with_fit_and_cover_options():
 def test_music_room_hides_video_only_fullscreen_options():
     page = _player_page()
     assert "document.getElementById('screenActions').hidden=true;" in page
+    assert "document.getElementById('waitingOverlay').hidden=true;" in page
     assert "document.body.classList.add('room-music')" in page
     assert 'id="fileName"' in page
     assert 'id="subFileName"' in page
