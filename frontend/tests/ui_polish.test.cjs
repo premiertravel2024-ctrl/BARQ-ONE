@@ -83,11 +83,11 @@ test('voice controller remains functional but has no floating overlay',()=>{
 });
 
 
-test('BARQ Stories is a real navigable application section, not a landing mockup',()=>{
+test('Reading Library opens BARQ Stories and supports reading, narration, and saving',()=>{
   const one=read('pages/BarqOne.tsx');
   const stories=read('pages/BarqStories.tsx');
   const library=read('pages/barqStoriesData.ts');
-  assert.match(one,/\['stories','حكايات برق','BARQ Stories'/);
+  assert.match(one,/\['stories','مكتبة القراءة','Reading Library'/);
   assert.match(one,/page==='stories'&&<BarqStories\/>/);
   assert.match(stories,/\/v1\/voice\/speak/);
   assert.match(stories,/streamChat\(/);
