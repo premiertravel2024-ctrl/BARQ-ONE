@@ -24,3 +24,5 @@
 .bws-confirm button{border:1px solid #56616f;padding:10px 15px;min-height:42px;color:#e6e7eb;border-radius:10px;background:#242934}
 .bws-confirm button.bws-danger{background:#af3056;border-color:#e65c85;color:#fff}.bws-confirm button:disabled{opacity:.45}
 @media(max-width:600px){.bws-active-strip{padding:10px}.bws-active-buttons{width:100%}.bws-active-buttons button{flex:1}.bws-wallpaper-actions .bws-remove{flex-basis:39px}}
+
+.bws-error-wrap{display:flex;align-items:center;gap:10px;flex-wrap:wrap}.bws-error-wrap .barq-media-error{flex:1;min-width:200px}.bws-permission-button{background:#8b3050;color:#fff;border:1px solid #cf6583;padding:9px 13px;border-radius:9px;min-height:40px;font-size:.8rem}

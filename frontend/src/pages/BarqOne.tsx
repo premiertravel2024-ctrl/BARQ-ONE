@@ -340,7 +340,7 @@ export function BarqOne({page,providers,onVoice,onNavigate,onModels,onQuick}:Pro
   {page==='mission'&&<Mission/>}
   {page==='monitor'&&<MonitorPanel full/>}
   {page==='resources'&&<ResourceSaver/>}
-  {page==='wallpapers'&&<Wallpapers/>}
+  {page==='wallpapers'&&<Wallpapers onOpenSettings={()=>onNavigate('settings')}/>}
   {page==='watch'&&<WatchTogether mode="video"/>}
   {page==='music'&&<MusicPlayer/>}
   {page==='stories'&&<BarqStories/>}

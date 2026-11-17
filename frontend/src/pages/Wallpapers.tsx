@@ -18,11 +18,12 @@ function Preview({item,native}:{item:Wallpaper;native:boolean}){const [failed,se
 
 type CommandResult = {status: string; verified?: boolean};
 
-export function Wallpapers() {
+export function Wallpapers({onOpenSettings}:{onOpenSettings?:()=>void}={}) {
   const ar = useApp(s => s.language) === 'ar';
   const [data, setData] = useState<Reply | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
+  const [permissionNeeded,setPermissionNeeded]=useState(false);
   const [notice, setNotice] = useState('');
   const [volume, setVolume] = useState(40);
   const [installing, setInstalling] = useState(false);
@@ -82,9 +83,16 @@ export function Wallpapers() {
     pending.current = true;
     setBusy(true);
     setError('');
+    setPermissionNeeded(false);
     setNotice('');
     try { await action(); }
-    catch (e) { setError(e instanceof Error ? e.message : String(e)); }
+    catch (e) {
+      const message=e instanceof Error?e.message:String(e);
+      if(message.includes('Enable Computer Control first')){
+        setPermissionNeeded(true);
+        setError(ar?'لازم تفعل التحكم في الكمبيوتر من الإعدادات قبل تشغيل أو حذف خلفية.':'Enable Computer Control in Settings to manage wallpapers.');
+      }else setError(message);
+    }
     finally { pending.current = false; setBusy(false); }
   }
 
@@ -154,7 +162,7 @@ export function Wallpapers() {
      <span className="bws-feature-badge">{ar?'خلفياتك الحية':'YOUR LIBRARY'}</span>
     </div>
    </header>
-   {error&&<p className="barq-media-error" role="alert">{error}</p>}
+   {error&&<div className="bws-error-wrap" role="alert"><p className="barq-media-error">{error}</p>{permissionNeeded&&onOpenSettings&&<button type="button" className="bws-permission-button" onClick={onOpenSettings}>{ar?'افتح إعدادات التحكم':'Open Computer Control settings'}</button>}</div>}
    {notice&&<p className="bws-notice" role="status">{notice}</p>}
    {!data&&!error&&<p className="barq-muted" role="status">{ar?'بنفحص محرك الخلفيات…':'Checking wallpaper engine…'}</p>}
    {data&&!ready&&<section className="bws-setup">
