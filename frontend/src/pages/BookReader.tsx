@@ -80,7 +80,8 @@ export default function BookReader({book,ar,onClose}:{book:ReadingEdition;ar:boo
    if(controller.signal.aborted)return;
    GlobalWorkerOptions.workerSrc=workerUrl;
    const assets='/assets/pdfjs/';
-   const loading=getDocument({data,isEvalSupported:false,useSystemFonts:true,
+   // Use PDF glyph outlines so the browser cannot reshape joined Arabic glyphs.
+   const loading=getDocument({data,isEvalSupported:false,disableFontFace:true,useSystemFonts:true,
     cMapUrl:assets+'cmaps/',cMapPacked:true,standardFontDataUrl:assets+'standard_fonts/',
     wasmUrl:assets+'wasm/',iccUrl:assets+'iccs/'});
    destroy=()=>loading.destroy();
