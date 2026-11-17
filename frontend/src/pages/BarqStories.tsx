@@ -8,7 +8,16 @@ import './barqStories.css';
 
 type Shelf={stories:BarqStory[];favorites:string[];progress:Record<string,number>};
 const KEY='barq-stories-v1';
-const genres=['الكل','فانتازيا','غموض','خيال علمي','مغامرة','رعب','مكتبتي'];
+const genres=['الكل','روايات مصرية','روايات عالمية','فانتازيا','غموض','خيال علمي','مغامرة','رعب','مكتبتي'];
+// Verified publisher/library links: books are opened at their lawful source,
+// not silently copied or represented as BARQ-written chapters.
+const realNovels=[
+ {id:'egy-zenab',title:'زينب',author:'محمد حسين هيكل',category:'روايات مصرية',year:1914,url:'https://downloads.hindawi.org/books/28493759.pdf',publisher:'مؤسسة هنداوي',description:'من الروايات المبكرة في الأدب المصري الحديث، عن الريف والحب والتقاليد.'},
+ {id:'egy-east',title:'عصفور من الشرق',author:'توفيق الحكيم',category:'روايات مصرية',year:1938,url:'https://downloads.hindawi.org/books/74917046.pdf',publisher:'مؤسسة هنداوي',description:'رواية مصرية عن التقاء الشرق والغرب وتجربة الشاب محسن في باريس.'},
+ {id:'world-pride',title:'كبرياء وتحامل / Pride and Prejudice',author:'Jane Austen',category:'روايات عالمية',year:1813,url:'https://www.gutenberg.org/ebooks/1342',publisher:'Project Gutenberg',description:'رواية كلاسيكية إنجليزية عن العائلة والمكانة الاجتماعية والحب.'},
+ {id:'world-time',title:'آلة الزمن / The Time Machine',author:'H. G. Wells',category:'روايات عالمية',year:1895,url:'https://www.gutenberg.org/ebooks/35',publisher:'Project Gutenberg',description:'من كلاسيكيات الخيال العلمي والرحلة إلى مستقبل بعيد.'},
+ {id:'world-sherlock',title:'مغامرات شيرلوك هولمز',author:'Arthur Conan Doyle',category:'روايات عالمية',year:1892,url:'https://www.gutenberg.org/ebooks/1661',publisher:'Project Gutenberg',description:'مجموعة قصص بوليسية عالمية لشيرلوك هولمز.'},
+] as const;
 const covers:StoryMood[]=['ember','ocean','violet','gold','forest'];
 function readShelf():Shelf{
  try{
@@ -52,6 +61,7 @@ export function BarqStories(){
  const chapter=book?.chapters[currentIndex];
  const matches=items.filter(x=>(genre==='الكل'||(genre==='مكتبتي'?x.source!=='original':x.genre===genre))&&(x.title+' '+x.summary).toLowerCase().includes(query.trim().toLowerCase()));
  const recents=items.filter(s=>(shelf.progress[s.id]||0)>0);
+ const realMatches=realNovels.filter(book=>(genre==='الكل'||genre===book.category)&&(book.title+' '+book.author+' '+book.description).toLowerCase().includes(query.trim().toLowerCase()));
  const label=(a:string,b:string)=>ar?a:b;
  useEffect(()=>{try{localStorage.setItem(KEY,JSON.stringify(shelf))}catch{setError('مش قادر أحفظ المكتبة محليًا. راجع المساحة المتاحة على الجهاز.')}},[shelf]);
  useEffect(()=>()=>{abortAI.current?.abort();abortSpeech.current?.abort();playingAudio.current?.pause()},[]);
@@ -161,6 +171,15 @@ export function BarqStories(){
    <section className="bs-collection"><div className="bs-title-row"><div className="bs-title"><span>EXPLORE THE COLLECTION</span><h2>{label('اكتشف حكايتك الجاية','Find your next story')}</h2><p>{label('من الغموض للفانتازيا والخيال العلمي.','Fantasy, mystery, and new worlds.')}</p></div>
     <label className="bs-search"><Search size={18}/><input aria-label={label('ابحث في القصص','Search stories')} placeholder={label('ابحث عن حكاية...','Search stories...')} value={query} onChange={e=>setQuery(e.target.value)}/></label></div>
     <div className="bs-filters" role="group" aria-label={label('تصنيف القصص','Story categories')}>{genres.map(g=><button type="button" key={g} aria-pressed={genre===g} onClick={()=>setGenre(g)}>{g}</button>)}</div>
+    {(genre==='الكل'||genre==='روايات مصرية'||genre==='روايات عالمية')&&<section className="bs-real-library" aria-label={label('الروايات الحقيقية','Published novels')}>
+      <div className="bs-real-heading"><div><span>{label('مكتبة موثّقة','VERIFIED BOOKS')}</span><h3>{label('روايات مصرية وعالمية حقيقية','Real Egyptian and world literature')}</h3><p>{label('كتب منشورة بأسماء مؤلفيها الأصليين. القراءة من المصدر الرسمي؛ المحتوى مش مولّد بالذكاء الاصطناعي.','Published works with their original authors. Read at the library or publisher source.')}</p></div><BookOpen size={22}/></div>
+      <div className="bs-real-grid">{realMatches.map(novel=><article className="bs-real-card" key={novel.id}>
+       <div className="bs-real-cover" aria-hidden="true"><BookOpen size={28}/><small>{novel.year}</small></div>
+       <div className="bs-real-copy"><span>{novel.category} · {novel.publisher}</span><h4>{novel.title}</h4><strong>{novel.author}</strong><p>{novel.description}</p>
+        <a href={novel.url} target="_blank" rel="noopener noreferrer">{label('اقرأ من المصدر الأصلي','Open official source')}<ArrowLeft size={15}/></a></div>
+      </article>)}</div>
+      {realMatches.length===0&&<p className="bs-real-empty">{label('مفيش روايات مطابقة للبحث.','No published books match this search.')}</p>}
+     </section>}
     {matches.length?<div className="bs-grid">{matches.map(s=><article className="bs-card" key={s.id}>
      <button className="bs-card-cover" type="button" onClick={()=>openBook(s.id)} aria-label={label('افتح ','Open ')+s.title}><Cover story={s}/><span className="bs-card-open"><BookOpen size={19}/></span></button>
      <div className="bs-card-copy"><div className="bs-card-meta"><span>{s.genre}</span><span><Clock3 size={13}/>{s.chapters.length} {label('فصل','chapters')}</span></div>
@@ -168,7 +187,7 @@ export function BarqStories(){
        <div className="bs-card-footer"><button onClick={()=>openBook(s.id)}>{label('افتح الحكاية','Read story')}<ArrowLeft size={15}/></button>
         <button className="bs-favorite" aria-label={label('المفضلة','Favorite')} aria-pressed={shelf.favorites.includes(s.id)} onClick={()=>fav(s.id)}><Heart size={17} fill={shelf.favorites.includes(s.id)?'currentColor':'none'}/></button></div>
      </div>
-    </article>)}</div>:<div className="bs-empty"><BookOpen size={32}/><strong>{label('مفيش حكايات مطابقة','No stories found')}</strong><p>{label('جرّب تصنيف أو بحث مختلف.','Try another search or category.')}</p></div>}
+    </article>)}</div>:(genre==='روايات مصرية'||genre==='روايات عالمية')?null:<div className="bs-empty"><BookOpen size={32}/><strong>{label('مفيش حكايات مطابقة','No stories found')}</strong><p>{label('جرّب تصنيف أو بحث مختلف.','Try another search or category.')}</p></div>}
    </section></div>
   :<section className="bs-reader" ref={reader}>
     <aside className="bs-reader-sidebar"><Cover story={book}/><div className="bs-book-about"><span>{book.genre}</span><h2>{book.title}</h2><p>{book.summary}</p>
