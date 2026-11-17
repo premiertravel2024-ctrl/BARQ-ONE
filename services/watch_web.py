@@ -495,5 +495,6 @@ document.getElementById('send').onclick=chat;
 document.getElementById('chatText').onkeydown=function(e){if(e.key==='Enter'){e.preventDefault();chat();}else if(Date.now()-typingAt>1000){typingAt=Date.now();send('typing','1');}};
 document.querySelectorAll('.emoji').forEach(function(btn){btn.onclick=function(){send('reaction',btn.dataset.emoji);addMessage('أنا',btn.dataset.emoji);};});
 })();
-</script></body></html>"""
+</script></body></html>
+"""
 

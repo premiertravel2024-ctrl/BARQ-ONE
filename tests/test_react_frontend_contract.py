@@ -19,7 +19,7 @@ class ReactFrontendContract(unittest.TestCase):
             with self.subTest(piece=piece):self.assertIn(piece,button)
     def test_both_palettes_and_type(self):
         css=(UI/'src/styles/tokens.css').read_text(encoding='utf-8')
-        for piece in ['#0e0d10','#19161c','#242126','#121014','#ffffff13','#f8f7f3','#bcb5bd','#ae2143','#ff728c','#F8F4F6','#FFFFFF','#F1E8EE']:
+        for piece in ['#0F1115','#191D24','#242A34','#111419','#ffffff13','#f8f7f3','#bcb5bd','#ae2143','#ff728c','#F8F4F6','#FFFFFF','#F1E8EE']:
             with self.subTest(piece=piece):self.assertIn(piece,css)
     def test_python_fallback_serving(self):
         api=(ROOT/'api.py').read_text(encoding='utf-8')
