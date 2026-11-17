@@ -1,4 +1,4 @@
-import {useCallback,useEffect,useLayoutEffect,useRef,useState} from 'react';
+import {useEffect,useLayoutEffect,useRef,useState} from 'react';
 import type {PDFDocumentProxy} from 'pdfjs-dist';
 import {ArrowRight,Bookmark,ChevronLeft,ChevronRight} from 'lucide-react';
 
@@ -11,8 +11,10 @@ function saved(id:string):Progress{
  }catch{return {page:1,marks:[]};}
 }
 
-function PdfPage({pdf,page,width,height,onError}:{pdf:PDFDocumentProxy;page:number;width:number;height:number;onError:()=>void}){
+function PdfPage({pdf,page,width,height,ar}:{pdf:PDFDocumentProxy;page:number;width:number;height:number;ar:boolean}){
  const canvas=useRef<HTMLCanvasElement>(null);
+ const [failed,setFailed]=useState(false);
+ const [attempt,setAttempt]=useState(0);
  useEffect(()=>{
   if(!canvas.current||width<1)return;
   const surface=canvas.current,context=surface.getContext('2d');
@@ -29,17 +31,20 @@ function PdfPage({pdf,page,width,height,onError}:{pdf:PDFDocumentProxy;page:numb
    const render=docPage.render({canvas:surface,canvasContext:context,viewport:view});
    cancel=()=>render.cancel();
    return render.promise;
-  }).catch(()=>{if(!cancelled)onError();});
+  }).catch(()=>{if(!cancelled)setFailed(true);});
   return()=>{cancelled=true;cancel?.();};
- },[pdf,page,width,height,onError]);
+ },[pdf,page,width,height,attempt]);
 
- return <canvas ref={canvas} aria-label={'PDF '+page}/>;
+ return <><canvas ref={canvas} hidden={failed} aria-label={'PDF '+page}/>{failed&&
+  <button type="button" onClick={()=>{setFailed(false);setAttempt(previous=>previous+1);}}>
+   {ar?'إعادة تحميل الصفحة':'Reload page'} {page}
+  </button>}</>;
 }
 export default function BookReader({book,ar,onClose}:{book:ReadingEdition;ar:boolean;onClose:()=>void}){
  const [progress,setProgress]=useState(()=>saved(book.id));
  const [pdf,setPdf]=useState<PDFDocumentProxy>();
  const [text,setText]=useState<string[]>();
- const [error,setError]=useState(false);
+ const [error,setError]=useState<'source'|'pdf'|'password'>();
  const [retry,setRetry]=useState(0);
  const viewport=useRef<HTMLDivElement>(null);
  const content=useRef<HTMLDivElement>(null);
@@ -48,7 +53,6 @@ export default function BookReader({book,ar,onClose}:{book:ReadingEdition;ar:boo
  const pdfWidth=Math.min(width,900);
  const pdfHeight=Math.ceil(pdfWidth*ratio);
  const pageStride=pdfHeight+12;
- const failRender=useCallback(()=>setError(true),[]);
  const savedPage=useRef(progress.page);
  const count=pdf?.numPages||text?.length||0;
  const page=Math.min(progress.page,count||1);
@@ -63,19 +67,22 @@ export default function BookReader({book,ar,onClose}:{book:ReadingEdition;ar:boo
  useEffect(()=>{
   const controller=new AbortController();
   let destroy:(()=>Promise<void>)|undefined;
-  setPdf(undefined);setText(undefined);setError(false);
+  let stage:'source'|'pdf'='source';
+  setPdf(undefined);setText(undefined);setError(undefined);
   void (async()=>{
    const response=book.file||await fetch('/v1/reading/books/'+encodeURIComponent(book.id),{signal:controller.signal});
    if(response instanceof Response&&!response.ok)throw new Error('Edition unavailable');
    if(book.format==='text'){
-    const edition=await response.text();
+    const edition=(await response.text()).replace(/\r\n/g,'\n');
+    if(!edition.trim()||edition.trimStart().startsWith('<'))throw new Error('Expected text edition');
     const parts=edition.match(/[\s\S]{1,6000}(?:\n|$)|[\s\S]{1,6000}/g)||[];
     if(!controller.signal.aborted)setText(parts);
     return;
    }
    const data=new Uint8Array(await response.arrayBuffer());
+   stage='pdf';
    const [{GlobalWorkerOptions,getDocument},{default:workerUrl}]=await Promise.all([
-    import('pdfjs-dist'),import('pdfjs-dist/build/pdf.worker.min.mjs?url'),
+    import('pdfjs-dist/legacy/build/pdf.mjs'),import('pdfjs-dist/legacy/build/pdf.worker.min.mjs?url'),
    ]);
    if(controller.signal.aborted)return;
    GlobalWorkerOptions.workerSrc=workerUrl;
@@ -88,7 +95,9 @@ export default function BookReader({book,ar,onClose}:{book:ReadingEdition;ar:boo
    const result=await loading.promise;
    const first=(await result.getPage(1)).getViewport({scale:1});
    if(!controller.signal.aborted){setRatio(first.height/first.width);setPdf(result);}
-  })().catch(()=>{if(!controller.signal.aborted)setError(true);});
+  })().catch((failure:unknown)=>{
+   if(!controller.signal.aborted)setError(failure instanceof Error&&failure.name==='PasswordException'?'password':stage);
+  });
   return()=>{controller.abort();void destroy?.().catch(()=>{});};
  },[book,retry]);
 
@@ -131,12 +140,16 @@ export default function BookReader({book,ar,onClose}:{book:ReadingEdition;ar:boo
    </div>}
   </header>
   <div className="bs-document-content" ref={content}>
-   {error?<div role="alert">{ar?'تعذّر فتح النسخة. جرّب تاني.':'Could not open this edition.'} <button type="button" onClick={()=>setRetry(x=>x+1)}>{ar?'إعادة المحاولة':'Retry'}</button></div>:
+   {error?<div className="bs-reader-error" role="alert">
+    <p>{error==='password'?(ar?'ملف الـPDF محمي بكلمة سر.':'This PDF is password-protected.'):
+     error==='pdf'?(ar?'تعذّر قراءة ملف الـPDF. افتح نسخة سليمة أو جرّب تاني.':'Could not read the PDF. Open another copy or retry.'):
+      (ar?'تعذّر تحميل الكتاب من المصدر. جرّب تاني بعد رجوع الاتصال.':'The book source is unavailable. Retry when connected.')}</p>
+    <button type="button" onClick={()=>setRetry(x=>x+1)}>{ar?'إعادة المحاولة':'Retry'}</button></div>:
     pdf?<div className="bs-pdf-scroll" ref={viewport} onScroll={notePage} tabIndex={0} aria-label={ar?'صفحات الكتاب':'Book pages'}>
      {Array.from({length:pdf.numPages},(_,index)=>{
       const number=index+1;
       return <div className="bs-pdf-page" key={number} style={{width:pdfWidth,height:pdfHeight}}>
-       {Math.abs(number-page)<=2&&<PdfPage pdf={pdf} page={number} width={pdfWidth} height={pdfHeight} onError={failRender}/>}
+       {Math.abs(number-page)<=2&&<PdfPage pdf={pdf} page={number} width={pdfWidth} height={pdfHeight} ar={ar}/>}
       </div>;
      })}
      <div aria-hidden="true" style={{height:'max(0px, calc(var(--pdf-viewport) - '+pdfHeight+'px))'}}/>

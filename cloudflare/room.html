@@ -301,6 +301,32 @@ body:not(.room-music) .room-head-note,.room-embedded:not(.room-music) .room-head
 .room-music #officialMusic{margin:0;gap:8px}
 .room-music #officialMusic > .sub{margin:0;font-size:.76rem}
 .room-music #officialMusic > a{color:#f6b1cd}
+
+body,button,input,select,summary,label,.msg,.sub,small{font-style:normal;font-synthesis:none}
+body{font-family:'Cairo','Segoe UI',Arial,sans-serif}
+html,body,button,input,select,.panel,.msg,.chat-heading{font-family:'Cairo','Segoe UI',Arial,sans-serif}
+input:focus,textarea:focus,select:focus{outline:none;box-shadow:none;border-color:#65748a}
+.file-picker:focus-within,.subtitle-picker:focus-within{border-color:#65748a;background:#24242d}
+#sources{padding:5px 8px;border-radius:8px}
+#sources[open] summary{margin-bottom:3px}
+#sources .source-hint{margin:0 0 5px}
+#sources .source-options{gap:6px;margin:0 0 5px;align-items:center}
+#sources .file-picker{border-radius:7px;min-height:34px;flex-wrap:nowrap;padding:3px 6px}
+#sources .file-cta{padding:3px 6px;font-size:.71rem}
+#sources .file-name{flex:1;min-width:0;margin:0}
+#sources #linkForm{flex-wrap:nowrap;align-items:center;gap:5px}
+#sources #linkForm button,#sources #linkMedia,#sources #musicService button,#sources #musicService input{width:auto;height:34px;min-height:34px;padding:5px 8px;border-radius:7px;line-height:1.25}
+#sources #musicService{margin:0 0 5px;padding:4px;gap:5px}
+#sources .row{gap:6px;margin:4px 0}
+#sources #subtitlePicker,#sources #quality{min-height:30px;padding:4px 7px;border-radius:7px}
+#sources #guestControls{min-height:0}
+#chatToggle{min-height:34px;padding:5px 9px}
+body.room-focus:not(.room-music) .grid{grid-template-columns:minmax(0,1fr)}
+@media(max-width:540px){
+ #sources #linkForm button,#sources #linkMedia,#sources .file-picker{height:auto;min-height:38px}
+ #sources .file-picker{flex-wrap:wrap}
+ #sources .file-name{flex-basis:100%}
+}
 </style></head>
 <body><main><header class="room-head">
  <div><h1 id="roomTitle">غرفة المشاهدة</h1><p class="room-head-note">BARQ ONE</p></div>
@@ -326,7 +352,7 @@ body:not(.room-music) .room-head-note,.room-embedded:not(.room-music) .room-head
   <strong id="musicNowTitle">اختار أغنية نسمعها سوا</strong><small id="musicNowSource">ملف صوتي من جهازك أو رابط رسمي</small>
   <div class="music-equalizer" aria-hidden="true"><i/><i/><i/><i/><i/><i/><i/><i/><i/></div>
  </div><video id="video" controls playsinline></video><div id="waitingOverlay" class="room-waiting" role="status" aria-live="polite"><span class="room-waiting-icon" aria-hidden="true">BARQ</span><strong id="waitingTitle">في انتظار الفيديو</strong><small id="waitingDescription">الفيديو هيظهر أول ما المضيف يشغّله</small></div><div id="captions" class="captions" dir="auto" aria-live="off"></div><div class="player-screen-actions" id="screenActions"><button type="button" id="fitMode" title="اختيار طريقة عرض الفيديو" aria-pressed="false">ملء الإطار</button><button type="button" id="enterFullscreen" title="عرض الفيديو على حجم الشاشة">ملء الشاشة</button></div></div>
- <div class="room-viewer-actions"><div class="row room-guest-controls" id="guestWrap" hidden aria-label="أدوات المشاهدة"><span class="guest-tools-label">التحكم في المشاهدة</span><button id="resumePlayback" title="تشغيل الصوت والفيديو">تشغيل بالصوت</button><button id="pauseRequest" title="طلب تشغيل أو إيقاف مؤقت">اطلب تشغيل / إيقاف</button><button id="seekRequest" title="طلب تقديم 30 ثانية">اطلب تقديم ٣٠ ثانية</button><button type="button" id="retryMedia" hidden>إعادة توصيل الفيديو</button></div><button type="button" id="chatToggle" aria-expanded="true" aria-controls="roomChat">إخفاء الدردشة</button></div>
+ <div class="room-viewer-actions"><div class="row room-guest-controls" id="guestWrap" hidden aria-label="أدوات المشاهدة"><span class="guest-tools-label">التحكم في المشاهدة</span><button id="resumePlayback" title="تشغيل الصوت والفيديو">تشغيل بالصوت</button><button id="pauseRequest" title="طلب تشغيل أو إيقاف مؤقت">اطلب تشغيل / إيقاف</button><button id="seekRequest" title="طلب تقديم 30 ثانية">اطلب تقديم ٣٠ ثانية</button><button type="button" id="retryMedia" hidden>إعادة توصيل البث</button></div><button type="button" id="chatToggle" aria-expanded="true" aria-controls="roomChat">إخفاء الدردشة</button></div>
  <section id="officialMusic" hidden class="row"></section>
  <p class="sub" id="mediaNote" role="status"></p>
 </section>
@@ -343,7 +369,7 @@ var socket=null,peer=null,localStream=null,remoteStream=null,connected=false,pen
 var video=document.getElementById('video');
 var music=params.get('mode')==='music';
 var blobUrl=null,guestPresent=false,loadVersion=0,rtcQueue=Promise.resolve();
-var mediaTimer=null,retryAt=0,guestSoundEnabled=false;
+var mediaTimer=null,recoveryTimer=null,recoveryAttempts=0,retryAt=0,guestSoundEnabled=false;
 var retryButton=document.getElementById('retryMedia');
 var resumeButton=document.getElementById('resumePlayback');
 if(music){
@@ -403,7 +429,14 @@ var paired=params.get('paired')==='1';
 if(paired)document.body.classList.add('room-embedded');
 var turnServers=[],officialTrack=null,visibleTrackKey=null;
 var reconnectTimer=null,reconnectAttempts=0,lastCode='',leaving=false,typingAt=0;
-window.addEventListener('pagehide',function(){leaving=true;clearTimeout(reconnectTimer);closePeer();if(socket)socket.close(1000);});
+var heartbeat=setInterval(function(){if(connected)send('ping',null);},25000);
+window.addEventListener('pagehide',function(){
+ leaving=true;clearInterval(heartbeat);clearTimeout(reconnectTimer);clearTimeout(recoveryTimer);
+ closePeer();if(socket)socket.close(1000);
+});
+window.addEventListener('online',function(){
+ if(!leaving&&(host||paired||lastCode)){reconnectAttempts=0;connect(lastCode);}
+});
 var nearby=params.get('lan')==='1'||/^http:\/\/(?:10\.|172\.|192\.168\.|100\.)/.test(location.origin);
 document.getElementById('localWrap').hidden=!host;
 document.getElementById('musicService').hidden=!host||!music;
@@ -413,7 +446,10 @@ if(!host){
  video.controls=false;video.muted=true;status.textContent='ادخل كود الغرفة';
  video.addEventListener('playing',function(){
   if(!remoteStream||video.srcObject!==remoteStream)return;
-  if(music||video.videoWidth>0){clearTimeout(mediaTimer);retryButton.hidden=true;showWaiting(false);note('العرض متصل');}
+  if(music||video.videoWidth>0){
+   clearTimeout(mediaTimer);clearTimeout(recoveryTimer);recoveryAttempts=0;
+   retryButton.hidden=true;showWaiting(false);note('العرض متصل');
+  }
  });
 }
 function note(text){status.textContent=text;}
@@ -433,9 +469,23 @@ function connect(code){
  socket=new WebSocket(url);
  socket.onopen=function(){note('جاري تجهيز اتصال الغرفة…');};
  socket.onerror=function(){note('فشل اتصال الغرفة');};
- socket.onclose=function(event){connected=false;guestPresent=false;pendingIce=[];note('اتصال الغرفة اتقطع');if(!host){showWaiting(true,'الاتصال اتقطع','الفيديو هيكمل من عرض المضيف لما الاتصال يرجع');}closePeer();
- if(!leaving&&![1000,1008].includes(event.code)&&reconnectAttempts<5){var delay=Math.min(15000,1000*Math.pow(2,reconnectAttempts++));note('الاتصال اتقطع؛ بنحاول نرجع الغرفة…');reconnectTimer=setTimeout(function(){connect(lastCode);},delay);}
- else if(!host&&!paired&&!leaving)document.getElementById('joinPanel').hidden=false;
+ socket.onclose=function(event){
+  connected=false;guestPresent=false;pendingIce=[];
+  clearTimeout(recoveryTimer);
+  var reconnectable=!leaving&&![1000,1008].includes(event.code);
+  var streaming=reconnectable&&peer&&peer.connectionState==='connected';
+  if(!streaming){
+   closePeer();
+   if(!host)showWaiting(true,'الاتصال اتقطع','البث بيرجع من نفس المكان عند المضيف لما الاتصال يرجع');
+  }
+  if(reconnectable&&reconnectAttempts<7){
+   var delay=Math.min(20000,750*Math.pow(2,reconnectAttempts++))+Math.floor(Math.random()*400);
+   note(streaming?'البث شغّال · بنرجّع اتصال الغرفة…':'الاتصال اتقطع؛ بنحاول نرجع الغرفة…');
+   reconnectTimer=setTimeout(function(){connect(lastCode);},delay);
+  }else{
+   note('اتصال الغرفة اتقطع');
+   if(!host&&!paired&&!leaving)document.getElementById('joinPanel').hidden=false;
+  }
  };
  socket.onmessage=async function(event){
   var packet;try{packet=JSON.parse(event.data);}catch(e){return;}
@@ -450,14 +500,18 @@ function connect(code){
    closePeer();
    var pc=makePeer();
    showWaiting(true,'جاري توصيل الفيديو','هيظهر هنا أول ما يوصل من صاحب الغرفة');
-   mediaTimer=setTimeout(showMediaFailure,14000);
+   mediaTimer=setTimeout(function(){scheduleRecovery(0);},14000);
    await pc.setRemoteDescription(packet.value);
    await drainIce(pc);
    var answer=await pc.createAnswer();
    await pc.setLocalDescription(answer);
    if(peer===pc)send('answer',pc.localDescription);
   });
-  if(packet.type==='request-media'&&host&&Date.now()-retryAt>3000){retryAt=Date.now();queueRTC(makeOffer);}
+  if(packet.type==='request-media'&&host&&Date.now()-retryAt>3000){
+   retryAt=Date.now();
+   var forceRelay=packet.value?.relay===true;
+   queueRTC(function(){return makeOffer(forceRelay);});
+  }
   if(packet.type==='answer'&&host)queueRTC(async function(){if(peer&&peer.signalingState==='have-local-offer'){var pc=peer;await pc.setRemoteDescription(packet.value);await drainIce(pc);}});
   if(packet.type==='ice')queueRTC(async function(){if(peer&&peer.remoteDescription){try{await peer.addIceCandidate(packet.value);}catch(e){}}else if(pendingIce.length<100)pendingIce.push(packet.value);});
   if(packet.type==='request-pause'&&host){if(document.getElementById('guestControls').checked){video.paused?video.play():video.pause();}else addMessage('تنبيه','الضيف طلب إيقاف أو تشغيل الفيديو.');}
@@ -470,14 +524,37 @@ function queueRTC(operation){rtcQueue=rtcQueue.then(operation).catch(function(){
 async function drainIce(pc){while(peer===pc&&pendingIce.length){try{await pc.addIceCandidate(pendingIce.shift());}catch(e){}}}
 function closePeer(){
  clearTimeout(mediaTimer);
+ clearTimeout(recoveryTimer);
  if(peer){var old=peer;peer=null;old.close();}
  if(!host&&remoteStream){remoteStream=null;video.srcObject=null;}
 }
+function hasRelay(){
+ return turnServers.some(function(server){
+  return [].concat(server.urls||[]).some(function(url){return /^turns?:/.test(url);});
+ });
+}
+function requestMedia(){
+ if(host||!connected||!guestPresent||visibleTrackKey)return false;
+ var relay=recoveryAttempts>0&&hasRelay()&&!nearby;
+ if(!send('request-media',{relay:relay}))return false;
+ recoveryAttempts++;
+ retryButton.hidden=true;
+ note(music?'بنرجّع الصوت…':'بنرجّع الفيديو…');
+ showWaiting(true,'جاري إعادة توصيل الفيديو','خليك في الغرفة لحد ما العرض يرجع');
+ clearTimeout(mediaTimer);
+ mediaTimer=setTimeout(function(){scheduleRecovery(0);},14000);
+ return true;
+}
+function scheduleRecovery(delay){
+ clearTimeout(recoveryTimer);
+ recoveryTimer=setTimeout(function(){
+  if(recoveryAttempts>=2||!requestMedia())showMediaFailure();
+ },delay);
+}
 function showMediaFailure(){
  if(host)return;
- var hasRelay=turnServers.some(function(server){return [].concat(server.urls||[]).some(function(url){return /^turns?:/.test(url);});});
- var message=hasRelay||nearby?'اضغط إعادة توصيل الفيديو وحاول تاني.':'الفيديو ما وصلش بين الشبكتين. جرّب نفس شبكة الواي فاي أو اتصال بخادم ترحيل.';
- note('الدردشة متصلة · الفيديو ما وصلش');
+ var message=hasRelay()||nearby?'اضغط إعادة توصيل الفيديو وحاول تاني.':'الفيديو ما وصلش بين الشبكتين. جرّب نفس شبكة الواي فاي أو اتصال بخادم ترحيل.';
+ note(music?'الصوت ما وصلش':'الفيديو ما وصلش');
  showWaiting(true,'تعذّر توصيل الفيديو',message);
  retryButton.hidden=false;
 }
@@ -490,17 +567,23 @@ function playGuest(){
   note('اضغط تشغيل بالصوت');
  });
 }
-function makePeer(){
+function makePeer(relayOnly){
  if(peer)return peer;
- var pc=new RTCPeerConnection({iceServers:nearby?[]:turnServers.length?turnServers:[{urls:'stun:stun.l.google.com:19302'}]});
+ var pc=new RTCPeerConnection({
+  iceServers:nearby?[]:turnServers.length?turnServers:[{urls:'stun:stun.l.google.com:19302'}],
+  iceTransportPolicy:relayOnly&&!nearby&&hasRelay()?'relay':'all'
+ });
  peer=pc;
  pc.onicecandidate=function(e){if(peer===pc&&e.candidate)send('ice',e.candidate.toJSON());};
  pc.onconnectionstatechange=function(){
   if(peer!==pc)return;
-  if(pc.connectionState==='failed'){
-   if(host)note('الفيديو ما وصلش للضيف. الدردشة متصلة.');
-   else {clearTimeout(mediaTimer);showMediaFailure();}
-  }else if(host&&pc.connectionState==='connected')note('الفيديو بيتبعت للضيف');
+  if(pc.connectionState==='failed'||pc.connectionState==='disconnected'){
+   if(host)note(music?'اتصال الصوت مع الضيف ضعيف':'اتصال الفيديو مع الضيف ضعيف');
+   else scheduleRecovery(pc.connectionState==='failed'?0:4000);
+  }else if(pc.connectionState==='connected'){
+   clearTimeout(recoveryTimer);
+   if(host)note(music?'الصوت بيتبعت للضيف':'الفيديو بيتبعت للضيف');
+  }
  };
  pc.ontrack=function(event){
   if(host||peer!==pc)return;
@@ -518,13 +601,13 @@ function makePeer(){
  if(host&&localStream)localStream.getTracks().forEach(function(track){if(track.readyState==='live')pc.addTrack(track,localStream);});
  return pc;
 }
-async function makeOffer(){
+async function makeOffer(relayOnly){
  if(!host||!localStream||!connected||!guestPresent)return;
  if(!(music?localStream.getAudioTracks():localStream.getVideoTracks()).some(function(track){return track.readyState==='live';}))return;
  closePeer();
- var pc=makePeer();
+ var pc=makePeer(relayOnly);
  var quality=document.getElementById('quality').value;
- var maxRate=quality==='high'?4000000:quality==='medium'?1800000:quality==='low'?600000:null;
+ var maxRate=quality==='high'?4000000:quality==='medium'?1800000:quality==='low'?600000:nearby?4000000:2500000;
  if(maxRate){for(var sender of pc.getSenders()){if(sender.track&&sender.track.kind==='video'){var p=sender.getParameters();if(!p.encodings||!p.encodings.length)continue;p.encodings[0].maxBitrate=maxRate;try{await sender.setParameters(p);}catch(e){}}}}
  var offer=await pc.createOffer();await pc.setLocalDescription(offer);if(peer===pc)send('offer',pc.localDescription);
 }
@@ -738,12 +821,8 @@ if(host){
   if(video.srcObject||video.src)playGuest();
  };
  retryButton.onclick=function(){
-  if(send('request-media',true)){
-   retryButton.hidden=true;
-   showWaiting(true,'جاري إعادة توصيل الفيديو','خليك في الغرفة لحد ما العرض يرجع');
-   clearTimeout(mediaTimer);
-   mediaTimer=setTimeout(showMediaFailure,14000);
-  }
+  recoveryAttempts=0;
+  if(!requestMedia())note('استنى لحد ما اتصال الغرفة يرجع.');
  };
  document.getElementById('pauseRequest').onclick=function(){send('request-pause',true);};
  document.getElementById('seekRequest').onclick=function(){send('request-seek',30);};
