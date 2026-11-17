@@ -56,3 +56,8 @@
 .ops-chat-row button:first-child{flex:1}
 .ops-chat-row button[aria-pressed='true']{color:#ff728c}
 
+
+/* Dedicated chat in top bar; rail remains for app modules. */
+.ops-header-actions .ops-standalone-chat{display:inline-flex;gap:7px;border-color:#94435e;color:#ffe7ef;padding:7px 12px;background:#251722;font-weight:750;min-height:38px}
+.ops-header-actions .ops-standalone-chat[aria-current=page]{background:#b63259;border-color:#e65c85;color:#fff}
+@media(max-width:730px){.ops-header-actions .ops-standalone-chat span{display:none}.ops-header-actions .ops-standalone-chat{min-width:38px;padding:8px;justify-content:center}}

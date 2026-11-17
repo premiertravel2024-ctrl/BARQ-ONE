@@ -196,9 +196,9 @@ function RuntimeTools(){
  }
  useEffect(()=>{const controller=new AbortController();void inspect(controller.signal);return()=>controller.abort();},[]);
  return <section className="one-surface">
-  <div className="one-section-head"><h2>{ar?'أدوات الجهاز':'Detected tools'}</h2><button type="button" onClick={()=>void inspect()}>{ar?'إعادة الفحص':'Scan again'}</button></div>
+  <div className="one-section-head"><h2>{ar?'أدوات تشغيل النماذج':'AI model runtimes'}</h2><button type="button" onClick={()=>void inspect()}>{ar?'إعادة الفحص':'Scan again'}</button></div>
   {error&&<p role="alert">{ar?'تعذّر فحص الأدوات.':'Tool detection unavailable.'}</p>}
-  {tools?.map(tool=><div className="one-line" key={tool.name}><span>{tool.name}</span>
+  {tools?.filter(tool=>/ollama|llama|model|ai|python|cuda|pytorch|torch|transformers|huggingface|deepseek|qwen|gemini|groq|mistral/i.test(tool.name)).map(tool=><div className="one-line" key={tool.name}><span>{tool.name}</span>
    <span>{tool.detected?(ar?'تم العثور عليها':'Detected'):(ar?'غير مكتشفة':'Undetected')}</span></div>)}
  </section>;
 }
@@ -330,7 +330,7 @@ export function BarqOne({page,providers,onVoice,onNavigate,onModels,onQuick}:Pro
    </div>
    <div className="one-dashboard" dir="ltr">
     <MonitorPanel/>
-    <OverviewSignals providers={providers} onTools={()=>onNavigate('library')}/>
+    <OverviewSignals providers={providers} onTools={()=>onNavigate('tools')}/>
    </div>
    <Mission/>
   </>}
@@ -343,7 +343,7 @@ export function BarqOne({page,providers,onVoice,onNavigate,onModels,onQuick}:Pro
   {page==='music'&&<MusicPlayer/>}
   {page==='automation'&&<AutomationDashboard/>}
   {page==='tools'&&<div className="one-panels"><ProviderList providers={providers} onSettings={onModels}/><RuntimeTools/></div>}
-  {(page==='tools'||page==='library'||page==='installed')&&<OpenHub mode={page}/>}
+  {(page==='library'||page==='installed')&&<OpenHub mode={page}/>} 
  </section>;
 }
 

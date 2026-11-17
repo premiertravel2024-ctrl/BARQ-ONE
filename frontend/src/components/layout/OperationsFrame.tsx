@@ -1,5 +1,4 @@
-import {useState} from 'react';
-import {AudioLines,ChevronDown,Ellipsis,Menu,Copy,PanelLeftClose,PanelLeftOpen,Pencil,Pin,Plus,Search,Settings2,Trash2,X} from 'lucide-react';
+import {AudioLines,Ellipsis,Menu,Copy,MessageSquare,PanelLeftClose,PanelLeftOpen,Pencil,Search,Settings2,Trash2,X} from 'lucide-react';
 import {useApp} from '../../store';
 import {sections,type OnePage} from '../../pages/BarqOne';
 import {ModelSelector} from '../chat/ModelSelector';
@@ -16,24 +15,22 @@ export function OperationsHeader({page,navigate,search,settings}:Actions){
    <button className="ops-wordmark" type="button" onClick={()=>navigate('center')}><span className="ops-mark"><AudioLines size={17}/></span><span>BARQ <b>ONE</b></span></button>
   </div>
   <nav aria-label={ar?'التنقل الرئيسي':'Main navigation'}>
-   {(['center','chat','library','tools','monitor'] as const).map(key=>{
+   {(['center','library','tools','monitor'] as const).map(key=>{
     const item=sections.find(section=>section[0]===key)!;
     return <button key={key} type="button" onClick={()=>navigate(key)} aria-current={page===key?'page':undefined}>{item[ar?1:2]}</button>;
    })}
   </nav>
   <div className="ops-header-actions">
+    <button className="ops-standalone-chat" type="button" onClick={()=>navigate('chat')} aria-current={page==='chat'?'page':undefined} aria-label={ar?'فتح المحادثة':'Open chat'}><MessageSquare size={17}/><span>{ar?'المحادثة':'Chat'}</span></button>
    <button className="ops-search" type="button" onClick={search} aria-label={ar?'البحث':'Search'}><Search size={14}/><span>{ar?'بحث سريع':'Quick search'}</span><kbd dir="ltr">Ctrl K</kbd></button>
    <button type="button" onClick={settings} aria-label={ar?'الإعدادات':'Settings'}><Settings2 size={16}/></button>
   </div>
  </header>;
 }
 
-export function OperationsRail({page,navigate,newChat,onDelete,onPlayground}:Pick<Actions,'page'|'navigate'>&{newChat:()=>void;onDelete:(id:string)=>void;onPlayground:()=>void}){
+export function OperationsRail({page,navigate,onPlayground}:Pick<Actions,'page'|'navigate'>&{newChat:()=>void;onDelete:(id:string)=>void;onPlayground:()=>void}){
  const ar=useApp(s=>s.language)==='ar',open=useApp(s=>s.sidebarOpen),setOpen=useApp(s=>s.setSidebarOpen);
  const collapsed=useApp(s=>s.sidebarCollapsed),setCollapsed=useApp(s=>s.setSidebarCollapsed);
- const chats=useApp(s=>s.chats),active=useApp(s=>s.activeId),select=useApp(s=>s.selectChat);
- const [expand,setExpand]=useState(true);
- const pin=useApp(s=>s.pinChat);
  function choose(target:OnePage){navigate(target);setOpen(false);}
  return <>
   {open&&<button type="button" className="ops-drawer-backdrop" aria-label={ar?'إغلاق':'Close'} onClick={()=>setOpen(false)}/>}
@@ -44,17 +41,8 @@ export function OperationsRail({page,navigate,newChat,onDelete,onPlayground}:Pic
     <button className="ops-rail-close" type="button" aria-label={ar?'إغلاق':'Close'} onClick={()=>setOpen(false)}><X size={17}/></button>
    </div>
    <nav aria-label={ar?'أقسام التطبيق':'Application sections'}>
-    {sections.map(([key,label,english,Icon])=><button key={key} type="button" title={ar?label:english} aria-current={page===key?'page':undefined} aria-label={ar?label:english} onClick={()=>choose(key)}><i><Icon size={15}/></i><span>{ar?label:english}</span></button>)}
+    {sections.filter(([key])=>key!=='chat').map(([key,label,english,Icon])=><button key={key} type="button" title={ar?label:english} aria-current={page===key?'page':undefined} aria-label={ar?label:english} onClick={()=>choose(key)}><i><Icon size={15}/></i><span>{ar?label:english}</span></button>)}
    </nav>
-   {page==='chat'&&<div className="ops-chat-history">
-    <button className="ops-new-chat" type="button" onClick={()=>{newChat();setOpen(false)}}><Plus size={16}/><span>{ar?'محادثة جديدة':'New chat'}</span></button>
-    <button className="ops-history-toggle" type="button" onClick={()=>setExpand(!expand)} aria-expanded={expand}><span>{ar?'المحادثات':'Conversations'}</span><ChevronDown size={14}/></button>
-    {expand&&[...chats].sort((a,b)=>Number(b.pinned)-Number(a.pinned)||b.updatedAt-a.updatedAt).map(chat=><div key={chat.id} className="ops-chat-row" data-current={active===chat.id}>
-     <button type="button" title={chat.title} onClick={()=>{select(chat.id);choose('chat')}}>{chat.title}</button>
-     <button type="button" title={ar?'تثبيت المحادثة':'Pin chat'} aria-label={ar?'تثبيت '+chat.title:'Pin '+chat.title} aria-pressed={chat.pinned} onClick={()=>pin(chat.id)}><Pin size={13}/></button>
-     <button type="button" aria-label={ar?'حذف '+chat.title:'Delete '+chat.title} onClick={()=>onDelete(chat.id)}><Trash2 size={13}/></button>
-    </div>)}
-   </div>}
    <button type="button" className="ops-more" onClick={onPlayground}><i><Ellipsis size={15}/></i><span>{ar?'مختبر النماذج':'Model playground'}</span></button>
   </aside>
  </>;
