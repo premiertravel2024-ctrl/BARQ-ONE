@@ -152,7 +152,9 @@ jobs:
         shell: pwsh
         run: choco install innosetup -y --no-progress
       - name: Verify incremental Core+UI extraction contract before building
-        run: python -m pytest -q tests/test_restore_verified_core.py
+        run: |
+          python -m pip install 'pytest>=8,<10'
+          python -m pytest -q tests/test_restore_verified_core.py
       - name: Check Windows policy regression and protected staging paths
         shell: pwsh
         run: |
