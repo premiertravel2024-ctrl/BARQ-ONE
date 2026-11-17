@@ -48,7 +48,7 @@ jobs:
         working-directory: .
         run: |
           python3 -m pip install pytest fastapi httpx mutagen
-          python3 -m pytest -q tests/test_cinema_music_rebuild.py tests/test_room_player_fullscreen.py tests/test_ui_upgrade_v22.py tests/test_app_context.py
+          python3 -m pytest -q tests/test_cinema_music_rebuild.py tests/test_room_player_fullscreen.py tests/test_ui_upgrade_v22.py tests/test_app_context.py tests/test_reading_editions.py
       - name: Verify media UI behavior on desktop and mobile
         run: |
           npx playwright install --with-deps chromium
@@ -244,6 +244,18 @@ jobs:
           if-no-files-found: error
           retention-days: 30
       - name: Download the published Windows artifact
+        id: download-windows
+        continue-on-error: true
+        uses: actions/download-artifact@v4
+        with:
+          name: BARQ-v2.41.0-verified-Windows-x64
+          path: ${{ runner.temp }}/barq-published-artifact
+      - name: Allow newly uploaded artifacts to propagate
+        if: steps.download-windows.outcome == 'failure'
+        shell: pwsh
+        run: Start-Sleep -Seconds 15
+      - name: Retry downloading the published Windows artifact
+        if: steps.download-windows.outcome == 'failure'
         uses: actions/download-artifact@v4
         with:
           name: BARQ-v2.41.0-verified-Windows-x64

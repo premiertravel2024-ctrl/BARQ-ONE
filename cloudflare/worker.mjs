@@ -181,6 +181,7 @@ export class RoomSession {
     if(typeof message!=="string"||message.length>65536){socket.close(1009,"Message too large");return;}
     let data;try{data=JSON.parse(message);}catch{return;}
     const role=this.ctx.getTags(socket)[0]||"",type=data?.type;
+    if(type==="ping")return;
     const allowed=["offer","answer","ice","chat","typing","reaction","track","sync","subtitle","request-pause","request-seek","request-media"];
     if(!allowed.includes(type))return;
     if(["offer","sync","track","subtitle"].includes(type)&&role!=="host")return;

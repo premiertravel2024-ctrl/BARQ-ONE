@@ -719,6 +719,8 @@ async def signal_session(ws:WebSocket,room_id:str,*,hosted=False,ice_servers=Non
             if not isinstance(payload,dict):
                 continue
             kind=payload.get("type")
+            if kind=="ping":
+                continue
             if kind not in (allowed_host if role=="host" else allowed_guest):
                 continue
             if kind in ("chat","reaction","typing"):

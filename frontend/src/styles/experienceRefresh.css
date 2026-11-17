@@ -27,6 +27,8 @@
 .one-page-head h1{letter-spacing:0}
 .one-page button,.bm-player button,.bs-hub button,.barq-media button{transition:background-color .15s ease,border-color .15s ease,color .15s ease}
 .one-page :is(button,input,textarea,select):focus-visible{outline:2px solid #f16a91;outline-offset:2px}
+.one-page :is(input,textarea,select):focus{outline:none;box-shadow:none;border-color:#65748a}
+.one-page :is(button,input,textarea,select,summary,small){font-style:normal}
 
 /* Music: one quiet header + small segmented navigation, not a dominant hero. */
 .bm-player{border:1px solid var(--barq-ui-border);border-radius:18px;overflow:hidden;background:#111419}

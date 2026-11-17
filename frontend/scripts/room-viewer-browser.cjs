@@ -49,6 +49,15 @@ async function verifyPlayback(browser,mode){
    };
   });
   await host.goto('http://localhost:44331/r/test?role=host&paired=1&mode='+mode);
+  await host.locator('#linkMedia').click();
+  const field=await host.locator('#linkMedia').evaluate(input=>({
+   height:input.getBoundingClientRect().height,
+   outline:getComputedStyle(input).outlineStyle,
+   style:getComputedStyle(input).fontStyle,
+  }));
+  assert.ok(field.height<=40,'source input should be compact');
+  assert.equal(field.outline,'none');
+  assert.equal(field.style,'normal');
   await host.locator('#sources summary').click();
   await host.locator('#sources summary').click();
   const fixture=await host.evaluate(async audioOnly=>{
@@ -101,6 +110,13 @@ async function verifyPlayback(browser,mode){
    throw new Error(mode+' guest did not receive media: '+JSON.stringify({history,host:await inspect(host),guest:await inspect(guest)}),{cause:error});
   }
   assert.ok(history.some(packet=>packet.type==='answer'&&packet.role==='guest'));
+  await guest.evaluate(()=>{
+   const peer=window.__peers.at(-1);
+   Object.defineProperty(peer,'connectionState',{value:'failed'});
+   peer.dispatchEvent(new Event('connectionstatechange'));
+  });
+  await guest.waitForFunction(()=>window.__peers.length>1&&window.__peers.at(-1).connectionState==='connected');
+  assert.ok(history.some(packet=>packet.type==='request-media'&&packet.role==='guest'));
   assert.equal(await guest.locator('#waitingOverlay').isVisible(),false);
   await guest.locator('#resumePlayback').click();
   assert.equal(await guest.locator('#video').evaluate(media=>media.muted),false);

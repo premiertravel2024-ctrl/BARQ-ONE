@@ -300,6 +300,10 @@ def live_voice_capture_worklet():
         'X-Content-Type-Options': 'nosniff',
     })
 if (react_dist/'assets').is_dir():
+    # Windows MIME registry entries can otherwise prevent PDF.js module workers from loading.
+    import mimetypes
+    mimetypes.add_type('text/javascript', '.mjs', strict=True)
+    mimetypes.add_type('application/wasm', '.wasm', strict=True)
     app.mount('/assets',StaticFiles(directory=react_dist/'assets'),name='react-assets')
 
 @app.get('/')
