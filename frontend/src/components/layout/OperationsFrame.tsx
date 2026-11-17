@@ -16,13 +16,12 @@ export function OperationsHeader({page,navigate,search,settings}:Actions){
    <button className="ops-wordmark" type="button" onClick={()=>navigate('center')}><span className="ops-mark"><AudioLines size={17}/></span><span>BARQ <b>ONE</b></span></button>
   </div>
   <nav aria-label={ar?'التنقل الرئيسي':'Main navigation'}>
-   {(['center','library','tools','monitor'] as const).map(key=>{
+   {(['center','chat','library','tools','monitor'] as const).map(key=>{
     const item=sections.find(section=>section[0]===key)!;
     return <button key={key} type="button" onClick={()=>navigate(key)} aria-current={page===key?'page':undefined}>{item[ar?1:2]}</button>;
    })}
   </nav>
   <div className="ops-header-actions">
-    <button className="ops-standalone-chat" type="button" onClick={()=>navigate('chat')} aria-current={page==='chat'?'page':undefined} aria-label={ar?'فتح المحادثة':'Open chat'}><MessageSquare size={17}/><span>{ar?'المحادثة':'Chat'}</span></button>
    <button className="ops-search" type="button" onClick={search} aria-label={ar?'البحث':'Search'}><Search size={14}/><span>{ar?'بحث سريع':'Quick search'}</span><kbd dir="ltr">Ctrl K</kbd></button>
    <button type="button" onClick={settings} aria-label={ar?'الإعدادات':'Settings'}><Settings2 size={16}/></button>
   </div>
@@ -44,7 +43,6 @@ export function OperationsRail({page,navigate,onPlayground}:Pick<Actions,'page'|
    <nav aria-label={ar?'أقسام التطبيق':'Application sections'}>
     {sections.filter(([key])=>key!=='chat').map(([key,label,english,Icon])=><button key={key} type="button" title={ar?label:english} aria-current={page===key?'page':undefined} aria-label={ar?label:english} onClick={()=>choose(key)}><i><Icon size={15}/></i><span>{ar?label:english}</span></button>)}
    </nav>
-   <button type="button" className="ops-more" onClick={onPlayground}><i><Ellipsis size={15}/></i><span>{ar?'مختبر النماذج':'Model playground'}</span></button>
   </aside>
  </>;
 }
