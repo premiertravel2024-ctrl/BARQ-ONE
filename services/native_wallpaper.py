@@ -103,6 +103,21 @@ def import_file(path):
     return apply(identifier)
 
 
+def remove_wallpaper(identifier):
+    """Remove an imported entry, never the original media outside BARQ."""
+    if not isinstance(identifier, str) or len(identifier) != 24 or any(c not in "0123456789abcdef" for c in identifier):
+        raise ValueError("Invalid wallpaper ID")
+    with _lock:
+        entries = _load()
+        if identifier not in entries:
+            raise ValueError("Wallpaper not found in the BARQ library")
+        if state().get("wallpaper_id") == identifier:
+            stop()
+        entries.pop(identifier)
+        _save(entries)
+        return {"status": "removed", "verified": True, "removed_id": identifier, "media_deleted": False}
+
+
 def _state_path():
     return _folder() / "engine.json"
 
@@ -209,12 +224,16 @@ def control(action, volume=None):
 def stop():
     global _process
     with _lock:
+        # A previously launched engine can outlive the transient main process handle.
+        # The local authenticated control port is authoritative when its PID is valid.
+        old = _state()
+        if old.get("pid") != os.getpid():
+            try:
+                _request(old, "stop")
+            except RuntimeError:
+                pass
         if _process is not None:
             if _process.poll() is None:
-                try:
-                    _request(_state(), "stop")
-                except RuntimeError:
-                    pass
                 try:
                     _process.wait(timeout=2)
                 except subprocess.TimeoutExpired:
@@ -426,12 +445,28 @@ def engine_main(identifier, parent_pid):
         except (ValueError, OSError, ImportError):
             return
 
+    loaded = threading.Event()
+    published = threading.Event()
+    def publish_when_ready():
+        # WebView2 can fire loaded BEFORE before_show on some Windows builds.
+        # Publish when both events happened, regardless of their order.
+        if not ready.is_set() or not loaded.is_set() or published.is_set():
+            return
+        with _lock:
+            if published.is_set():
+                return
+            record = {"pid": os.getpid(), "port": port, "token": token, "wallpaper_id": identifier}
+            temp = _state_path().with_suffix(".tmp")
+            temp.write_text(json.dumps(record), encoding="utf-8")
+            os.replace(temp, _state_path())
+            published.set()
     def attach():
         try:
             native = gui["window"].native
             handle = int(native.Handle.ToInt64())
             _embed_native_window(handle)
             ready.set()
+            publish_when_ready()
         except Exception as error:
             gui["error"] = str(error)
             print("Wallpaper attachment failed:", error, file=sys.stderr, flush=True)
@@ -445,17 +480,12 @@ def engine_main(identifier, parent_pid):
         gui["window"] = w
         w.events.before_show += attach
         def signal_loaded():
-            # Do not report ready until native attachment and web content completed.
-            if ready.is_set():
-                current = {"pid": os.getpid(), "port": port, "token": token,
-                           "wallpaper_id": identifier}
-                temp = _state_path().with_suffix(".tmp")
-                temp.write_text(json.dumps(current), encoding="utf-8")
-                os.replace(temp, _state_path())
+            loaded.set()
+            publish_when_ready()
         w.events.loaded += signal_loaded
         threading.Thread(target=check_parent, daemon=True).start()
         webview.start(gui="edgechromium", debug=False)
-        return 0 if ready.is_set() else 4
+        return 0 if ready.is_set() and loaded.is_set() and media_ready.is_set() else 4
     except (OSError, RuntimeError) as exc:
         return 5
     finally:

@@ -263,6 +263,21 @@ def pick_local_wallpaper():
     return _run(["setwp","--file",str(path)])
 
 
+@router.delete("/{wallpaper_id}")
+def remove_wallpaper(wallpaper_id: str):
+    """Remove the BARQ library record only; never erase the user's own media."""
+    _consent()
+    if not _native_enabled():
+        raise HTTPException(501, "Removing legacy Lively library entries is not supported by BARQ")
+    from services import native_wallpaper as native
+    try:
+        return native.remove_wallpaper(wallpaper_id)
+    except ValueError as exc:
+        raise HTTPException(404, str(exc)) from exc
+    except (RuntimeError, OSError) as exc:
+        raise HTTPException(503, str(exc)) from exc
+
+
 @router.post("/action")
 def wallpaper_action(request:Action):
     if request.action=="show":

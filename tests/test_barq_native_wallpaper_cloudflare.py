@@ -62,3 +62,47 @@ def test_windows_installer_dispatches_bundled_engine():
     assert "desktop.py" in build
     assert "create_window" in source and "WorkerW" in source
     assert "winget" not in source
+
+
+def test_native_wallpaper_remove_only_manifest_and_never_original_file(monkeypatch, tmp_path):
+    from services import native_wallpaper as native
+    monkeypatch.setattr(native, "_folder", lambda: tmp_path)
+    monkeypatch.setattr(native, "supported", lambda: True)
+    monkeypatch.setattr(native, "apply", lambda ident: {"status": "playing", "verified": True})
+    media = tmp_path / "my-cinema.gif"
+    media.write_bytes(b"GIF89a" + b"wallpaper")
+    native.import_file(str(media))
+    identifier = native.list_wallpapers()[0]["id"]
+    monkeypatch.setattr(native, "state", lambda: {"wallpaper_id": identifier})
+    stopped = []
+    monkeypatch.setattr(native, "stop", lambda: stopped.append(True))
+    response = native.remove_wallpaper(identifier)
+    assert response["status"] == "removed"
+    assert response["media_deleted"] is False
+    assert stopped == [True]
+    assert native.list_wallpapers() == []
+    assert media.exists(), "User's original wallpaper must never be deleted"
+    with pytest.raises(ValueError):
+        native.remove_wallpaper("../unsafe")
+
+
+def test_remove_route_dispatches_only_native_records(monkeypatch):
+    from api_routes import lively
+    from services import native_wallpaper as native
+    monkeypatch.setattr(lively, "_consent", lambda: None)
+    monkeypatch.setattr(lively, "_native_enabled", lambda: True)
+    monkeypatch.setattr(native, "remove_wallpaper", lambda key: {"status": "removed", "removed_id": key})
+    assert lively.remove_wallpaper("a" * 24)["status"] == "removed"
+    monkeypatch.setattr(lively, "_native_enabled", lambda: False)
+    with pytest.raises(Exception) as exc:
+        lively.remove_wallpaper("a" * 24)
+    assert getattr(exc.value, "status_code", None) == 501
+
+
+def test_native_wallpaper_publishes_when_loaded_and_attached_irrespective_of_order():
+    source = (ROOT / "services/native_wallpaper.py").read_text(encoding="utf-8")
+    assert "loaded = threading.Event()" in source
+    assert "publish_when_ready()" in source
+    assert "ready.is_set() or not loaded.is_set()" in source
+    assert "w.events.loaded += signal_loaded" in source
+    assert "w.events.before_show += attach" in source
