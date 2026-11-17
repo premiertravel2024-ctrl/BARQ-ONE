@@ -117,7 +117,11 @@ async function verifyPlayback(browser,mode){
   });
   await guest.waitForFunction(()=>window.__peers.length>1&&window.__peers.at(-1).connectionState==='connected');
   assert.ok(history.some(packet=>packet.type==='request-media'&&packet.role==='guest'));
-  assert.equal(await guest.locator('#waitingOverlay').isVisible(),false);
+  await guest.waitForFunction(()=>{
+   const media=document.querySelector('#video');
+   return media.srcObject&&media.readyState>=2&&media.currentTime>0&&!media.paused;
+  });
+  await guest.locator('#waitingOverlay').waitFor({state:'hidden'});
   await guest.locator('#resumePlayback').click();
   assert.equal(await guest.locator('#video').evaluate(media=>media.muted),false);
   if(mode==='music'){
