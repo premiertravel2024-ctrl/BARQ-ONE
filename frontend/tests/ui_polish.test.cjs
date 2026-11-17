@@ -35,7 +35,9 @@ test('BARQ ONE navigation retains model selection without mounting the removed w
   assert.doesNotMatch(app,/<Sidebar |<TopBar /);
   assert.match(sidebar,/<ModelSelector compact\/>/);
   assert.doesNotMatch(app,/<WorkspaceStudio/);
-  assert.ok(sidebar.includes('sections.map('));
+  assert.ok(sidebar.includes("sections.filter(([key])=>key!=='chat').map("));
+  assert.match(sidebar,/className="ops-standalone-chat"/);
+  assert.match(sidebar,/navigate\('chat'\)/);
   const shell=read('pages/BarqOne.tsx');
   for(const section of ['chat','center','voice','mission','library','installed','tools','monitor','automation','settings'])
     assert.ok(shell.includes(`['${section}',`),section);

@@ -50,3 +50,19 @@ def test_embedded_windows_room_grants_iframe_fullscreen_permission():
     assert 'barq-watch-player' in react
     css = (ROOT / "frontend/src/pages/barqMedia.css").read_text(encoding="utf-8")
     assert '.barq-watch-player iframe' in css
+
+
+def test_theater_viewer_uses_full_size_stage_and_clear_media_waiting_state():
+    page = _player_page()
+    assert 'id="waitingOverlay"' in page
+    assert 'class="row room-guest-controls"' in page
+    assert 'body:not(.room-music) #videoStage>video' in page
+    assert 'height:100%;max-height:none' in page
+    assert 'video.srcObject=event.streams[0];showWaiting(false)' in page
+
+
+def test_guest_chat_does_not_depend_on_host_only_peer_joined_event():
+    page = _player_page()
+    assert "if(host&&!guestPresent)" in page
+    assert "if(!send('chat',msg))" in page
+    assert "if(!guestPresent){note('الشخص التاني" not in page
