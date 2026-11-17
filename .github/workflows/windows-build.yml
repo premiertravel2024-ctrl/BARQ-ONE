@@ -178,6 +178,31 @@ jobs:
             if ((Get-FileHash -Algorithm SHA256 $file).Hash.ToLowerInvariant() -ne $expected) { throw "Artifact checksum mismatch: $file" }
           }
           if ($report.status -ne 'ok' -or $report.ui -ne 'react' -or $report.frozen -ne $true) { throw 'Packaged executable smoke test failed' }
+      - name: Package verified BARQ Core and UI incremental update
+        shell: pwsh
+        run: |
+          $compiler = & ./scripts/find_inno.ps1
+          if ([string]::IsNullOrWhiteSpace($compiler) -or !(Test-Path -LiteralPath $compiler -PathType Leaf)) { throw 'Inno compiler unavailable for incremental update' }
+          if (!(Test-Path 'dist/BARQ/BARQ.exe')) { throw 'Missing newly built executable' }
+          if (!(Test-Path 'web/react/index.html')) { throw 'Missing freshly built React UI' }
+          & $compiler ./scripts/installer_core_ui_update.iss
+          if ($LASTEXITCODE -ne 0) { throw 'Core/React update compilation failed' }
+          $patch = 'release/BARQ_Core_UI_Update_2.41.0.exe'
+          if (!(Test-Path $patch)) { throw 'Missing Core+UI patch installer' }
+          $size = (Get-Item $patch).Length
+          if ($size -gt 180MB) { throw "Unexpectedly large update: $size bytes" }
+          $checksum = (Get-FileHash $patch -Algorithm SHA256).Hash.ToLowerInvariant()
+          "$checksum  BARQ_Core_UI_Update_2.41.0.exe" | Set-Content release/BARQ_Core_UI_Update_2.41.0.sha256 -Encoding ascii
+          Write-Host "Core+UI patch built, $size bytes, SHA256 $checksum"
+      - name: Upload verified incremental Core+UI update
+        uses: actions/upload-artifact@v4
+        with:
+          name: BARQ-v2.41.0-Core-and-UI-update
+          path: |
+            release/BARQ_Core_UI_Update_2.41.0.exe
+            release/BARQ_Core_UI_Update_2.41.0.sha256
+          if-no-files-found: error
+          retention-days: 30
       - name: Upload build diagnostics even on failure
         if: always()
         uses: actions/upload-artifact@v4
