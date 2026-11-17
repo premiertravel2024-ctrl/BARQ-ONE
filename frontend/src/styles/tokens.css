@@ -1,8 +1,8 @@
 /* BARQ design tokens — dark by default, light theme remains fully supported. */
 :root,[data-theme='dark'] {
  color-scheme:dark;
- --bg-base:#0e0d10;--bg-surface:#19161c;--bg-elevated:#242126;--bg-input:#121014;
- --base-rgb:16 13 20;--surface-rgb:24 18 29;--elevated-rgb:34 25 37;
+ --bg-base:#0F1115;--bg-surface:#191D24;--bg-elevated:#242A34;--bg-input:#111419;
+ --base-rgb:15 17 21;--surface-rgb:25 29 36;--elevated-rgb:36 42 52;
  --border-color:#ffffff13;--border-strong:#625767;
  --text-primary:#f8f7f3;--text-secondary:#bcb5bd;--text-muted:#bcb5bd;
  --accent-1:#ae2143;--accent-2:#ff728c;--accent-3:#8f1d39;--accent-hover:#ff8ca1;
@@ -27,3 +27,4 @@
  --shadow-float:0 12px 40px rgba(15,23,42,.16);
  --scroll-thumb:#A6AFBE;--scroll-track:transparent;
 }
+

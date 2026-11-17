@@ -1,6 +1,6 @@
-#define AppName "BARQ"
+#define AppName "BARQ ONE"
 #define AppVersion "2.41.0"
-#define AppPublisher "BARQ"
+#define AppPublisher "BARQ ONE"
 ; The source directory is the scripts/ folder. Verify the executable BEFORE
 ; attempting to compile an installer: double-clicking installer.iss does NOT
 ; build the Windows application. SourcePath is provided by Inno Setup ISPP.

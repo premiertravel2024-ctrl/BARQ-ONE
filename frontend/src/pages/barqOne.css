@@ -19,7 +19,7 @@
 .one-page-head h1 { font-size:clamp(1.5rem,3vw,2.5rem); font-weight:800; line-height:1.2; }
 .one-page-head p { color:var(--one-muted); font:600 .76rem/1.5 'Inter', system-ui,sans-serif; letter-spacing:.12em; }
 .one-page-head strong,.one-tool-heading svg,.one-link { color:var(--one-red); }
-.one-page :is(button,select,.one-toolbar label),.one-confirm {
+.one-page :is(button,select,.one-toolbar label):not(:where(.barq-cinema *, .bm-player *)),.one-confirm {
   border:1px solid var(--one-border,#514152);
   border-radius:10px;
   background:#13161B;
@@ -27,11 +27,11 @@
   min-height:38px;
   padding:6px 12px;
 }
-.one-page button { display:inline-flex;align-items:center;gap:7px;text-align:start; }
+.one-page button:not(:where(.barq-cinema *, .bm-player *)) { display:inline-flex;align-items:center;gap:7px;text-align:start; }
 .one-page :is(button:hover,button[aria-pressed='true']) { border-color:var(--one-red); }
 .one-page :is(button,input,select,a):focus-visible { outline:2px solid var(--one-red);outline-offset:3px; }
 .one-page button:disabled { opacity:.48;cursor:default; }
-.one-page h2 { font-weight:750;font-size:1rem; }
+.one-page h2:not(:where(.barq-cinema *, .bm-player *)) { font-weight:750;font-size:1rem; }
 .one-surface { min-width:0;background:var(--one-surface);border:1px solid var(--one-border);border-radius:16px;padding:16px; }
 .one-muted { color:var(--one-muted,#988ca5);font-size:.85rem; }
 .one-error { color:#ff8693;font-size:.9rem; }
@@ -121,7 +121,7 @@
 .one-toolbar .one-auto-tools {flex:0 1 auto}
 .one-toolbar .one-auto-tools input {flex:0;accent-color:#ff728c}
 [data-theme='light'] .one-page {--one-surface:#fff;--one-border:#48563325;--one-muted:#4c5341;--one-accent:#91203e;color:#24271c}
-[data-theme='light'] .one-page :is(button,select,.one-toolbar label),[data-theme='light'] .one-surface {background:#f6f5ed;color:#26281c}
+[data-theme='light'] .one-page :is(button,select,.one-toolbar label):not(:where(.barq-cinema *, .bm-player *)),[data-theme='light'] .one-surface {background:#f6f5ed;color:#26281c}
 [data-theme='light'] .one-flow-node {background:#f8edf1}
 [data-theme='light'] .one-flow-node[data-on='true'] {background:#f9dce3}
 [data-theme='light'] .one-flow-node[data-failed='true'] {background:#ffdcdc}

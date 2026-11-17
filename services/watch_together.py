@@ -614,7 +614,8 @@ async def join_signal(ws: WebSocket,key: str):
         pass
     finally:
         try:
-            await ws.close()
+            # A bridge failure must remain abnormal so the browser reconnects.
+            await ws.close(code=1011)
         except (RuntimeError,WebSocketDisconnect):
             pass
 

@@ -109,7 +109,7 @@ export default function App(){
   if(page==='settings'){setSettingsTab('general');setSettings(false);}
   setOnePage(page);setPlayground(false);
  };
- return <div data-release-marker="v2.40.2-build-gated-ui" className="ops-shell" dir={language==='ar'?'rtl':'ltr'}>
+ return <div data-release-marker="v2.41.0-build-gated-ui" className="ops-shell" dir={language==='ar'?'rtl':'ltr'}>
   <OperationsHeader page={onePage} navigate={navigateOne} search={()=>setPalette(true)} settings={()=>navigateOne('settings')}/>
   <div className={playground?'hidden':'ops-body'} dir="ltr">
    <OperationsRail page={onePage} navigate={navigateOne} newChat={()=>{newChat();navigateOne('chat')}} onDelete={setDeleteId} onPlayground={openPlayground}/>
@@ -142,3 +142,4 @@ export default function App(){
   <Modal open={!!deleteId} onClose={()=>setDeleteId(null)} title={t('removeConfirm')} footer={<><Button variant="secondary" onClick={()=>setDeleteId(null)}>{t('cancel')}</Button><Button variant="danger" disabled={streaming} icon={<Trash2 size={16}/>} onClick={confirmDelete}>{t('confirm')}</Button></>}><p className="text-sm text-secondary">{t('removeDescription')} <strong>{useApp.getState().chats.find(c=>c.id===deleteId)?.title||''}</strong></p></Modal>
  </div>
 }
+

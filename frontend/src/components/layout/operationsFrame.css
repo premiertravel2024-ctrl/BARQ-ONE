@@ -1,6 +1,6 @@
 .ops-shell {
  display:flex;flex-direction:column;height:100dvh;min-height:0;overflow:hidden;color:var(--text-primary);
- background:radial-gradient(ellipse at 92% -15%,#31131e 0%,transparent 43%),radial-gradient(ellipse at 11% 87%,#1e151c,transparent 53%),#0c0b0e;
+ background:#0F1115;
 }
 .ops-header {display:flex;min-height:64px;align-items:center;justify-content:space-between;gap:16px;padding:8px 22px;flex:none;border-bottom:1px solid #ffffff0e}
 .ops-brand,.ops-header nav,.ops-header-actions,.ops-wordmark,.ops-search {display:flex;align-items:center;gap:9px}
@@ -15,7 +15,7 @@
 .ops-mobile-menu,.ops-rail-close,.ops-drawer-backdrop {display:none}
 .ops-body {min-width:0;min-height:0;display:flex;flex:1;gap:8px;padding:10px 12px 12px}
 .ops-body > main,.ops-stage {display:flex;flex:1;flex-direction:column;min-width:0;min-height:0;overflow:hidden}
-.ops-rail {width:204px;flex:none;display:flex;flex-direction:column;gap:8px;overflow:auto;border:1px solid #ffffff0a;border-radius:22px;padding:11px 10px;background:linear-gradient(155deg,#201924,#151118 80%)}
+.ops-rail {width:204px;flex:none;display:flex;flex-direction:column;gap:8px;overflow:auto;border:1px solid #ffffff0a;border-radius:22px;padding:11px 10px;background:#13161B}
 .ops-rail-heading {display:flex;justify-content:space-between;align-items:center;gap:6px;padding-inline:7px;color:var(--text-muted);font-size:.73rem}
 .ops-rail-heading button {padding:6px;border-radius:7px}
 .ops-rail nav {display:grid;gap:2px}
@@ -55,3 +55,4 @@
 .ops-body>.ops-stage .barq-composer-surface {border-radius:18px;background:var(--bg-surface)}
 .ops-chat-row button:first-child{flex:1}
 .ops-chat-row button[aria-pressed='true']{color:#ff728c}
+

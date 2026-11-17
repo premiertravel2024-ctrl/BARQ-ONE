@@ -322,8 +322,8 @@ export function BarqOne({page,providers,onVoice,onNavigate,onModels,onQuick}:Pro
  const ar=useApp(s=>s.language)==='ar';
  const title=sections.find(([key])=>key===page);
  return <section className="one-page">
-  <header className="one-page-head"><div><h1>{title?.[ar?1:2]}</h1></div>
-   {page==='center'&&<button type="button" onClick={()=>onNavigate('voice')}><AudioLines size={17}/>{ar?'المساعد الصوتي':'Voice assistant'}</button>}</header>
+  {!['watch','music','wallpapers'].includes(page)&&<header className="one-page-head"><div><h1>{title?.[ar?1:2]}</h1></div>
+   {page==='center'&&<button type="button" onClick={()=>onNavigate('voice')}><AudioLines size={17}/>{ar?'المساعد الصوتي':'Voice assistant'}</button>}</header>}
   {page==='center'&&<>
    <div className="one-quick-ribbon" aria-label={ar?'أوامر سريعة':'Quick commands'}>
     {(ar?['افتح كروم','حرارة المعالج وكارت الشاشة','اقرأ النافذة الحالية']:['Open Chrome','CPU and GPU temperature','Read the current screen']).map(command=><button type="button" key={command} onClick={()=>onQuick(command)}><Terminal size={14}/>{command}</button>)}

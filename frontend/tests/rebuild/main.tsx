@@ -1,2 +1,2 @@
-import React from 'react';import{createRoot}from'react-dom/client';import{CinemaDiscovery}from'../../src/pages/CinemaDiscovery';import{MusicPlayer}from'../../src/pages/MusicPlayer';import '../../src/styles/global.css';
-const music=location.search.includes('music');createRoot(document.getElementById('root')!).render(music?<MusicPlayer/>:<CinemaDiscovery ar={true} roomActive={false} onRoom={()=>{document.body.dataset.room='opened'}}/>);
+import React from 'react';import{createRoot}from'react-dom/client';import{CinemaDiscovery}from'../../src/pages/CinemaDiscovery';import{MusicPlayer}from'../../src/pages/MusicPlayer';import '../../src/styles/global.css';import '../../src/pages/barqOne.css';
+const music=location.search.includes('music');createRoot(document.getElementById('root')!).render(<div className="one-page">{music?<MusicPlayer/>:<CinemaDiscovery ar={true} roomActive={false} onRoom={()=>{document.body.dataset.room='opened'}}/>}</div>);
