@@ -1,4 +1,4 @@
-import {useEffect,useRef,useState} from 'react';
+import {useCallback,useEffect,useLayoutEffect,useRef,useState} from 'react';
 import type {PDFDocumentProxy} from 'pdfjs-dist';
 import {ArrowRight,Bookmark,ChevronLeft,ChevronRight} from 'lucide-react';
 
@@ -11,15 +11,45 @@ function saved(id:string):Progress{
  }catch{return {page:1,marks:[]};}
 }
 
+function PdfPage({pdf,page,width,height,onError}:{pdf:PDFDocumentProxy;page:number;width:number;height:number;onError:()=>void}){
+ const canvas=useRef<HTMLCanvasElement>(null);
+ useEffect(()=>{
+  if(!canvas.current||width<1)return;
+  const surface=canvas.current,context=surface.getContext('2d');
+  if(!context)return;
+  let cancelled=false;
+  let cancel:(()=>void)|undefined;
+  void pdf.getPage(page).then(docPage=>{
+   if(cancelled)return;
+   const native=docPage.getViewport({scale:1});
+   const density=Math.min(window.devicePixelRatio||1,2);
+   const view=docPage.getViewport({scale:Math.min(width/native.width,height/native.height)*density});
+   surface.width=Math.ceil(view.width);
+   surface.height=Math.ceil(view.height);
+   const render=docPage.render({canvas:surface,canvasContext:context,viewport:view});
+   cancel=()=>render.cancel();
+   return render.promise;
+  }).catch(()=>{if(!cancelled)onError();});
+  return()=>{cancelled=true;cancel?.();};
+ },[pdf,page,width,height,onError]);
+
+ return <canvas ref={canvas} aria-label={'PDF '+page}/>;
+}
 export default function BookReader({book,ar,onClose}:{book:ReadingEdition;ar:boolean;onClose:()=>void}){
  const [progress,setProgress]=useState(()=>saved(book.id));
  const [pdf,setPdf]=useState<PDFDocumentProxy>();
  const [text,setText]=useState<string[]>();
  const [error,setError]=useState(false);
  const [retry,setRetry]=useState(0);
- const canvas=useRef<HTMLCanvasElement>(null);
+ const viewport=useRef<HTMLDivElement>(null);
  const content=useRef<HTMLDivElement>(null);
  const [width,setWidth]=useState(640);
+ const [ratio,setRatio]=useState(1.414);
+ const pdfWidth=Math.min(width,900);
+ const pdfHeight=Math.ceil(pdfWidth*ratio);
+ const pageStride=pdfHeight+12;
+ const failRender=useCallback(()=>setError(true),[]);
+ const savedPage=useRef(progress.page);
  const count=pdf?.numPages||text?.length||0;
  const page=Math.min(progress.page,count||1);
 
@@ -49,41 +79,41 @@ export default function BookReader({book,ar,onClose}:{book:ReadingEdition;ar:boo
    ]);
    if(controller.signal.aborted)return;
    GlobalWorkerOptions.workerSrc=workerUrl;
-   const loading=getDocument({data,isEvalSupported:false,useSystemFonts:true});
+   const assets='/assets/pdfjs/';
+   const loading=getDocument({data,isEvalSupported:false,useSystemFonts:true,
+    cMapUrl:assets+'cmaps/',cMapPacked:true,standardFontDataUrl:assets+'standard_fonts/',
+    wasmUrl:assets+'wasm/',iccUrl:assets+'iccs/'});
    destroy=()=>loading.destroy();
    const result=await loading.promise;
-   if(!controller.signal.aborted)setPdf(result);
+   const first=(await result.getPage(1)).getViewport({scale:1});
+   if(!controller.signal.aborted){setRatio(first.height/first.width);setPdf(result);}
   })().catch(()=>{if(!controller.signal.aborted)setError(true);});
   return()=>{controller.abort();void destroy?.().catch(()=>{});};
  },[book,retry]);
 
- useEffect(()=>{
-  if(!pdf||!canvas.current||width<1)return;
-  const surface=canvas.current,context=surface.getContext('2d');
-  if(!context)return;
-  let cancelled=false;
-  let cancel:(()=>void)|undefined;
-  void pdf.getPage(page).then(docPage=>{
-   if(cancelled)return;
-   const native=docPage.getViewport({scale:1});
-   const density=Math.min(window.devicePixelRatio||1,2);
-   const view=docPage.getViewport({scale:Math.min(width,900)/native.width*density});
-   surface.width=Math.ceil(view.width);
-   surface.height=Math.ceil(view.height);
-   const render=docPage.render({canvas:surface,canvasContext:context,viewport:view});
-   cancel=()=>render.cancel();
-   return render.promise;
-  }).catch(()=>{if(!cancelled)setError(true);});
-  return()=>{cancelled=true;cancel?.();};
- },[pdf,page,width]);
 
+ useLayoutEffect(()=>{
+  if(pdf&&viewport.current)viewport.current.scrollTop=(Math.min(savedPage.current,pdf.numPages)-1)*pageStride;
+ },[pdf,pageStride]);
+
+ function notePage(){
+  if(!viewport.current||!pdf)return;
+  const next=Math.min(pdf.numPages,Math.floor((viewport.current.scrollTop+Math.min(45,viewport.current.clientHeight/4))/pageStride)+1);
+  if(next===savedPage.current)return;
+  savedPage.current=next;
+  setProgress(previous=>({...previous,page:next}));
+ }
+ useEffect(()=>{
+  try{localStorage.setItem('barq-reader:'+book.id,JSON.stringify(progress));}catch{/* The reader stays usable. */}
+ },[book.id,progress]);
  function save(next:Progress){
   setProgress(next);
-  try{localStorage.setItem('barq-reader:'+book.id,JSON.stringify(next));}catch{/* The reader stays usable. */}
+  savedPage.current=next.page;
  }
  function go(next:number){
   save({...progress,page:next});
-  content.current?.scrollIntoView({block:'start'});
+  if(pdf&&viewport.current)viewport.current.scrollTop=(next-1)*pageStride;
+  else content.current?.scrollIntoView({block:'start'});
  }
  return <section className="bs-document" aria-label={book.title}>
   <header className="bs-document-toolbar">
@@ -101,7 +131,15 @@ export default function BookReader({book,ar,onClose}:{book:ReadingEdition;ar:boo
   </header>
   <div className="bs-document-content" ref={content}>
    {error?<div role="alert">{ar?'تعذّر فتح النسخة. جرّب تاني.':'Could not open this edition.'} <button type="button" onClick={()=>setRetry(x=>x+1)}>{ar?'إعادة المحاولة':'Retry'}</button></div>:
-    pdf?<canvas ref={canvas} aria-label={(ar?'صفحة ':'Page ')+page}/>:text?<article dir="auto">{text[page-1]}</article>:
+    pdf?<div className="bs-pdf-scroll" ref={viewport} onScroll={notePage} tabIndex={0} aria-label={ar?'صفحات الكتاب':'Book pages'}>
+     {Array.from({length:pdf.numPages},(_,index)=>{
+      const number=index+1;
+      return <div className="bs-pdf-page" key={number} style={{width:pdfWidth,height:pdfHeight}}>
+       {Math.abs(number-page)<=2&&<PdfPage pdf={pdf} page={number} width={pdfWidth} height={pdfHeight} onError={failRender}/>}
+      </div>;
+     })}
+     <div aria-hidden="true" style={{height:'max(0px, calc(var(--pdf-viewport) - '+pdfHeight+'px))'}}/>
+    </div>:text?<article dir="auto">{text[page-1]}</article>:
      <p role="status">{ar?'جاري تحميل الكتاب…':'Loading book…'}</p>}
   </div>
  </section>;

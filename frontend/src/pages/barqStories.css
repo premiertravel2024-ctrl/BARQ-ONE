@@ -87,3 +87,20 @@
 .bs-document-content { display:grid; place-items:start center; padding:12px 0; }
 .bs-document-content canvas { display:block; width:min(100%,900px); height:auto; background:#fff; border-radius:4px; }
 .bs-document-content article { width:min(100%,75ch); white-space:pre-wrap; background:#221d27; border:1px solid #574753; padding:clamp(15px,4vw,38px); border-radius:12px; font-size:1.05rem; line-height:1.85; overflow-wrap:anywhere; }
+
+.one-page > .bs-hub { flex:0 0 auto; min-width:0; }
+.bs-hub .bs-real-grid { grid-template-columns:repeat(auto-fill,minmax(min(100%,280px),1fr)); align-items:stretch }
+.bs-hub .bs-published-card { align-items:stretch; grid-template-columns:92px minmax(0,1fr); }
+.bs-published-card .bs-real-cover { width:92px; height:138px; align-self:start; }
+.bs-hub .bs-published-card .bs-real-cover:has(img) { padding:0; }
+.bs-published-card .bs-real-cover img { width:100%; height:100%; object-fit:contain; }
+.bs-published-card .bs-real-copy { grid-template-rows:auto auto auto 1fr auto; }
+.bs-published-actions { align-items:stretch; }
+.bs-published-actions .bs-series-open { flex:1; justify-content:space-between; }
+.bs-published-actions .bs-favorite { flex:0 0 38px; }
+.bs-series-scroll { overscroll-behavior:contain; scrollbar-gutter:stable; }
+.bs-series-detail li > span { flex:1 1 180px; }
+.bs-document-content { scroll-margin-top:65px; }
+.bs-pdf-scroll { --pdf-viewport:max(170px,calc(100dvh - 205px)); width:100%; height:var(--pdf-viewport); overflow:auto; scrollbar-gutter:stable; overscroll-behavior:contain; }
+.bs-pdf-page { margin:0 auto 12px; max-width:100%; display:grid; place-items:center; background:#fff; border-radius:4px; overflow:hidden; }
+.bs-pdf-page canvas { width:auto; max-width:100%; max-height:100%; }

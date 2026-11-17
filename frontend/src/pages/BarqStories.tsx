@@ -1,9 +1,10 @@
-import {lazy,Suspense,useRef,useState,type ChangeEvent} from 'react';
+import {lazy,Suspense,useCallback,useRef,useState,type ChangeEvent} from 'react';
 import {ArrowLeft,BookOpen,ExternalLink,Heart,Search,Upload} from 'lucide-react';
 import {Modal} from '../components/ui/Modal';
 import {useAppView} from '../lib/appContext';
 import {useApp} from '../store';
 import {publishedBooks,type PublishedBook} from './publishedBooks';
+import {paranormalCollection} from './paranormalIssues';
 import './barqStories.css';
 
 const BookReader=lazy(()=>import('./BookReader'));
@@ -37,6 +38,12 @@ export function BarqStories(){
  const [genre,setGenre]=useState('الكل');
  const [favorites,setFavorites]=useState(savedFavorites);
  const [series,setSeries]=useState<PublishedBook>();
+ const [issueQuery,setIssueQuery]=useState('');
+ const closeSeries=useCallback(()=>setSeries(undefined),[]);
+ const issueTerm=searchKey(issueQuery.trim()).replace(/[٠-٩]/g,digit=>String(digit.charCodeAt(0)-0x660)).replace(/[۰-۹]/g,digit=>String(digit.charCodeAt(0)-0x6f0));
+ const issues=series?.issues?.filter(issue=>/^\d+$/.test(issueTerm)
+  ?issue.number===Number(issueTerm):searchKey(issue.title).includes(issueTerm))||[];
+
  const [edition,setEdition]=useState<ReadingEdition>();
  const [error,setError]=useState('');
  const upload=useRef<HTMLInputElement>(null);
@@ -74,7 +81,7 @@ export function BarqStories(){
    title:target?.title||file.name.replace(/\.pdf$/i,''),format:'pdf',file});
  }
  function openBook(book:PublishedBook){
-  if(book.series){setSeries(book);return;}
+  if(book.series){setIssueQuery('');setSeries(book);return;}
   if(book.format){setEdition({id:book.id,title:book.title,format:book.format});return;}
   pickFile(book);
  }
@@ -112,17 +119,23 @@ export function BarqStories(){
     </article>)}</div>:<p className="bs-empty">{label('مفيش كتب مطابقة للبحث.','No matching books.')}</p>}
    </section>
   </>}
-  <Modal open={!!series} onClose={()=>setSeries(undefined)} title={series?.title||''}>
+  <Modal open={!!series} onClose={closeSeries} title={series?.title||''} wide bodyClassName="bs-series-scroll"
+   footer={series&&<a className="bs-primary" href={series.id==='paranormal'?paranormalCollection:series.url} target="_blank" rel="noopener noreferrer">
+    {series.id==='paranormal'?label('المجموعة الكاملة عند الناشر','Complete set from the publisher'):label('كل الأعداد عند الناشر','All issues at the publisher')}
+   </a>}>
    {series&&<section className="bs-series-detail" dir={ar?'rtl':'ltr'}>
     <strong>{series.author}</strong><p>{series.description}</p>
     <p>{label('لو عندك نسخة PDF من العدد، افتحها هنا في برق.','If you have a PDF of an issue, open it here in BARQ.')}</p>
-    {!!series.issues?.length&&<ol>{series.issues.map(issue=><li key={issue.number}>
+    {!!series.issues?.length&&<>
+     <label className="bs-search"><Search size={17}/><input value={issueQuery} onChange={event=>setIssueQuery(event.target.value)}
+      aria-label={label('ابحث عن عدد','Find an issue')} placeholder={label('اسم العدد أو رقمه…','Issue title or number…')}/></label>
+     <p role="status">{issues.length} / {series.issues.length} {label('عدد','issues')}</p>
+     <ol>{issues.map(issue=><li key={issue.number}>
      <span>{issue.number}. {issue.title}</span>
      <div><button type="button" onClick={()=>pickFile({id:series.id+'-'+issue.number,title:issue.title})}>{label('افتح PDF','Open PDF')}</button>
       <a href={issue.url} target="_blank" rel="noopener noreferrer"><ExternalLink size={14}/>{label('الناشر','Publisher')}</a></div>
-    </li>)}</ol>}
+    </li>)}</ol></>}
     {!series.issues?.length&&<button type="button" onClick={()=>pickFile(series)}>{label('افتح نسخة PDF','Open a PDF')}</button>}
-    <a className="bs-primary" href={series.url} target="_blank" rel="noopener noreferrer">{label('كل الأعداد عند الناشر','All issues at the publisher')}</a>
    </section>}
   </Modal>
  </div>;
