@@ -133,7 +133,7 @@ def test_native_wallpaper_previews_do_not_need_computer_control(monkeypatch, tmp
     identifier = "b" * 24
     native._save({identifier: {"path": str(media), "title": "preview"}})
     response = lively.wallpaper_preview(identifier)
-    assert response.path == str(media)
+    assert Path(response.path) == media
     # Deleting or applying wallpapers still performs action authorization.
     with pytest.raises(RuntimeError, match="No action permission"):
         lively.remove_wallpaper(identifier)
