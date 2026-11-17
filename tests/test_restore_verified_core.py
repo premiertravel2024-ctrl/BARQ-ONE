@@ -8,7 +8,7 @@ import zipfile
 
 import pytest
 
-from scripts.restore_verified_core import restore
+from scripts.restore_verified_core import restore, restore_ui
 
 
 def _pe_binary():
@@ -20,13 +20,21 @@ def _pe_binary():
     return bytes(content)
 
 
-def _verified_fixture(root: Path, *, version="2.41.0", payload=None):
+def _verified_fixture(root: Path, *, version="2.41.0", payload=None, with_ui=False, without_worklet=False, bad_member=None):
     release = root / "release"
     release.mkdir(parents=True, exist_ok=True)
     content = payload if payload is not None else _pe_binary()
     archive = release / f"BARQ_Portable_{version}.zip"
     with zipfile.ZipFile(archive, "w", zipfile.ZIP_DEFLATED) as zf:
         zf.writestr("BARQ/BARQ.exe", content)
+        if with_ui:
+            prefix = "BARQ/_internal/web/react/"
+            zf.writestr(prefix+"index.html", b'<!doctype html><div id="root"></div>')
+            zf.writestr(prefix+"assets/index-abc123.js", b'console.log("BARQ v2.41.0")')
+            if not without_worklet:
+                zf.writestr(prefix+"audio/live-capture.js", b'console.log("live voice")')
+            if bad_member:
+                zf.writestr(prefix+bad_member, b'untrusted content')
     sums = {
         f"release/BARQ_Portable_{version}.zip": hashlib.sha256(archive.read_bytes()).hexdigest(),
         "dist/BARQ/BARQ.exe": hashlib.sha256(content).hexdigest(),
@@ -87,11 +95,49 @@ def test_invalid_exe_rejected_without_touching_existing(tmp_path):
     assert target.read_bytes() == b"original"
 
 
+def test_verified_portable_restores_both_exe_and_react_ui(tmp_path):
+    _, exe = _verified_fixture(tmp_path, with_ui=True)
+    executable, ui = restore_ui(tmp_path)
+    assert executable.read_bytes() == exe
+    assert (ui / "index.html").read_bytes().startswith(b"<!doctype")
+    assert (ui / "audio/live-capture.js").is_file()
+    assert (ui / "assets/index-abc123.js").is_file()
+
+
+def test_incomplete_ui_cannot_replace_existing_react(tmp_path):
+    _verified_fixture(tmp_path, with_ui=True, without_worklet=True)
+    existing = tmp_path / "web/react/index.html"
+    existing.parent.mkdir(parents=True)
+    existing.write_text("old UI")
+    with pytest.raises(ValueError, match="AudioWorklet"):
+        restore_ui(tmp_path)
+    assert existing.read_text() == "old UI"
+
+
+def test_unsafe_zip_member_cannot_escape_react_destination(tmp_path):
+    _verified_fixture(tmp_path, with_ui=True, bad_member="assets/../../../evil.js")
+    with pytest.raises(ValueError, match="Unsafe React UI"):
+        restore_ui(tmp_path)
+    assert not (tmp_path / "evil.js").exists()
+    assert not (tmp_path / "web/react").exists()
+
+
+def test_corrupt_zip_prevents_exe_and_ui_restoration(tmp_path):
+    archive, _ = _verified_fixture(tmp_path, with_ui=True)
+    with archive.open("ab") as output:
+        output.write(b"tampered")
+    with pytest.raises(ValueError, match="Portable ZIP differs"):
+        restore_ui(tmp_path)
+    assert not (tmp_path / "dist/BARQ/BARQ.exe").exists()
+    assert not (tmp_path / "web/react").exists()
+
+
 def test_current_windows_workflow_restores_from_verified_portable():
     root = Path(__file__).resolve().parents[1]
     wf = (root / ".github/workflows/windows-build.yml").read_text(encoding="utf-8")
     source = (root / "scripts/build_short_path.py").read_text(encoding="utf-8")
-    assert "py -3.11 scripts/restore_verified_core.py" in wf
+    assert "py -3.11 scripts/restore_verified_core.py --with-ui" in wf
+    assert "Verify incremental Core+UI extraction contract before building" in wf
     assert "if (!(Test-Path 'dist/BARQ/BARQ.exe'))" not in wf
     assert "shutil.copy2(artifact,destination/artifact.name)" in source
     assert "shutil.rmtree(stage)" in source

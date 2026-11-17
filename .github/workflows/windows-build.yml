@@ -151,6 +151,8 @@ jobs:
       - name: Install Inno Setup
         shell: pwsh
         run: choco install innosetup -y --no-progress
+      - name: Verify incremental Core+UI extraction contract before building
+        run: python -m pytest -q tests/test_restore_verified_core.py
       - name: Check Windows policy regression and protected staging paths
         shell: pwsh
         run: |
@@ -187,9 +189,12 @@ jobs:
           # in the checkout and removes the temporary PyInstaller staging tree.
           # Restore the EXACT tested BARQ.exe from this run's portable ZIP, not a stale
           # or unrelated dist/ file. Verify both ZIP and executable SHA-256 first.
-          py -3.11 scripts/restore_verified_core.py
-          if ($LASTEXITCODE -ne 0) { throw 'Unable to restore the verified core executable for incremental update' }
-          if (!(Test-Path 'web/react/index.html')) { throw 'Missing freshly built React UI' }
+          py -3.11 scripts/restore_verified_core.py --with-ui
+          if ($LASTEXITCODE -ne 0) { throw 'Unable to restore verified Core+UI from this run portable archive' }
+          if (!(Test-Path 'dist/BARQ/BARQ.exe')) { throw 'Verified BARQ.exe missing after recovery' }
+          if (!(Test-Path 'web/react/index.html')) { throw 'Verified React UI missing after recovery' }
+          if (!(Test-Path 'web/react/audio/live-capture.js')) { throw 'Verified React worklet missing after recovery' }
+          if (!(Get-ChildItem 'web/react/assets' -Filter '*.js' -ErrorAction Stop)) { throw 'Verified React JS assets missing after recovery' }
           & $compiler ./scripts/installer_core_ui_update.iss
           if ($LASTEXITCODE -ne 0) { throw 'Core/React update compilation failed' }
           $patch = 'release/BARQ_Core_UI_Update_2.41.0.exe'
