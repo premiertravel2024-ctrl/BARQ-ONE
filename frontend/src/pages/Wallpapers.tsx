@@ -1,7 +1,8 @@
 import {useEffect, useRef, useState} from 'react';
-import {Download, ExternalLink, Heart, Image, Layers, Pause, Play, Plus, RefreshCw, Search, Shuffle, Square, Volume2} from 'lucide-react';
+import {Download, ExternalLink, Heart, Image, Layers, Pause, Play, Plus, RefreshCw, Search, Shuffle, Square, Trash2, CheckCircle2, AlertCircle, Volume2} from 'lucide-react';
 import {requestJSON} from '../lib/backend';
 import {useApp} from '../store';
+import {Modal} from '../components/ui/Modal';
 import './wallpaperGallery.css';
 
 type Wallpaper = {id: string; title: string; type: string; preview_available: boolean};
@@ -25,6 +26,7 @@ export function Wallpapers() {
   const [notice, setNotice] = useState('');
   const [volume, setVolume] = useState(40);
   const [installing, setInstalling] = useState(false);
+  const [deleteTarget,setDeleteTarget]=useState<Wallpaper|null>(null);
   const pending = useRef(false);
   const [query,setQuery]=useState('');
   const [filter,setFilter]=useState<'all'|'video'|'gif'|'favorites'>('all');
@@ -99,9 +101,14 @@ export function Wallpapers() {
       const result = await requestJSON<CommandResult>('/v1/wallpapers/action', {
         method: 'POST', body: JSON.stringify({action, wallpaper_id, volume: action === 'volume' ? volume : undefined}),
       });
-      if (result.verified) setNotice(ar ? 'محرك خلفيات برق أكد تنفيذ الأمر.' : 'BARQ wallpaper engine confirmed the action.');
-      else if (result.status === 'command_sent') setNotice(ar ? 'الأمر اتبعت لمشغّل الخلفيات.' : 'Command sent to the wallpaper player.');
-      await refresh();
+      const after=await refresh();
+      if(action==='apply'&&after.engine){
+        if(after.engine.running&&after.engine.wallpaper_id===wallpaper_id&&result.verified)
+          setNotice(ar?'محرك برق أكد تشغيل الخلفية.':'Wallpaper engine reports active playback.');
+        else throw new Error(ar?'محرك برق ما أكدش تشغيل الخلفية. جرّب ملف H.264 MP4 أو راجع تشخيص المحرك.':'Playback not verified. Try an H.264 MP4 or inspect engine diagnostics.');
+      }else if(result.verified)setNotice(ar?'تم تنفيذ الأمر بنجاح.':'Action verified.');
+      else if(result.status==='command_sent')setNotice(ar?'الأمر اتبعت، لكن العرض على سطح المكتب مش متحقق منه.':'Command sent; desktop playback not yet verified.');
+      else if(result.status==='failed')throw new Error(ar?'محرك الخلفيات رفض الأمر.':'The wallpaper engine rejected the action.');
     });
   }
 
@@ -109,11 +116,21 @@ export function Wallpapers() {
     void operate(async () => {
       const result = await requestJSON<CommandResult>('/v1/wallpapers/pick-local', {method: 'POST'});
       if (result.status === 'cancelled') return;
-      setNotice(ar ? 'تم استيراد الخلفية وتشغيلها داخل برق.' : 'Wallpaper imported and launched within BARQ.');
-      await refresh();
+      const after=await refresh();
+      setNotice(result.verified&&after.engine?.running?(ar?'تم الاستيراد وتشغيل الخلفية.':'Imported and playing.'):(ar?'تم الاستيراد، لكن تشغيلها على سطح المكتب لسه مش متأكد منه.':'Imported; desktop playback not yet verified.'));
     });
   }
 
+  async function removeSelected(){
+    const target=deleteTarget;if(!target)return;
+    await operate(async()=>{
+      const result=await requestJSON<{status:string;removed_id:string;media_deleted:boolean}>('/v1/wallpapers/'+encodeURIComponent(target.id),{method:'DELETE'});
+      if(result.status!=='removed')throw new Error(ar?'فشل إزالة الخلفية.':'Removal failed.');
+      setFavorites(prev=>{const next=prev.filter(x=>x!==target.id);try{localStorage.setItem('barq-wallpaper-favorites',JSON.stringify(next))}catch{}return next});
+      setDeleteTarget(null);await refresh();
+      setNotice(ar?'اتشالت من مكتبة برق بس. ملفك الأصلي لسه على الجهاز.':'Removed from BARQ only. Original media is untouched.');
+    });
+  }
   const ready = data?.engine ? data.engine.supported : data?.lively.installed;
   const list=(data?.library||[]).filter(item=>{
     const match=(item.title+' '+item.type).toLowerCase().includes(query.trim().toLowerCase());
@@ -124,13 +141,13 @@ export function Wallpapers() {
    <header className="bws-hero">
     <div className="bws-hero-copy">
      <span className="bws-overline"><Layers size={16}/> BARQ WALLPAPER STUDIO</span>
-     <h2>{ar?'مساحتك، مزاجك، خلفيتك':'Your space. Your atmosphere.'}</h2>
+     <h2>{ar?'سطح مكتبك، بطريقتك':'Your desktop, your way.'}</h2>
      <p>{ar?'اكتشف الخلفيات الحية اللي على جهازك، رتّب المفضلة، وشغّل اللي يعجبك في ثواني.':'Explore your local animated wallpapers, save favorites, and apply in one click.'}</p>
      <div className="bws-hero-actions">
        <button className="bws-main-btn" disabled={busy||!ready} onClick={addLocal}><Plus size={18}/>{ar?'أضف خلفية حية':'Add live wallpaper'}</button>
        <button disabled={busy} onClick={()=>void operate(async()=>{await refresh()})}><RefreshCw size={16}/>{ar?'تحديث المكتبة':'Refresh library'}</button>
      </div>
-     {data?.engine&&<span className={'bws-engine-state'+(data.engine.running?' bws-active':'')}>{data.engine.running?(ar?'الخلفية شغالة حاليًا':'Wallpaper playing'):(ar?'محرك برق جاهز':'BARQ engine ready')}</span>}
+     {data?.engine&&<span className={'bws-engine-state'+(data.engine.running?' bws-active':'')} aria-live="polite">{data.engine.running?(ar?'محرك برق أكد تشغيل الخلفية':'Wallpaper engine reports playback'):(ar?'مفيش خلفية شغالة حاليًا':'No wallpaper currently playing')}</span>}
     </div>
     <div className="bws-feature-preview" aria-hidden="true">
      {featured?<Preview item={featured} native={!!data?.engine}/>:<Image size={78}/>}
@@ -150,6 +167,11 @@ export function Wallpapers() {
     <section className="bws-discovery">
      <div className="bws-titlebar"><div><span>{ar?'مكتبتك':'YOUR COLLECTION'}</span><h3>{ar?'استكشف الخلفيات':'Explore wallpapers'}</h3></div>
       <small>{data.library.length} {ar?'خلفية':'wallpapers'}</small></div>
+     {data.engine&&<div className="bws-active-strip">
+      <span className={data.engine.running?'on':''}>{data.engine.running?<CheckCircle2 size={18}/>:<AlertCircle size={18}/>}</span>
+      <div><strong>{data.engine.running?(ar?'الخلفية الحالية شغالة':'Wallpaper active'):(ar?'مفيش خلفية شغالة':'Wallpaper stopped')}</strong><small>{data.engine.running?(featured?.title||''):(ar?'اختار خلفية واضغط تطبيق':'Choose a wallpaper and press Apply')}</small></div>
+      <div className="bws-active-buttons"><button disabled={busy||!data.engine.running} onClick={()=>invoke('pause')}><Pause size={15}/>{ar?'إيقاف مؤقت':'Pause'}</button><button disabled={busy||!data.engine.running} onClick={()=>invoke('stop')}><Square size={15}/>{ar?'إيقاف':'Stop'}</button></div>
+     </div>}
      <div className="bws-toolbar">
       <label className="bws-search"><Search size={18}/><input aria-label={ar?'بحث الخلفيات':'Search wallpapers'} value={query} onChange={e=>setQuery(e.target.value)} placeholder={ar?'ابحث عن خلفية...':'Search wallpapers...'}/></label>
       <div className="bws-tabs" role="group" aria-label={ar?'تصفية الخلفيات':'Filter wallpapers'}>
@@ -161,8 +183,9 @@ export function Wallpapers() {
        <span className="bws-type">{isGif(item)?'GIF':isVideo(item)?'VIDEO':String(item.type).slice(0,12)}</span>
        <button type="button" className="bws-heart" aria-label={favorites.includes(item.id)?(ar?'إزالة من المفضلة':'Remove favorite'):(ar?'إضافة للمفضلة':'Add favorite')} aria-pressed={favorites.includes(item.id)} onClick={()=>toggleFavorite(item.id)}><Heart size={17} fill={favorites.includes(item.id)?'currentColor':'none'}/></button>
       </div>
-      <div className="bws-wallpaper-text"><strong dir="auto">{item.title}</strong><small>{data.engine?.wallpaper_id===item.id&&data.engine.running?(ar?'قيد التشغيل':'Playing'):(ar?'من مكتبتك المحلية':'From local library')}</small>
-       <button disabled={busy} onClick={()=>invoke('apply',item.id)}><Play size={15}/>{ar?'تطبيق الخلفية':'Apply wallpaper'}</button></div>
+      <div className="bws-wallpaper-text"><strong dir="auto">{item.title}</strong><small>{data.engine?.wallpaper_id===item.id&&data.engine.running?(ar?'شغالة دلوقتي':'Now playing'):(ar?'محفوظة في المكتبة':'Saved in library')}</small>
+       <div className="bws-wallpaper-actions"><button disabled={busy} onClick={()=>invoke('apply',item.id)}><Play size={15}/>{ar?'تطبيق على الجهاز':'Apply to desktop'}</button>
+        {data.engine&&<button className="bws-remove" disabled={busy} aria-label={(ar?'إزالة الخلفية ':'Remove wallpaper ')+item.title} title={ar?'إزالة من المكتبة':'Remove from library'} onClick={()=>setDeleteTarget(item)}><Trash2 size={16}/></button>}</div></div>
      </article>)}</div>:<div className="bws-empty"><Image size={30}/><strong>{data.library.length===0?(ar?'مكتبتك لسه فاضية':'Your library is empty'):(ar?'مفيش خلفيات مطابقة':'No matching wallpapers')}</strong><p>{ar?'ضيف ملف فيديو أو GIF من جهازك، أو غيّر البحث.':'Import a video or GIF, or adjust your filters.'}</p><button disabled={busy} onClick={addLocal}><Plus size={16}/>{ar?'إضافة خلفية':'Add wallpaper'}</button></div>}
     </section>
     <details className="bws-player-settings"><summary>{ar?'التحكم في تشغيل الخلفيات':'Playback controls'}</summary>
@@ -177,6 +200,12 @@ export function Wallpapers() {
      </div>
     </details>
    </>}
+  <Modal open={!!deleteTarget} onClose={()=>{if(!busy)setDeleteTarget(null)}} title={ar?'إزالة الخلفية؟':'Remove wallpaper?'}>
+    <div className="bws-confirm"><Trash2 size={27}/><p>{ar?'هتشيل الخلفية من مكتبة برق بس؛ ملف الفيديو أو GIF الأصلي هيفضل على جهازك.':'Remove it from the BARQ library, not from your computer.'}</p><strong dir="auto">{deleteTarget?.title}</strong>
+      <div><button type="button" disabled={busy} onClick={()=>setDeleteTarget(null)}>{ar?'إلغاء':'Cancel'}</button>
+       <button type="button" disabled={busy} className="bws-danger" onClick={()=>void removeSelected()}>{busy?(ar?'جاري الإزالة...':'Removing...'):(ar?'إزالة من المكتبة':'Remove')}</button></div>
+    </div>
+  </Modal>
   </div>;
 }
 

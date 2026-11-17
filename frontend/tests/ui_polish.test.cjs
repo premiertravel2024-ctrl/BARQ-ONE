@@ -92,3 +92,14 @@ test('BARQ Stories is a real navigable application section, not a landing mockup
   assert.match(stories,/saveStory\(/);
   assert.match(library,/b-portal/);
 });
+
+
+test('wallpaper gallery supports applying and safe removal with confirmation',()=>{
+ const ui=read('src/pages/Wallpapers.tsx');
+ const css=read('src/pages/wallpaperGallery.css');
+ assert.match(ui,/method:'DELETE'/);
+ assert.match(ui,/className="bws-remove"/);
+ assert.match(ui,/deleteTarget/);
+ assert.match(css,/\.bws-active-strip/);
+ assert.match(css,/\.bws-confirm/);
+});
