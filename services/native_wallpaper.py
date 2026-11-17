@@ -165,6 +165,26 @@ def state():
             return {"integrated": True, "supported": True, "running": False, "backend": "webview2-workerw"}
 
 
+def _failure_path():
+    return _folder() / "engine-error.json"
+
+
+def _write_engine_failure(message):
+    reason = str(message).replace(chr(13), " ").replace(chr(10), " ").strip()[:450]
+    try:
+        _failure_path().write_text(json.dumps({"reason": reason}), encoding="utf-8")
+    except OSError:
+        pass
+
+
+def _engine_failure():
+    try:
+        value = json.loads(_failure_path().read_text(encoding="utf-8"))
+        return str(value.get("reason") or "").strip()[:450] if isinstance(value, dict) else ""
+    except (OSError, ValueError):
+        return ""
+
+
 def apply(identifier):
     global _process
     if not supported():
@@ -177,6 +197,7 @@ def apply(identifier):
             args.append(str(Path(__file__).resolve().parents[1] / "desktop.py"))
         args += ["--barq-wallpaper-engine", identifier, str(os.getpid())]
         _state_path().unlink(missing_ok=True)
+        _failure_path().unlink(missing_ok=True)
         try:
             with (_folder() / "engine.log").open("w", encoding="utf-8") as log:
                 _process = subprocess.Popen(args, stdin=subprocess.DEVNULL, stdout=log,
@@ -184,7 +205,7 @@ def apply(identifier):
                                             creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0))
         except OSError as exc:
             raise RuntimeError("Failed to start embedded BARQ wallpaper player") from exc
-        deadline = time.monotonic() + 12
+        deadline = time.monotonic() + 24
         while time.monotonic() < deadline and _process.poll() is None:
             current = _state()
             if current.get("pid") == _process.pid:
@@ -199,8 +220,10 @@ def apply(identifier):
                     return {"status": "playing", "verified": True}
             time.sleep(0.1)
         code = _process.poll()
+        reason = _engine_failure()
         stop()
-        raise RuntimeError(f"Wallpaper engine did not initialize on this desktop (exit: {code})")
+        detail = f": {reason}" if reason else ". Check the WebView2 runtime and desktop session."
+        raise RuntimeError(f"Wallpaper engine did not initialize on this desktop (exit: {code}){detail}")
 
 
 def control(action, volume=None):
