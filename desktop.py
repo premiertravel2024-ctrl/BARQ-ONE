@@ -201,7 +201,7 @@ def show_startup_error(exc: BaseException) -> None:
             pass
 
 
-def run_desktop() -> None:
+def run_desktop():
     from core.paths import data_dir
     install_crash_diagnostics()
     import uvicorn
@@ -256,10 +256,15 @@ def run_desktop() -> None:
     personal_stop=threading.Event()
     threading.Thread(target=run_monitor,args=(personal_stop,),daemon=True,name='BARQ-Personal-Monitor').start()
     threading.Thread(target=native_hotkey,args=(personal_stop,),daemon=True,name='BARQ-Emergency-Hotkey').start()
+    from core.app_updates import UpdateBridge
+    desktop_url = f'http://127.0.0.1:{port}'
+    updates = UpdateBridge(desktop_url)
     try:
-        window = webview.create_window('BARQ', f'http://127.0.0.1:{port}',
+        window = webview.create_window('BARQ', desktop_url,
+                              js_api=updates,
                               min_size=(950, 650), width=1350, height=860,
                               background_color='#0F1115')
+        updates._window = window
         from voice.background_window import install as install_tray
         from voice.startup_greeting import maybe_greet_after_window_shown
         # The welcome runs only on the explicit Windows-login --background path.
@@ -296,6 +301,7 @@ def run_desktop() -> None:
         clear_endpoint()
         server.should_exit = True
         thread.join(timeout=10)
+    return updates._pending
 
 
 
@@ -367,7 +373,10 @@ def main() -> int:
             if not show_existing():
                 raise RuntimeError('BARQ is already running. Open it from the notification area beside the Windows clock.')
             return 0
-        run_desktop()
+        pending_update = run_desktop()
+        if pending_update is not None:
+            release()
+            pending_update.launch()
         return 0
     except Exception as exc:
         show_startup_error(exc)

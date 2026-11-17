@@ -31,3 +31,6 @@ web/react/
 # Downloaded SHA256-pinned speaker model; never commit binary weights
 models/speaker/*.onnx
 models/speaker/*.onnx.download
+
+# Public updater configuration generated from the release environment.
+/assets/update-channel.json

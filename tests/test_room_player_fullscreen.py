@@ -18,18 +18,15 @@ def test_local_and_cloud_rooms_have_identical_player_ui():
     assert _player_page() == cloud
 
 
-def test_fullscreen_expands_stage_with_fit_and_cover_options():
+def test_fullscreen_uses_one_icon_and_fills_stage():
     page = _player_page()
     assert 'id="videoStage"' in page
     assert 'id="enterFullscreen"' in page
-    assert 'id="fitMode"' in page
+    assert 'id="fitMode"' not in page
     assert "stage.requestFullscreen()" in page
     assert "document.exitFullscreen()" in page
     assert "document.fullscreenElement" in page
-    assert 'data-fit="contain"' in page
-    assert '[data-fit="cover"]' in page
     assert '.player:fullscreen' in page
-    assert 'object-fit:contain' in page
     assert 'object-fit:cover' in page
     assert "fullscreenchange" in page
 

@@ -5,6 +5,7 @@ import {sections,type OnePage} from '../../pages/BarqOne';
 import {ModelSelector} from '../chat/ModelSelector';
 import {Dropdown} from '../ui/Dropdown';
 import {IconButton} from '../ui/IconButton';
+import {AppUpdates} from './AppUpdates';
 import './operationsFrame.css';
 
 type Actions={page:OnePage;navigate:(page:OnePage)=>void;search:()=>void;settings:()=>void};
@@ -22,6 +23,7 @@ export function OperationsHeader({page,navigate,search,settings}:Actions){
    })}
   </nav>
   <div className="ops-header-actions">
+   <AppUpdates ar={ar}/>
    <button className="ops-search" type="button" onClick={search} aria-label={ar?'البحث':'Search'}><Search size={14}/><span>{ar?'بحث سريع':'Quick search'}</span><kbd dir="ltr">Ctrl K</kbd></button>
    <button type="button" onClick={settings} aria-label={ar?'الإعدادات':'Settings'}><Settings2 size={16}/></button>
   </div>

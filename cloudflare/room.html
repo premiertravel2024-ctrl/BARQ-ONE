@@ -59,14 +59,12 @@ main{max-width:1530px;padding:clamp(12px,1.6vw,22px)}
 #subFileName{color:#e3b8c9}
 #guestControls{accent-color:#ec547a}
 .player{background:radial-gradient(ellipse at 50% 30%,#311d2a,#08070d 72%);display:grid;place-items:center;border:1px solid #42303c;border-radius:13px;overflow:hidden;min-height:260px}
-.player video{width:100%;height:auto;aspect-ratio:16/9;max-height:min(66vh,730px);object-fit:contain;display:block;border-radius:0;background:#060509}
-.player[data-fit="cover"] video{object-fit:cover}
+.player video{width:100%;height:auto;aspect-ratio:16/9;max-height:min(66vh,730px);object-fit:cover;display:block;border-radius:0;background:#060509}
 .player-screen-actions{position:absolute;top:11px;left:11px;z-index:10;display:flex;gap:7px;direction:rtl}
 .player-screen-actions button{font-size:.76rem;background:#221925ed;border:1px solid #6a4055;color:#fff;border-radius:8px;padding:7px 11px;min-height:35px}
 .player-screen-actions button:hover{background:#953455}
 .player:fullscreen,.player:-webkit-full-screen{width:100vw;height:100vh;max-width:none;max-height:none;border:0;border-radius:0;background:#000;display:flex;align-items:center;justify-content:center}
-.player:fullscreen video,.player:-webkit-full-screen video{width:100%;height:100%;max-height:100%;aspect-ratio:auto;border-radius:0;object-fit:contain}
-.player[data-fit="cover"]:fullscreen video,.player[data-fit="cover"]:-webkit-full-screen video{object-fit:cover}
+.player:fullscreen video,.player:-webkit-full-screen video{width:100%;height:100%;max-height:100%;aspect-ratio:auto;border-radius:0;object-fit:cover}
 .player:fullscreen .player-screen-actions,.player:-webkit-full-screen .player-screen-actions{top:18px;left:18px}
 .player:fullscreen .captions{bottom:10%;z-index:2}
 .room-music .player{min-height:245px;padding:90px 15px 24px;position:relative;align-items:end}
@@ -179,13 +177,11 @@ body:not(.room-music) .grid{grid-template-columns:minmax(0,1fr) minmax(265px,310
 body:not(.room-music) .panel{background:#191d24;border-color:#343a44;border-radius:16px}
 body:not(.room-music) .room-media-panel{padding:clamp(8px,1vw,14px);min-width:0}
 body:not(.room-music) #videoStage{display:block;position:relative;isolation:isolate;width:100%;min-height:0;aspect-ratio:16/9;background:#06090e;border-radius:12px;overflow:hidden}
-body:not(.room-music) #videoStage>video{display:block;position:absolute;inset:0;width:100%;height:100%;max-height:none;min-height:0;aspect-ratio:auto;object-fit:contain;border-radius:0}
-body:not(.room-music) #videoStage[data-fit="cover"]>video{object-fit:cover}
+body:not(.room-music) #videoStage>video{display:block;position:absolute;inset:0;width:100%;height:100%;max-height:none;min-height:0;aspect-ratio:auto;object-fit:cover;border-radius:0}
 body:not(.room-music) #videoStage .captions{z-index:4}
 body:not(.room-music) #videoStage .player-screen-actions{z-index:6}
 body:not(.room-music) #videoStage:fullscreen,body:not(.room-music) #videoStage:-webkit-full-screen{width:100vw;height:100vh;aspect-ratio:auto;max-width:none;max-height:none}
-body:not(.room-music) #videoStage:fullscreen>video,body:not(.room-music) #videoStage:-webkit-full-screen>video{object-fit:contain}
-body:not(.room-music) #videoStage[data-fit="cover"]:fullscreen>video,body:not(.room-music) #videoStage[data-fit="cover"]:-webkit-full-screen>video{object-fit:cover}
+body:not(.room-music) #videoStage:fullscreen>video,body:not(.room-music) #videoStage:-webkit-full-screen>video{object-fit:cover}
 .room-waiting{position:absolute;inset:0;z-index:3;display:flex;flex-direction:column;gap:12px;align-items:center;justify-content:center;pointer-events:none;text-align:center;padding:22px;background:radial-gradient(circle at 50% 30%,#431f315c,#0a0d11 80%);color:#f5eff4}
 .room-waiting-icon{width:64px;height:64px;border:1px solid #c14f73;border-radius:50%;background:#4d2030;display:grid;place-items:center;color:#ff97b1;box-shadow:0 0 45px #d845653a;font-size:1.35rem;padding-inline-start:4px}
 .room-waiting strong{font-size:clamp(.92rem,1.6vw,1.2rem);font-weight:850}
@@ -351,6 +347,17 @@ body.room-focus:not(.room-music) .grid{grid-template-columns:minmax(0,1fr)}
 #typing,#chatNotice{margin:0;font-size:.68rem;color:#aab6c8;line-height:1.4}
 #chatNotice:not(:empty){padding-top:4px}
 @media(max-width:700px){#roomChat #chatText{font-size:16px;min-height:42px}#roomChat #send{min-height:42px}}
+#videoStage #enterFullscreen{display:grid;place-items:center;width:34px;height:34px;min-height:0;padding:0;border-radius:8px;background:#121620df;border-color:#ffffff38}
+#enterFullscreen svg,#roomChat #send svg{width:17px;height:17px;pointer-events:none}
+#enterFullscreen[aria-pressed="false"] .collapse-icon,#enterFullscreen[aria-pressed="true"] .expand-icon{display:none}
+body:not(.room-music) #videoStage>video{max-width:none;object-position:center}
+body:not(.room-music) #videoStage:is(:fullscreen, :-webkit-full-screen){height:100dvh;max-height:none}
+#roomChat #send{display:grid;place-items:center;width:38px;height:38px;min-height:38px;padding:0;border-radius:9px;background:#a53155;border:1px solid #c6597d;color:#fff;transition:background .15s,transform .15s}
+#roomChat #send:enabled:hover{background:#ba3c65}
+#roomChat #send:enabled:active{transform:scale(.95)}
+#roomChat #send:disabled{background:#282936;border-color:#3c4050;color:#9298aa;opacity:1;cursor:default}
+@media(max-width:700px){#roomChat #send{width:44px;height:42px;min-height:42px}}
+@media(prefers-reduced-motion:reduce){#roomChat #send{transition:none}}
 </style></head>
 <body><main><header class="room-head">
  <div><h1 id="roomTitle">غرفة المشاهدة</h1><p class="room-head-note">BARQ ONE</p></div>
@@ -370,12 +377,12 @@ body.room-focus:not(.room-music) .grid{grid-template-columns:minmax(0,1fr)}
   <form class="row" id="musicService" hidden><input id="musicServiceUrl" type="url" required placeholder="رابط أغنية أو ألبوم" aria-label="رابط Spotify أو أنغامي"><button>مشاركة من Spotify أو أنغامي</button></form>
   <div class="row"><label id="videoQuality">الجودة <select id="quality"><option value="auto">تلقائي</option><option value="high">عالية</option><option value="medium">متوسطة</option><option value="low">منخفضة</option></select></label><label class="subtitle-picker" id="subtitlePicker">ترجمة SRT/VTT <span id="subFileName">اختيار ملف</span><input id="subFile" type="file" accept=".srt,.vtt,text/vtt" aria-label="اختيار ملف ترجمة"></label><label><input id="guestControls" type="checkbox"> السماح للضيف بالتحكم في التشغيل</label></div>
  </details></div>
- <div class="player" id="videoStage" data-fit="contain"><div class="music-now" id="musicNow" hidden>
+ <div class="player" id="videoStage"><div class="music-now" id="musicNow" hidden>
   <span class="music-now-overline">NOW PLAYING · BARQ ONE</span>
   <div class="music-now-art" aria-hidden="true"><span>♫</span></div>
   <strong id="musicNowTitle">اختار أغنية نسمعها سوا</strong><small id="musicNowSource">ملف صوتي من جهازك أو رابط رسمي</small>
   <div class="music-equalizer" aria-hidden="true"><i/><i/><i/><i/><i/><i/><i/><i/><i/></div>
- </div><video id="video" controls playsinline></video><div id="waitingOverlay" class="room-waiting" role="status" aria-live="polite"><span class="room-waiting-icon" aria-hidden="true">BARQ</span><strong id="waitingTitle">في انتظار الفيديو</strong><small id="waitingDescription">الفيديو هيظهر أول ما المضيف يشغّله</small></div><div id="captions" class="captions" dir="auto" aria-live="off"></div><div class="player-screen-actions" id="screenActions"><button type="button" id="fitMode" title="اختيار طريقة عرض الفيديو" aria-pressed="false">ملء الإطار</button><button type="button" id="enterFullscreen" title="عرض الفيديو على حجم الشاشة">ملء الشاشة</button></div></div>
+ </div><video id="video" controls controlslist="nofullscreen" playsinline></video><div id="waitingOverlay" class="room-waiting" role="status" aria-live="polite"><span class="room-waiting-icon" aria-hidden="true">BARQ</span><strong id="waitingTitle">في انتظار الفيديو</strong><small id="waitingDescription">الفيديو هيظهر أول ما المضيف يشغّله</small></div><div id="captions" class="captions" dir="auto" aria-live="off"></div><div class="player-screen-actions" id="screenActions"><button type="button" id="enterFullscreen" title="تكبير الفيديو" aria-label="تكبير الفيديو" aria-pressed="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path class="expand-icon" d="M9 4H4v5m11-5h5v5M4 15v5h5m11-5v5h-5"/><path class="collapse-icon" d="M4 9h5V4m11 5h-5V4M9 20v-5H4m11 5v-5h5"/></svg></button></div></div>
  <div class="room-viewer-actions"><div class="row room-guest-controls" id="guestWrap" hidden aria-label="أدوات المشاهدة"><span class="guest-tools-label">التحكم في المشاهدة</span><button id="resumePlayback" title="تشغيل الصوت والفيديو">تشغيل بالصوت</button><button id="pauseRequest" title="طلب تشغيل أو إيقاف مؤقت">اطلب تشغيل / إيقاف</button><button id="seekRequest" title="طلب تقديم 30 ثانية">اطلب تقديم ٣٠ ثانية</button><button type="button" id="retryMedia" hidden>إعادة توصيل البث</button></div><button type="button" id="chatToggle" aria-expanded="true" aria-controls="roomChat">إخفاء الدردشة</button></div>
  <section id="officialMusic" hidden class="row"></section>
  <p class="sub" id="mediaNote" role="status"></p>
@@ -386,7 +393,7 @@ body.room-focus:not(.room-music) .grid{grid-template-columns:minmax(0,1fr)}
  <p id="typing" role="status"></p>
  <form id="chatForm" class="row chat-compose">
   <textarea id="chatText" rows="1" dir="auto" maxlength="500" placeholder="اكتب رسالة…" aria-label="اكتب رسالة"></textarea>
-  <button id="send" type="submit" disabled>إرسال</button>
+  <button id="send" type="submit" aria-label="إرسال الرسالة" title="إرسال الرسالة" disabled><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m22 2-7 20-4-9-9-4 20-7ZM22 2 11 13"/></svg></button>
  </form>
  <p id="chatNotice" role="status"></p>
 </aside>
@@ -421,21 +428,26 @@ if(music){
 }
 var captionEl=document.getElementById('captions'),cues=[],lastCaption='';
 var stage=document.getElementById('videoStage');
-var fullscreenButton=document.getElementById('enterFullscreen'),fitButton=document.getElementById('fitMode');
-function updateFullscreenLabel(){fullscreenButton.textContent=document.fullscreenElement?'⤡ إنهاء ملء الشاشة':'⛶ ملء الشاشة';}
+var fullscreenButton=document.getElementById('enterFullscreen');
+function updateFullscreenLabel(){
+ var active=Boolean(document.fullscreenElement||video.webkitDisplayingFullscreen);
+ var label=active?'تصغير الفيديو':'تكبير الفيديو';
+ fullscreenButton.title=label;
+ fullscreenButton.setAttribute('aria-label',label);
+ fullscreenButton.setAttribute('aria-pressed',String(active));
+}
 document.addEventListener('fullscreenchange',updateFullscreenLabel);
-fullscreenButton.onclick=function(){
- if(document.fullscreenElement){void document.exitFullscreen().catch(function(){note('تعذّر إغلاق وضع ملء الشاشة.');});return;}
- if(stage.requestFullscreen){
-   void stage.requestFullscreen().then(updateFullscreenLabel).catch(function(){note('المتصفح منع ملء الشاشة. جرّب زر ملء الشاشة في مشغّل الفيديو.');});
- }else if(video.webkitEnterFullscreen){try{video.webkitEnterFullscreen();}catch(e){note('المشغّل لا يدعم ملء الشاشة.');}}
- else note('وضع ملء الشاشة غير متاح في المتصفح الحالي.');
-};
-fitButton.onclick=function(){
- var fill=stage.dataset.fit!=='cover';
- stage.dataset.fit=fill?'cover':'contain';
- fitButton.setAttribute('aria-pressed',String(fill));
- fitButton.textContent=fill?'إظهار الفيديو كاملًا':'ملء الإطار';
+video.addEventListener('webkitbeginfullscreen',updateFullscreenLabel);
+video.addEventListener('webkitendfullscreen',updateFullscreenLabel);
+fullscreenButton.onclick=async function(){
+ try{
+  if(document.fullscreenElement){await document.exitFullscreen();return;}
+  if(stage.requestFullscreen){
+   try{await stage.requestFullscreen();return;}catch(error){if(!video.webkitEnterFullscreen)throw error;}
+  }
+  if(video.webkitEnterFullscreen){video.webkitEnterFullscreen();return;}
+  note('تكبير الفيديو غير متاح في المتصفح الحالي.');
+ }catch(error){note('تعذّر تغيير حجم شاشة الفيديو.');}
 };
 
 var status=document.getElementById('status');

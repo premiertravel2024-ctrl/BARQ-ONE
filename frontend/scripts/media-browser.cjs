@@ -103,15 +103,33 @@ const cMaps=await page.request.get('http://127.0.0.1:5173/assets/pdfjs/cmaps/Ado
 const font=await page.request.get('http://127.0.0.1:5173/assets/pdfjs/standard_fonts/LiberationSans-Regular.ttf');
 assert.ok(cMaps.ok()&&(await cMaps.body()).length>100,'PDF character maps must be reachable');
 assert.equal((await font.body()).readUInt32BE(0),0x00010000,'PDF standard fonts must be served as font files');
-await page.locator('.bs-pdf-scroll').evaluate(el=>{el.scrollTop=el.scrollHeight;});
-await page.getByText('2 / 2',{exact:true}).waitFor();
+await page.getByRole('button',{name:'تكبير القراءة',exact:true}).click();
+await page.getByText('120%',{exact:true}).waitFor();
+await page.getByRole('combobox',{name:'ألوان القراءة'}).selectOption('warm');
+assert.equal(await page.locator('.bs-document').getAttribute('data-paper'),'warm');
+const pageNumber=page.getByRole('spinbutton',{name:'انتقل إلى صفحة'});
+await pageNumber.fill('2');
+await pageNumber.press('Enter');
+await page.waitForFunction(()=>document.querySelector('.bs-page-jump input')?.value==='2');
 await page.getByRole('button',{name:'علّم الصفحة',exact:true}).click();
 assert.equal(await page.getByRole('button',{name:'علّم الصفحة'}).getAttribute('aria-pressed'),'true');
 await page.getByRole('button',{name:'رجوع للمكتبة'}).click();
 await page.getByRole('button',{name:'اقرأ في برق',exact:true}).click();
-await page.getByText('2 / 2',{exact:true}).waitFor();
+await page.waitForFunction(()=>document.querySelector('.bs-page-jump input')?.value==='2');
 
+await page.addInitScript(()=>{
+ window.pywebview={api:{
+  check_update:async()=>({status:'available',current:'2.41.1',version:'2.41.2',notes:'تحسين اختباري',size:2000000}),
+  download_update:async version=>{window.installerRequested=version;return {status:'installing'};},
+ }};
+});
 await page.goto('http://127.0.0.1:5173/');
+await page.getByRole('button',{name:'تحديث متاح',exact:true}).click();
+const updateDialog=page.getByRole('dialog',{name:'تحديثات BARQ ONE'});
+await updateDialog.getByText('تحسين اختباري').waitFor();
+await updateDialog.getByRole('button',{name:'حدّث الآن',exact:true}).click();
+assert.equal(await page.evaluate(()=>window.installerRequested),'2.41.2');
+await page.keyboard.press('Escape');
 assert.equal(await page.getByRole('button',{name:'اسأل برق',exact:true}).count(),0);
 const chatNav=page.locator('.ops-header nav').getByRole('button',{name:'المحادثة',exact:true});
 await chatNav.click();

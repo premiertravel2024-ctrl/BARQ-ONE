@@ -20,7 +20,7 @@ def _pe_binary():
     return bytes(content)
 
 
-def _verified_fixture(root: Path, *, version="2.41.0", payload=None, with_ui=False, without_worklet=False, bad_member=None):
+def _verified_fixture(root: Path, *, version="2.41.1", payload=None, with_ui=False, without_worklet=False, bad_member=None):
     release = root / "release"
     release.mkdir(parents=True, exist_ok=True)
     content = payload if payload is not None else _pe_binary()
@@ -30,7 +30,7 @@ def _verified_fixture(root: Path, *, version="2.41.0", payload=None, with_ui=Fal
         if with_ui:
             prefix = "BARQ/_internal/web/react/"
             zf.writestr(prefix+"index.html", b'<!doctype html><div id="root"></div>')
-            zf.writestr(prefix+"assets/index-abc123.js", b'console.log("BARQ v2.41.0")')
+            zf.writestr(prefix+"assets/index-abc123.js", b'console.log("BARQ v2.41.1")')
             if not without_worklet:
                 zf.writestr(prefix+"audio/live-capture.js", b'console.log("live voice")')
             if bad_member:
@@ -80,7 +80,7 @@ def test_untrusted_exe_content_is_rejected_even_if_zip_hash_matches(tmp_path):
 
 def test_recovery_build_marker_is_rejected(tmp_path):
     _verified_fixture(tmp_path)
-    (tmp_path / "release/build-ok-v2.41.0.marker").write_text("ok|BARQ|2.41.0|date|bundled-recovery")
+    (tmp_path / "release/build-ok-v2.41.1.marker").write_text("ok|BARQ|2.41.1|date|bundled-recovery")
     with pytest.raises(ValueError, match="fresh-source"):
         restore(tmp_path)
 
