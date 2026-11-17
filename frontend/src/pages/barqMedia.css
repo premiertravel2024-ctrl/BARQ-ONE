@@ -136,3 +136,12 @@
 @media(max-width:760px){.barq-music-hero{padding:22px;min-height:225px}.bma-vinyl{width:125px;height:125px}.bma-vinyl-center{width:46px;height:46px}.barq-music-app .barq-room-entry{grid-template-columns:1fr}.barq-music-app .barq-watch-player iframe{min-height:700px;height:810px}}
 @media(max-width:480px){.barq-music-hero{padding:16px;min-height:185px}.bma-vinyl{width:70px;height:70px;box-shadow:0 0 25px #c4427270}.bma-vinyl-center{width:31px;height:31px;border-width:3px}.bma-vinyl-center svg{width:16px}.bma-bars{display:none}.barq-music-hero .barq-watch-hero-copy h2{font-size:1.4rem}.barq-music-hero .barq-watch-hero-copy p{font-size:.73rem}.barq-music-app .barq-watch-choose-panel{min-height:0}.barq-music-app .barq-watch-player iframe{height:810px}}
 @media(prefers-reduced-motion:reduce){.bma-bars i{animation:none}}
+
+.barq-music-app .barq-music-hero { min-height:0; padding:14px 18px; }
+.barq-music-app .bma-vinyl { display:none; }
+.barq-music-providers { padding:12px; border:1px solid #423342; border-radius:14px; background:#19161e; }
+.barq-music-providers > div { display:flex; gap:8px; flex-wrap:wrap; }
+.barq-music-providers > div button { min-height:38px; padding:7px 15px; border:1px solid #644357; border-radius:8px; background:#27202c; }
+.barq-music-providers > div button[aria-pressed="true"] { background:#66314a; }
+.barq-music-providers .bm-service { margin-top:10px; }
+.bm-room-discovery { grid-template-columns:minmax(0,1fr); }

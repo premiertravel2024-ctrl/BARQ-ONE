@@ -14,7 +14,6 @@ import {BarqOne,sections,type OnePage} from './pages/BarqOne';
 import './styles/experienceRefresh.css';
 import {keepAppContextFresh,publishBookCatalogue,trackSection,type AppAction} from './lib/appContext';
 import {publishedBooks} from './pages/publishedBooks';
-import {originals} from './pages/barqStoriesData';
 import {VoiceResultsStrip} from './components/chat/VoiceResultsStrip';
 import {Modal} from './components/ui/Modal';import {Button} from './components/ui/Button';import {ToastViewport} from './components/ui/Toast';import {LauncherPalette} from './components/launcher/LauncherPalette';import {CommandPalette} from './components/ui/CommandPalette';import {Playground} from './pages/Playground';
 // Permission snapshot is kept up to date while the app is alive. We start
@@ -58,7 +57,6 @@ export default function App(){
  useEffect(()=>{
   publishBookCatalogue([
    ...publishedBooks.map(book=>({title:book.title,label:book.author})),
-   ...originals.map(book=>({title:book.title,label:book.genre})),
   ]);
  },[]);
  useEffect(()=>{
@@ -113,7 +111,7 @@ export default function App(){
    }catch{/* Local server may be restarting. */}finally{fetching=false}
   };
   const nativeWake=()=>{void check()};window.addEventListener('barq-native-wake',nativeWake);
-  void check();const timer=window.setInterval(()=>void check(),350);
+  void check();const timer=window.setInterval(()=>{if(!isHandsFreeActive())void check();},1200);
   return()=>{alive=false;window.clearInterval(timer);window.removeEventListener('barq-start-live-voice',open);window.removeEventListener('barq-native-wake',nativeWake);window.removeEventListener('barq-handsfree-stop',stopSpeech)};
  },[]);
  useEffect(()=>{

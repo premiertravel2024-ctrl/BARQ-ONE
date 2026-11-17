@@ -4,7 +4,7 @@ import {requestJSON} from '../lib/backend';
 import {useApp} from '../store';
 import {Modal} from '../components/ui/Modal';
 import {useAppView} from '../lib/appContext';
-import type {RoomTrack} from './MusicServices';
+import {MusicServices,type RoomTrack} from './MusicServices';
 import {CinemaDiscovery} from './CinemaDiscovery';
 
 type Mode = 'video' | 'music';
@@ -33,7 +33,7 @@ function parseInvite(value: string) {
   return {guest_url, code};
 }
 
-export function WatchTogether({mode = 'video',track,onRoomState}: {mode?: Mode;track?:RoomTrack;onRoomState?:(status:string)=>void}) {
+export function WatchTogether({mode = 'video',track,onTrack,requestedProvider,onRoomState}: {mode?: Mode;track?:RoomTrack;onTrack?:(track:RoomTrack)=>void;requestedProvider?:RoomTrack['provider'];onRoomState?:(status:string)=>void}) {
   const ar = useApp(s => s.language) === 'ar';
   const [room, setRoom] = useState<Room | null>(null);
   const [guest, setGuest] = useState('');
@@ -43,6 +43,8 @@ export function WatchTogether({mode = 'video',track,onRoomState}: {mode?: Mode;t
   const [invite, setInvite] = useState('');
   const [joinOpen, setJoinOpen] = useState(false);
   const [hostOpen, setHostOpen] = useState(false);
+  const [provider,setProvider]=useState<RoomTrack['provider']>();
+  useEffect(()=>{if(requestedProvider)setProvider(requestedProvider);},[requestedProvider]);
   const current = room?.mode === mode ? room : null;
   const frame=useRef<HTMLIFrameElement>(null);
   const pendingShare=useRef('');
@@ -195,6 +197,13 @@ export function WatchTogether({mode = 'video',track,onRoomState}: {mode?: Mode;t
         <button className="bc-primary" type="submit" disabled={busy||!invite.trim()}>{ar?'دخول الغرفة':'Join room'}</button>
       </form>
     </Modal>}
+    {music&&!guest&&onTrack&&<section className="barq-music-providers">
+      <div role="group" aria-label={ar?'مصدر الموسيقى':'Music source'}>
+        <button type="button" aria-pressed={provider==='anghami'} onClick={()=>setProvider(provider==='anghami'?undefined:'anghami')}>{ar?'أنغامي':'Anghami'}</button>
+        <button type="button" aria-pressed={provider==='spotify'} onClick={()=>setProvider(provider==='spotify'?undefined:'spotify')}>Spotify</button>
+      </div>
+      {provider&&<MusicServices key={provider} provider={provider} ar={ar} roomOnly onShare={onTrack}/>}
+    </section>}
     {music&&track&&<section className="barq-media-panel barq-room-track-selection">
       <div><strong dir="auto">{track.title}</strong><small>{track.provider==='spotify'?'Spotify':'Anghami'}</small></div>
       {current&&!guest&&<button type="button" disabled={sharedSelection.current} onClick={sendTrack}>{sharedSelection.current?(ar?'اتشارك':'Shared'):(ar?'شارك الاختيار':'Share selection')}</button>}

@@ -93,6 +93,8 @@ from api_routes.music import router as music_router
 app.include_router(music_router)
 from api_routes.app_context import router as app_context_router
 app.include_router(app_context_router)
+from api_routes.reading import router as reading_router
+app.include_router(reading_router)
 from api_routes.automation import router as automation_router
 app.include_router(automation_router)
 from api_routes.openhub_tools import router as openhub_tools_router

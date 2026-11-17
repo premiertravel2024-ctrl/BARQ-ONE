@@ -51,7 +51,7 @@ const pageUrl=(provider:Provider,item:Release)=>(provider==='spotify'?'https://o
 const kindLabel=(kind:string,ar:boolean)=>({track:ar?'أغنية':'Track',song:ar?'أغنية':'Track',album:ar?'ألبوم':'Album',artist:ar?'فنان':'Artist',playlist:ar?'قائمة تشغيل':'Playlist'}[kind]||kind);
 const itemKey=(item:Release)=>item.kind+'/'+item.id;
 
-export function MusicServices({provider,ar,onSelected,onShare}:{provider:Provider;ar:boolean;onSelected:(title:string)=>void;onShare:(track:RoomTrack)=>void}){
+export function MusicServices({provider,ar,onSelected,onShare,roomOnly=false}:{provider:Provider;ar:boolean;onSelected?:(title:string)=>void;roomOnly?:boolean;onShare:(track:RoomTrack)=>void}){
  const brand=provider==='spotify'?'Spotify':ar?'أنغامي':'Anghami';
  const [query,setQuery]=useState('');
  const [searched,setSearched]=useState('');
@@ -68,8 +68,12 @@ export function MusicServices({provider,ar,onSelected,onShare}:{provider:Provide
   const embed=officialEmbed(pageUrl(provider,item),provider);
   if(!embed)return;
   const shareable=provider==='anghami'||['track','album','playlist'].includes(item.kind);
-  setSelection({embed,title:item.title,artist:item.artist,track:shareable?{provider,kind:item.kind,id:item.id,title:item.title}:undefined});
-  onSelected(item.title);
+  const track=shareable?{provider,kind:item.kind,id:item.id,title:item.title}:undefined;
+  if(roomOnly&&!track){setError(ar?'اختار أغنية أو ألبوم أو قائمة تشغيل.':'Choose a track, album, or playlist.');return;}
+  setError('');
+  setSelection({embed,title:item.title,artist:item.artist,track});
+  onSelected?.(item.title);
+  if(roomOnly&&track){onShare(track);return;}
   requestAnimationFrame(()=>player.current?.focus());
  }
 
@@ -98,8 +102,13 @@ export function MusicServices({provider,ar,onSelected,onShare}:{provider:Provide
     const embed=officialEmbed(value,provider)||(provider==='anghami'?await resolveAnghami(value):undefined);
     if(abort.signal.aborted)return;
     if(!embed)throw new Error('Invalid link');
+    if(roomOnly){
+     const [,kind,id]=new URL(embed.page).pathname.split('/');
+     if(provider==='spotify'&&!['track','album','playlist'].includes(kind))throw new Error('Invalid link');
+     onShare({provider,kind,id,title:brand});return;
+    }
     setSelection({embed,title:brand});
-    onSelected(brand);
+    onSelected?.(brand);
     requestAnimationFrame(()=>player.current?.focus());
     return;
    }
@@ -141,7 +150,7 @@ export function MusicServices({provider,ar,onSelected,onShare}:{provider:Provide
    </div>
   </form>
   {error&&<p className="bm-service-error" role="alert">{error}</p>}
-  <div className="bm-discovery">
+  <div className={roomOnly?'bm-discovery bm-room-discovery':'bm-discovery'}>
    <section className="bm-releases" aria-busy={busy}>
     <h3>{searched?(ar?'نتائج البحث':'Search results'):(ar?'اختيارات للاستماع':'Featured picks')}</h3>
     {busy&&<p className="bm-discovery-status" role="status">{ar?'جاري البحث…':'Searching…'}</p>}
@@ -156,7 +165,7 @@ export function MusicServices({provider,ar,onSelected,onShare}:{provider:Provide
     </div>
     {searched&&<a className="bm-provider-link" href={providerSearch} target="_blank" rel="noopener noreferrer"><ExternalLink size={15}/>{provider==='spotify'?(ar?'بحث على Spotify':'Search on Spotify'):(ar?'نتائج أنغامي على الويب':'Anghami results on the web')}</a>}
    </section>
-   <section ref={player} tabIndex={-1} className="bm-service-player" aria-label={ar?'المشغّل الرسمي':'Official player'}>
+   {!roomOnly&&<section ref={player} tabIndex={-1} className="bm-service-player" aria-label={ar?'المشغّل الرسمي':'Official player'}>
     {selection?<><div className="bm-service-player-title">
      <div><strong dir="auto">{selection.title}</strong>{selection.artist&&<small dir="auto">{selection.artist}</small>}</div>
      {selection.track&&<button type="button" className="bm-share-song" onClick={()=>onShare(selection.track!)}>{ar?'شارك في الغرفة':'Share in room'}</button>}
@@ -165,7 +174,7 @@ export function MusicServices({provider,ar,onSelected,onShare}:{provider:Provide
     <iframe key={selection.embed.src} src={selection.embed.src+(provider==='anghami'?'?theme=fulldark&layout=wide&lang='+(ar?'ar':'en'):'')} title={selection.embed.title+' '+selection.embed.kind+' player'}
      allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" referrerPolicy="strict-origin-when-cross-origin"/>
     </>:<div className="bm-service-empty"><Headphones size={30}/><p>{ar?'اختار نتيجة علشان تفتح المشغّل.':'Select a result to open the player.'}</p></div>}
-   </section>
+   </section>}
   </div>
  </section>;
 }

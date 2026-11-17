@@ -51,3 +51,7 @@
  .bm-player .bm-switch button { justify-content: center; white-space: normal; }
 }
 @media (prefers-reduced-motion: reduce) { .bm-player .bm-switch button { transition: none; } }
+
+/* The outer stage owns vertical scrolling. Never shrink the room to its viewport. */
+.one-page > .bm-player { flex:0 0 auto; overflow:visible; }
+.bm-load-more { display:block; margin:12px auto; padding:9px 15px; border:1px solid #674658; border-radius:9px; }

@@ -1,11 +1,11 @@
 export type PublishedBook={
  id:string;title:string;author:string;category:string;genre:string;
- publisher:string;url:string;description:string;year?:number;series?:boolean;store?:boolean;issues?:{number:number;title:string;url:string}[];
+ publisher:string;url:string;format?:'pdf'|'text';cover?:string;description:string;year?:number;series?:boolean;store?:boolean;issues?:{number:number;title:string;url:string}[];
 };
 const series=(id:string,title:string,author:string,genre:string,url:string,description:string,issues?:PublishedBook['issues']):PublishedBook=>({
  id,title,author,genre,url,description,issues,category:'روايات مصرية',publisher:'روايات مصرية للجيب',series:true,
 });
-export const publishedBooks:PublishedBook[]=[
+const catalogue:PublishedBook[]=[
  series('paranormal','ما وراء الطبيعة','أحمد خالد توفيق','رعب','https://rewayatmasreya.com/collections/ma-waraa-al-tabia-ahmed-khaled-tawfik','حكايات رفعت إسماعيل مع الأساطير والظواهر الخارقة.', [{"number": 1, "title": "مصاص الدماء وأسطورة الرجل الذئب", "url": "https://rewayatmasreya.com/products/مصاص-الدماء-وأسطورة-الرجل-الذئب-1-ما-ورا"}, {"number": 2, "title": "أسطورة النداهة", "url": "https://rewayatmasreya.com/products/أسطورة-النداهة-2-ما-وراء-الطبيعة"}, {"number": 3, "title": "أسطورة وحش البحيرة", "url": "https://rewayatmasreya.com/products/أسطورة-وحش-البحيرة-3-ما-وراء-الطبيعة"}]),
  series('impossible','رجل المستحيل','نبيل فاروق','مغامرة','https://rewayatmasreya.com/collections/ragol-al-mostaheel-nabil-farouk','أدهم صبري في مهمات المخابرات والمطاردات.', [{"number": 1, "title": "الاختفاء الغامض", "url": "https://rewayatmasreya.com/products/الاختفاء-الغامض-1-رجل-المستحيل"}, {"number": 2, "title": "سباق الموت", "url": "https://rewayatmasreya.com/products/سباق-الموت-2-رجل-المستحيل"}, {"number": 3, "title": "قناع الخطر", "url": "https://rewayatmasreya.com/products/قناع-الخطر-3-سلسلة-رجل-المستحيل"}]),
  series('future','ملف المستقبل','نبيل فاروق','خيال علمي','https://rewayatmasreya.com/collections/malaf-al-mostaqbal','نور الدين وفريقه في مغامرات علمية وألغاز مستقبلية.'),
@@ -27,3 +27,18 @@ export const publishedBooks:PublishedBook[]=[
  {id:'world-time',title:'آلة الزمن / The Time Machine',author:'H. G. Wells',category:'روايات عالمية',genre:'خيال علمي',year:1895,url:'https://www.gutenberg.org/ebooks/35',publisher:'Project Gutenberg',description:'من كلاسيكيات الخيال العلمي والرحلة إلى مستقبل بعيد.'},
  {id:'world-sherlock',title:'مغامرات شيرلوك هولمز',author:'Arthur Conan Doyle',category:'روايات عالمية',genre:'غموض',year:1892,url:'https://www.gutenberg.org/ebooks/1661',publisher:'Project Gutenberg',description:'مجموعة قصص بوليسية عالمية لشيرلوك هولمز.'},
 ];
+
+const coverImages:Record<string,string>={
+ paranormal:'https://rewayatmasreya.com/cdn/shop/files/1_a9903f10-c39b-472c-b0f0-04fa0e707ce1.jpg?v=1792315603&width=240',
+ impossible:'https://rewayatmasreya.com/cdn/shop/files/D8_A7_D9_84_D8_A3_D8_AE_D8_AA_D9_81_D8_A7_D8_A1-_D8_A7_D9_84_D8_BA_D8_A7_D9_85_D8_B6.jpg?v=1790607187&width=240',
+ 'egy-blue':'https://ak-asset.jarir.com/akeneo-prod/asset/8/d/2/7/8d27b3f158aab6fd03a1b65cf08a953380ee4d1c_JBB1650NA003.jpg',
+ 'egy-mice':'https://ak-asset.jarir.com/akeneo-prod/asset/m1images/j/b/jbb6990na016.jpg',
+ flash:'https://rewayatmasreya.com/cdn/shop/collections/Flash__Egyptian_Comic_Adventure.png?v=1791994491&width=200',
+};
+export const publishedBooks=catalogue.map((book):PublishedBook=>{
+ const hindawi=book.url.match(/^https:\/\/downloads\.hindawi\.org\/books\/(\d+)\.pdf$/);
+ if(hindawi)return {...book,format:'pdf',cover:'https://downloads.hindawi.org/covers/svg/270x360/'+hindawi[1]+'.svg?v=5'};
+ const gutenberg=book.url.match(/^https:\/\/www\.gutenberg\.org\/ebooks\/(\d+)$/);
+ if(gutenberg)return {...book,format:'text',cover:'https://www.gutenberg.org/cache/epub/'+gutenberg[1]+'/pg'+gutenberg[1]+'.cover.medium.jpg'};
+ return {...book,cover:coverImages[book.id]};
+});
