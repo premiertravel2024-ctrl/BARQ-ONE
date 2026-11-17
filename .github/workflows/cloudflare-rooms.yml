@@ -32,6 +32,17 @@ jobs:
         if: ${{ env.CLOUDFLARE_API_TOKEN == '' || env.CLOUDFLARE_ACCOUNT_ID == '' }}
         run: |
           echo "::notice title=Cloudflare deployment pending::Set CLOUDFLARE_API_TOKEN and CLOUDFLARE_ACCOUNT_ID in repository Actions secrets; updated mobile room UI is NOT yet deployed."
+      - name: Validate and normalize Cloudflare account ID
+        if: ${{ env.CLOUDFLARE_API_TOKEN != '' && env.CLOUDFLARE_ACCOUNT_ID != '' }}
+        shell: bash
+        run: |
+          # GitHub secrets pasted with line breaks must never reach Wrangler unchanged.
+          clean_id="$(printf '%s' "$CLOUDFLARE_ACCOUNT_ID" | tr -d '[:space:]')"
+          if [[ ! "$clean_id" =~ ^[[:alnum:]_-]{32}$ ]]; then
+            echo "::error title=Cloudflare account ID::CLOUDFLARE_ACCOUNT_ID must be the 32-character Account ID from Cloudflare Workers & Pages, not the account name, Worker URL, or API token."
+            exit 1
+          fi
+          echo "CLOUDFLARE_ACCOUNT_ID=$clean_id" >> "$GITHUB_ENV"
       - name: Publish updated mobile and guest rooms
         if: ${{ env.CLOUDFLARE_API_TOKEN != '' && env.CLOUDFLARE_ACCOUNT_ID != '' }}
         run: npx --yes wrangler@4 deploy --config wrangler.jsonc
