@@ -1,6 +1,7 @@
 const publisher='https://rewayatmasreya.com/collections/ma-waraa-al-tabia-ahmed-khaled-tawfik';
 
 export const paranormalCollection='https://rewayatmasreya.com/products/ma-waraa-al-tabia-large-size-1-81';
+export const paranormalEbooks='https://play.google.com/store/books/series?id=lW27GwAAABAvdM';
 
 const titles=[
  "مصاص الدماء وأسطورة الرجل الذئب",

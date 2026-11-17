@@ -76,6 +76,7 @@ await page.locator('article').filter({has:page.getByRole('heading',{name:'ما �
  .getByRole('button',{name:'أعداد السلسلة'}).click();
 const issues=page.getByRole('dialog',{name:'ما وراء الطبيعة'});
 assert.equal(await issues.locator('li').count(),81);
+assert.equal(await issues.getByRole('link',{name:/Google Play/}).getAttribute('href'),'https://play.google.com/store/books/series?id=lW27GwAAABAvdM');
 await issues.locator('.bs-series-scroll').evaluate(el=>{el.scrollTop=el.scrollHeight;});
 assert.ok(await issues.locator('.bs-series-scroll').evaluate(el=>el.scrollTop>0));
 await issues.getByRole('textbox',{name:'ابحث عن عدد'}).fill('٨١');

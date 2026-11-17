@@ -4,7 +4,7 @@ import {Modal} from '../components/ui/Modal';
 import {useAppView} from '../lib/appContext';
 import {useApp} from '../store';
 import {publishedBooks,type PublishedBook} from './publishedBooks';
-import {paranormalCollection} from './paranormalIssues';
+import {paranormalCollection,paranormalEbooks} from './paranormalIssues';
 import './barqStories.css';
 
 const BookReader=lazy(()=>import('./BookReader'));
@@ -120,9 +120,14 @@ export function BarqStories(){
    </section>
   </>}
   <Modal open={!!series} onClose={closeSeries} title={series?.title||''} wide bodyClassName="bs-series-scroll"
-   footer={series&&<a className="bs-primary" href={series.id==='paranormal'?paranormalCollection:series.url} target="_blank" rel="noopener noreferrer">
+   footer={series&&<div className="bs-reading-options">
+    {series.id==='paranormal'&&<a className="bs-primary" href={paranormalEbooks} target="_blank" rel="noopener noreferrer">
+     {label('النسخ الإلكترونية على Google Play','Ebooks on Google Play')}
+    </a>}
+    <a className="bs-primary" href={series.id==='paranormal'?paranormalCollection:series.url} target="_blank" rel="noopener noreferrer">
     {series.id==='paranormal'?label('المجموعة الكاملة عند الناشر','Complete set from the publisher'):label('كل الأعداد عند الناشر','All issues at the publisher')}
-   </a>}>
+    </a>
+   </div>}>
    {series&&<section className="bs-series-detail" dir={ar?'rtl':'ltr'}>
     <strong>{series.author}</strong><p>{series.description}</p>
     <p>{label('لو عندك نسخة PDF من العدد، افتحها هنا في برق.','If you have a PDF of an issue, open it here in BARQ.')}</p>
