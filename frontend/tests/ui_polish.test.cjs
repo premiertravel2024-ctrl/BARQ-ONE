@@ -81,9 +81,9 @@ test('voice controller remains functional but has no floating overlay',()=>{
 
 
 test('BARQ Stories is a real navigable application section, not a landing mockup',()=>{
-  const one=read('src/pages/BarqOne.tsx');
-  const stories=read('src/pages/BarqStories.tsx');
-  const library=read('src/pages/barqStoriesData.ts');
+  const one=read('pages/BarqOne.tsx');
+  const stories=read('pages/BarqStories.tsx');
+  const library=read('pages/barqStoriesData.ts');
   assert.match(one,/\['stories','حكايات برق','BARQ Stories'/);
   assert.match(one,/page==='stories'&&<BarqStories\/>/);
   assert.match(stories,/\/v1\/voice\/speak/);
@@ -95,8 +95,8 @@ test('BARQ Stories is a real navigable application section, not a landing mockup
 
 
 test('wallpaper gallery supports applying and safe removal with confirmation',()=>{
- const ui=read('src/pages/Wallpapers.tsx');
- const css=read('src/pages/wallpaperGallery.css');
+ const ui=read('pages/Wallpapers.tsx');
+ const css=read('pages/wallpaperGallery.css');
  assert.match(ui,/method:'DELETE'/);
  assert.match(ui,/className="bws-remove"/);
  assert.match(ui,/deleteTarget/);
