@@ -421,6 +421,7 @@ def engine_main(identifier, parent_pid):
                     else:
                         media_ready.clear()
                         gui["error"] = "Media decoder failed. Use an MP4 H.264 or supported WebM/GIF file."
+                        _write_engine_failure(gui["error"])
                         print(gui["error"], file=sys.stderr, flush=True)
                     self._headers(204, "text/plain", 0)
                 except (ValueError, OSError): self._headers(400, "text/plain", 0)
@@ -484,16 +485,40 @@ def engine_main(identifier, parent_pid):
             os.replace(temp, _state_path())
             published.set()
     def attach():
+        if ready.is_set():
+            return
         try:
             native = gui["window"].native
+            if native is None:
+                raise RuntimeError("WebView2 native window is not yet available")
             handle = int(native.Handle.ToInt64())
+            if not handle:
+                raise RuntimeError("Native wallpaper handle unavailable")
             _embed_native_window(handle)
+            gui["error"] = ""
             ready.set()
             publish_when_ready()
         except Exception as error:
-            gui["error"] = str(error)
-            print("Wallpaper attachment failed:", error, file=sys.stderr, flush=True)
-            threading.Thread(target=gui["window"].destroy, daemon=True).start()
+            # Some Windows 11 desktops create WorkerW after before_show.
+            # Retrying after loaded is safer than destroying the window at once.
+            gui["error"] = "Desktop attachment: " + str(error)
+            print("Wallpaper attachment pending:", error, file=sys.stderr, flush=True)
+
+    def retry_attach_after_load():
+        deadline = time.monotonic() + 8
+        while not ready.is_set() and time.monotonic() < deadline:
+            attach()
+            if ready.is_set():
+                return
+            time.sleep(.5)
+        if not ready.is_set():
+            _write_engine_failure(gui["error"] or "Explorer WorkerW unavailable")
+            window = gui["window"]
+            if window:
+                try:
+                    window.destroy()
+                except Exception:
+                    pass
 
     try:
         w = webview.create_window("BARQ integrated wallpaper",
@@ -505,11 +530,20 @@ def engine_main(identifier, parent_pid):
         def signal_loaded():
             loaded.set()
             publish_when_ready()
+            if not ready.is_set():
+                threading.Thread(target=retry_attach_after_load, daemon=True).start()
         w.events.loaded += signal_loaded
         threading.Thread(target=check_parent, daemon=True).start()
         webview.start(gui="edgechromium", debug=False)
-        return 0 if ready.is_set() and loaded.is_set() and media_ready.is_set() else 4
-    except (OSError, RuntimeError) as exc:
+        if ready.is_set() and loaded.is_set() and media_ready.is_set():
+            return 0
+        reason = gui["error"] or ("WebView2 did not load media" if loaded.is_set() else "WebView2 window failed to load")
+        _write_engine_failure(reason)
+        print("BARQ wallpaper engine stopped:", reason, file=sys.stderr, flush=True)
+        return 4
+    except Exception as exc:
+        _write_engine_failure("WebView2 failed: " + str(exc))
+        print("BARQ wallpaper WebView2 startup failed:", exc, file=sys.stderr, flush=True)
         return 5
     finally:
         httpd.shutdown(); httpd.server_close()
