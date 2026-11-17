@@ -43,7 +43,7 @@ def verify_windows_pe(path: Path) -> None:
             raise ValueError("Extracted BARQ.exe has no PE signature")
 
 
-def restore(root: Path = ROOT, expected_version: str = "2.41.0") -> Path:
+def restore(root: Path = ROOT, expected_version: str = "2.41.1") -> Path:
     root = Path(root).resolve()
     release = root / "release"
     archive_path = release / f"BARQ_Portable_{expected_version}.zip"
@@ -96,7 +96,7 @@ def restore(root: Path = ROOT, expected_version: str = "2.41.0") -> Path:
             temp.unlink(missing_ok=True)
 
 
-def restore_ui(root: Path = ROOT, expected_version: str = "2.41.0") -> tuple[Path, Path]:
+def restore_ui(root: Path = ROOT, expected_version: str = "2.41.1") -> tuple[Path, Path]:
     """Restore the same build's frontend from the verified ZIP, never from checkout.
 
     PyInstaller --onedir stores --add-data web;web in BARQ/_internal/web/react.
@@ -180,7 +180,7 @@ def restore_ui(root: Path = ROOT, expected_version: str = "2.41.0") -> tuple[Pat
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--root", type=Path, default=ROOT)
-    parser.add_argument("--version", default="2.41.0")
+    parser.add_argument("--version", default="2.41.1")
     parser.add_argument("--with-ui", action="store_true", help="Also recover verified React UI for Core+UI patch packaging")
     args = parser.parse_args()
     try:

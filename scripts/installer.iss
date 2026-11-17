@@ -1,5 +1,5 @@
 #define AppName "BARQ ONE"
-#define AppVersion "2.41.0"
+#define AppVersion "2.41.1"
 #define AppPublisher "BARQ ONE"
 ; The source directory is the scripts/ folder. Verify the executable BEFORE
 ; attempting to compile an installer: double-clicking installer.iss does NOT
@@ -84,7 +84,7 @@ Name: "{autoprograms}\BARQ - Installed Files"; Filename: "{app}\SHOW_BARQ_FILES.
 Name: "{autoprograms}\BARQ - Repair Windows-MCP"; Filename: "{app}\INSTALL_BARQ_WINDOWS_MCP.bat"; Check: not IsSmoke
 Name: "{autoprograms}\BARQ - Install or Repair Toolkit"; Filename: "{sys}\WindowsPowerShell\v1.0\powershell.exe"; Parameters: "-NoProfile -ExecutionPolicy Bypass -File ""{app}\INSTALL_BARQ_TOOLKIT.ps1"""; Check: not IsSmoke
 Name: "{autoprograms}\BARQ - Repair CPU Sensors"; Filename: "{app}\INSTALL_BARQ_SENSORS.bat"; Check: not IsSmoke
-Name: "{autodesktop}\BARQ"; Filename: "{app}\BARQ.exe"; IconFilename: "{app}\BARQ.exe"; Tasks: desktopicon; Check: not IsSmoke
+Name: "{autodesktop}\BARQ"; Filename: "{app}\BARQ.exe"; IconFilename: "{app}\BARQ.exe"; Tasks: desktopicon; Check: (not IsSmoke) and (not IsBarqUpdate)
 [Tasks]
 Name: personalassistant; Description: "Keep BARQ ready in the background, start with Windows, enable wake microphone and ordinary computer commands"
 Name: fpsmonitor; Description: "Prepare PresentMon for on-demand FPS measurement (official GitHub, internet if missing)"
@@ -113,6 +113,8 @@ Filename: "{sys}\WindowsPowerShell\v1.0\powershell.exe"; Parameters: "-NoProfile
 ; Let the user confirm the microphone setting in Windows after installation.
 Filename: "ms-settings:privacy-microphone"; Description: "Review Windows microphone access for BARQ"; Flags: shellexec postinstall skipifsilent; Tasks: privacyhelp; Check: not IsSmoke
 
+Filename: "{app}\BARQ.exe"; WorkingDir: "{app}"; Flags: nowait; Check: IsBarqUpdate
+
 [Code]
 var
   WakeDownloadPage: TDownloadWizardPage;
@@ -121,6 +123,11 @@ var
 function IsSmoke: Boolean;
 begin
   Result := ExpandConstant('{param:BARQSMOKE|0}') = '1';
+end;
+
+function IsBarqUpdate: Boolean;
+begin
+  Result := (not IsSmoke) and WizardSilent and (ExpandConstant('{param:BARQUPDATE|0}') = '1');
 end;
 
 function ApplicationId(Param: String): String;
@@ -212,7 +219,7 @@ var
   ExitCode: Integer;
   WakeExe, Archive, ModelDir: String;
 begin
-  if CurStep <> ssPostInstall then Exit;
+  if (CurStep <> ssPostInstall) or IsBarqUpdate then Exit;
   if (not IsSmoke) and WizardIsTaskSelected('computerconsent') then begin
     ExitCode := -1;
     if (not Exec(ExpandConstant('{app}\BARQ.exe'),

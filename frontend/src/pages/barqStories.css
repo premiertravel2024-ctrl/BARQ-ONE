@@ -109,3 +109,18 @@
 .bs-reader-error{display:grid;gap:9px;justify-items:center;width:min(100%,480px);margin:22px auto;padding:14px;border:1px solid #433846;border-radius:9px;background:#19171e;text-align:center}
 .bs-reader-error p{margin:0;color:#e8dfe7}
 .bs-pdf-page canvas[hidden]{display:none}
+.bs-reader-display,.bs-page-jump{display:flex;align-items:center;gap:5px}
+.bs-page-jump{font-variant-numeric:tabular-nums}
+.bs-page-jump input{width:4.2ch;min-width:36px;text-align:center;padding:5px 3px;border-radius:6px;border:1px solid #604a5a;background:#292530;color:#f5eaf2;appearance:textfield}
+.bs-page-jump input::-webkit-inner-spin-button{appearance:none}
+.bs-reader-display :is(button,select){padding:5px 7px;min-height:31px}
+.bs-reader-display .bs-zoom-level{min-width:4.8ch;font-variant-numeric:tabular-nums}
+.bs-reader-progress{flex-basis:100%;width:100%;height:3px;border:0;appearance:none;border-radius:9px;overflow:hidden;background:#32303c;color:#de7599}
+.bs-reader-progress::-webkit-progress-bar{background:#32303c}
+.bs-reader-progress::-webkit-progress-value{background:#de7599}
+.bs-reader-progress::-moz-progress-bar{background:#de7599}
+.bs-pdf-page{max-width:none}
+.bs-document[data-paper="warm"] article{background:#f2e3c2;color:#322515;border-color:#c3ab87}
+.bs-document[data-paper="warm"] canvas{filter:sepia(.28)}
+.bs-document[data-paper="night"] article{background:#181b22;color:#dce2ed;border-color:#373d4b}
+.bs-document[data-paper="night"] canvas{filter:invert(.91) hue-rotate(180deg)}

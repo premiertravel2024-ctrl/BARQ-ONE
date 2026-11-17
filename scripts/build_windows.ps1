@@ -10,7 +10,7 @@ $root = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path
 Set-Location $root
 # A previous installer never counts as evidence of a new successful build.
 # Clear old output for the SAME version before building, even on a failed rebuild.
-$version = '2.41.0'
+$version = '2.41.1'
 $oldSetup = Join-Path $root "release\BARQ_Setup_$version.exe"
 if (Test-Path -LiteralPath $oldSetup) { Remove-Item -LiteralPath $oldSetup -Force }
 $buildMarker = Join-Path $root "release\build-ok-v$version.marker"
@@ -220,19 +220,19 @@ if (-not (Test-Path 'web/react/index.html')) { throw 'React dist/index.html is m
 $assets = @(Get-ChildItem 'web/react/assets' -File -ErrorAction SilentlyContinue)
 if ($assets.Count -eq 0) { throw 'React assets are missing.' }
 # The last BARQ releases sometimes installed a stale pre-built UI. Fail closed:
-# a genuine v2.41.0 workspace requires its own freshly compiled React marker.
+# a genuine v2.41.1 workspace requires its own freshly compiled React marker.
 if (-not $UseBundledUI) {
-  $studioMarker = 'v2.41.0-build-gated-ui'
+  $studioMarker = 'v2.41.1-build-gated-ui'
   $fresh = @(Get-ChildItem 'web/react/assets' -Filter '*.js' -File | Where-Object {
       Select-String -LiteralPath $_.FullName -SimpleMatch -Pattern $studioMarker -Quiet
   })
-  if ($fresh.Count -eq 0) { throw 'Fresh React build did not contain the v2.41.0 workspace marker. Installer blocked to prevent installing outdated UI.' }
+  if ($fresh.Count -eq 0) { throw 'Fresh React build did not contain the v2.41.1 workspace marker. Installer blocked to prevent installing outdated UI.' }
   $wakeUi = @(Get-ChildItem 'web/react/assets' -Filter '*.js' -File | Where-Object {
       Select-String -LiteralPath $_.FullName -SimpleMatch -Pattern '/v1/voice/wake/pending' -Quiet
   })
   if ($wakeUi.Count -eq 0) { throw 'Fresh React build is missing the wake listener. Installer blocked to avoid a stale voice UI.' }
   # Check the ACTUAL compiled consent controls and their current runtime
-  # endpoints/events. The old v2.41.0-desktop-consent-tooltip-fix marker was
+  # endpoints/events. The old v2.41.1-desktop-consent-tooltip-fix marker was
   # removed in a prior UI refactor and caused a false build failure even when
   # `npm run build` succeeded. Keep the security check, not the obsolete token.
   & py -3.11 (Join-Path $PSScriptRoot 'verify_desktop_consent_bundle.py') --root $root

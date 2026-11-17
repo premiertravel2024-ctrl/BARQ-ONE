@@ -1,6 +1,6 @@
 import {useEffect,useLayoutEffect,useRef,useState} from 'react';
 import type {PDFDocumentProxy} from 'pdfjs-dist';
-import {ArrowRight,Bookmark,ChevronLeft,ChevronRight} from 'lucide-react';
+import {ArrowRight,Bookmark,ChevronLeft,ChevronRight,Minus,Plus} from 'lucide-react';
 
 export type ReadingEdition={id:string;title:string;format:'pdf'|'text';file?:File};
 type Progress={page:number;marks:number[]};
@@ -46,11 +46,14 @@ export default function BookReader({book,ar,onClose}:{book:ReadingEdition;ar:boo
  const [text,setText]=useState<string[]>();
  const [error,setError]=useState<'source'|'pdf'|'password'>();
  const [retry,setRetry]=useState(0);
+ const [zoom,setZoom]=useState(100);
+ const [paper,setPaper]=useState<'default'|'warm'|'night'>('default');
+ const [pageInput,setPageInput]=useState<string|null>(null);
  const viewport=useRef<HTMLDivElement>(null);
  const content=useRef<HTMLDivElement>(null);
  const [width,setWidth]=useState(640);
  const [ratio,setRatio]=useState(1.414);
- const pdfWidth=Math.min(width,900);
+ const pdfWidth=Math.floor(Math.min(width,900)*zoom/100);
  const pdfHeight=Math.ceil(pdfWidth*ratio);
  const pageStride=pdfHeight+12;
  const savedPage=useRef(progress.page);
@@ -125,19 +128,42 @@ export default function BookReader({book,ar,onClose}:{book:ReadingEdition;ar:boo
   if(pdf&&viewport.current)viewport.current.scrollTop=(next-1)*pageStride;
   else content.current?.scrollIntoView({block:'start'});
  }
- return <section className="bs-document" aria-label={book.title}>
+ return <section className="bs-document" data-paper={paper} aria-label={book.title}>
   <header className="bs-document-toolbar">
    <button type="button" onClick={onClose}><ArrowRight size={16}/>{ar?'رجوع للمكتبة':'Back to library'}</button>
    <h2 dir="auto">{book.title}</h2>
    {count>0&&<div className="bs-document-controls">
     <button type="button" disabled={page<=1} aria-label={ar?'الصفحة السابقة':'Previous page'} onClick={()=>go(page-1)}><ChevronRight size={18}/></button>
-    <span dir="ltr">{page} / {count}</span>
+    <form className="bs-page-jump" onSubmit={event=>{
+     event.preventDefault();
+     if(pageInput?.trim()){
+      const target=Number(pageInput);
+      if(Number.isInteger(target))go(Math.max(1,Math.min(count,target)));
+     }
+     setPageInput(null);
+    }} dir="ltr">
+     <input type="number" min={1} max={count} inputMode="numeric" aria-label={ar?'انتقل إلى صفحة':'Go to page'}
+      value={pageInput??page} onFocus={event=>event.currentTarget.select()} onChange={event=>setPageInput(event.target.value)}
+      onBlur={()=>setPageInput(null)}/>
+     <span aria-live="off">/ {count}</span>
+    </form>
     <button type="button" disabled={page>=count} aria-label={ar?'الصفحة التالية':'Next page'} onClick={()=>go(page+1)}><ChevronLeft size={18}/></button>
     <button type="button" aria-label={ar?'علّم الصفحة':'Bookmark page'} aria-pressed={progress.marks.includes(page)}
      onClick={()=>save({...progress,page,marks:progress.marks.includes(page)?progress.marks.filter(mark=>mark!==page):[...progress.marks,page]})}><Bookmark size={17}/></button>
     {!!progress.marks.length&&<select aria-label={ar?'الصفحات المعلّمة':'Bookmarked pages'} value="" onChange={event=>go(Number(event.target.value))}>
      <option value="" disabled>{ar?'العلامات':'Bookmarks'}</option>{progress.marks.filter(mark=>mark>0&&mark<=count).sort((a,b)=>a-b).map(mark=><option key={mark} value={mark}>{mark}</option>)}</select>}
    </div>}
+   {count>0&&<div className="bs-reader-display">
+    <button type="button" aria-label={ar?'تصغير القراءة':'Zoom out'} disabled={zoom<=80} onClick={()=>setZoom(zoom-20)}><Minus size={15}/></button>
+    <button type="button" className="bs-zoom-level" aria-label={ar?'إعادة حجم القراءة':'Reset zoom'} onClick={()=>setZoom(100)}>{zoom}%</button>
+    <button type="button" aria-label={ar?'تكبير القراءة':'Zoom in'} disabled={zoom>=160} onClick={()=>setZoom(zoom+20)}><Plus size={15}/></button>
+    <select aria-label={ar?'ألوان القراءة':'Reading colors'} value={paper} onChange={event=>setPaper(event.target.value as typeof paper)}>
+     <option value="default">{ar?'عادي':'Default'}</option>
+     <option value="warm">{ar?'ورق دافئ':'Warm paper'}</option>
+     <option value="night">{ar?'ليلي':'Night'}</option>
+    </select>
+   </div>}
+   {count>0&&<progress className="bs-reader-progress" value={page} max={count} aria-label={ar?'تقدّم القراءة':'Reading progress'}/>}
   </header>
   <div className="bs-document-content" ref={content}>
    {error?<div className="bs-reader-error" role="alert">
@@ -145,7 +171,7 @@ export default function BookReader({book,ar,onClose}:{book:ReadingEdition;ar:boo
      error==='pdf'?(ar?'تعذّر قراءة ملف الـPDF. افتح نسخة سليمة أو جرّب تاني.':'Could not read the PDF. Open another copy or retry.'):
       (ar?'تعذّر تحميل الكتاب من المصدر. جرّب تاني بعد رجوع الاتصال.':'The book source is unavailable. Retry when connected.')}</p>
     <button type="button" onClick={()=>setRetry(x=>x+1)}>{ar?'إعادة المحاولة':'Retry'}</button></div>:
-    pdf?<div className="bs-pdf-scroll" ref={viewport} onScroll={notePage} tabIndex={0} aria-label={ar?'صفحات الكتاب':'Book pages'}>
+    pdf?<div className="bs-pdf-scroll" ref={viewport} dir="ltr" onScroll={notePage} tabIndex={0} aria-label={ar?'صفحات الكتاب':'Book pages'}>
      {Array.from({length:pdf.numPages},(_,index)=>{
       const number=index+1;
       return <div className="bs-pdf-page" key={number} style={{width:pdfWidth,height:pdfHeight}}>
@@ -153,7 +179,7 @@ export default function BookReader({book,ar,onClose}:{book:ReadingEdition;ar:boo
       </div>;
      })}
      <div aria-hidden="true" style={{height:'max(0px, calc(var(--pdf-viewport) - '+pdfHeight+'px))'}}/>
-    </div>:text?<article dir="auto">{text[page-1]}</article>:
+    </div>:text?<article dir="auto" style={{fontSize:`${1.05*zoom/100}rem`}}>{text[page-1]}</article>:
      <p role="status">{ar?'جاري تحميل الكتاب…':'Loading book…'}</p>}
   </div>
  </section>;

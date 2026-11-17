@@ -181,6 +181,9 @@ async function verifyPlayback(browser,mode){
    });
    const url=pathToFileURL(room).href+'?role=guest&mode=video&paired=1';
    await page.goto(url);
+   assert.equal(await page.locator('#screenActions button').count(),1);
+   assert.equal(await page.locator('#video').evaluate(video=>getComputedStyle(video).objectFit),'cover');
+   assert.equal(await page.getByRole('button',{name:'إرسال الرسالة'}).isDisabled(),true);
    await page.locator('#waitingOverlay').waitFor({state:'visible'});
    await page.waitForFunction(()=>document.getElementById('status')?.textContent.includes('مستني'));
    const sizes=await page.evaluate(()=>{
