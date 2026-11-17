@@ -18,7 +18,10 @@ def test_barq_one_navigation_keeps_execution_services():
     assert '<Composer ' in app and '<ApprovalDialog ' in app
     sidebar=code('components/layout/OperationsFrame.tsx')
     assert '<OperationsRail ' in app
-    assert "sections.map(" in sidebar
+    # The conversation is an independent top-bar destination, not a duplicated rail item.
+    assert "sections.filter(([key])=>key!=='chat').map(" in sidebar
+    assert 'className="ops-standalone-chat"' in sidebar
+    assert "onClick={()=>navigate('chat')}" in sidebar
     assert "['chat'," in code('pages/BarqOne.tsx')
     assert "['mission'," in code('pages/BarqOne.tsx')
     assert "(['chat','agent'] as const)" not in sidebar
