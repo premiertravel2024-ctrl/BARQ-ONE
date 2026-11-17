@@ -6,17 +6,29 @@ const TTL_MS = 2 * 60 * 60 * 1000;
 const RE_ROOM = /^[A-Za-z0-9_-]{16}$/;
 const MIME_JSON = {"content-type":"application/json; charset=utf-8","cache-control":"no-store","referrer-policy":"no-referrer"};
 const PAGE_HEADERS = {"content-type":"text/html; charset=utf-8","cache-control":"no-store","referrer-policy":"no-referrer",
-  "x-content-type-options":"nosniff","content-security-policy":"default-src 'self'; img-src 'self' data: blob:; media-src blob: https:; frame-src https://open.spotify.com https://play.anghami.com https://widget.anghami.com; connect-src 'self' ws: wss:; style-src 'unsafe-inline'; script-src 'unsafe-inline'; frame-ancestors 'self' http://127.0.0.1:*"};
+  "x-content-type-options":"nosniff","content-security-policy":"default-src 'self'; img-src 'self' data: blob:; media-src blob: https:; frame-src https://open.spotify.com https://play.anghami.com https://widget.anghami.com https://www.anghami.com https://anghami.com; connect-src 'self' ws: wss:; style-src 'unsafe-inline'; script-src 'unsafe-inline'; frame-ancestors 'self' http://127.0.0.1:*"};
 function reply(data,status=200){return new Response(JSON.stringify(data),{status,headers:MIME_JSON});}
 function randomToken(bytes=32){return btoa(String.fromCharCode(...crypto.getRandomValues(new Uint8Array(bytes)))).replaceAll("+","-").replaceAll("/","_").replace(/=+$/,"");}
 async function digest(v){const raw=await crypto.subtle.digest("SHA-256",new TextEncoder().encode(v));return Array.from(new Uint8Array(raw)).map(x=>x.toString(16).padStart(2,"0")).join("");}
 const roomStub=(env,id)=>env.ROOMS.get(env.ROOMS.idFromName(id));
 function safeRoom(path){const parts=path.split("/").filter(Boolean);const id=parts.at(-1);return RE_ROOM.test(id||"")?id:null;}
 const wsUpgrade=(request)=>request.headers.get("Upgrade")?.toLowerCase()==="websocket";
+
+function validTurn(env){return typeof env?.BARQ_TURN_SECRET==='string'&&env.BARQ_TURN_SECRET.length>=32&&typeof env.BARQ_TURN_URLS==='string'&&env.BARQ_TURN_URLS.split(',').every(u=>/^turns?:[A-Za-z0-9.-]+:[0-9]{1,5}(?:\?transport=(?:udp|tcp))?$/.test(u.trim()));}
+export async function iceServers(env,roomId){
+ const servers=[{urls:'stun:stun.l.google.com:19302'}];
+ if(!validTurn(env))return servers;
+ const username=String(Math.floor(Date.now()/1000)+7500)+':'+roomId;
+ const key=await crypto.subtle.importKey('raw',new TextEncoder().encode(env.BARQ_TURN_SECRET),{name:'HMAC',hash:'SHA-1'},false,['sign']);
+ const signature=await crypto.subtle.sign('HMAC',key,new TextEncoder().encode(username));
+ servers.push({urls:env.BARQ_TURN_URLS.split(',').map(u=>u.trim()),username,credential:btoa(String.fromCharCode(...new Uint8Array(signature)))});
+ return servers;
+}
+
 export default {
   async fetch(request,env){
     const url=new URL(request.url),p=url.pathname;
-    if(request.method==="GET"&&(p==="/"||p==="/health"))return reply({status:"ok",service:"BARQ ONE Rooms",type:"signaling",media:"peer-to-peer",turn_configured:false});
+    if(request.method==="GET"&&(p==="/"||p==="/health"))return reply({status:"ok",service:"BARQ ONE Rooms",type:"signaling",media:"peer-to-peer",turn_configured:validTurn(env)});
     if(request.method==="GET"&&p==="/health/rooms"){
       // Unlike /health, this actually exercises BOTH Durable Object bindings.
       try {
@@ -71,7 +83,7 @@ export default {
              u.username||u.password||u.port)return result({error:"Unexpected redirect"},422);
           const match=u.pathname.match(/^\/(?:embed\/)?(song|album|playlist|artist)\/([0-9]{1,15})\/?$/);
           if(match)return result({provider:"anghami",kind:match[1],id:match[2]});
-          const response=await fetch(u.toString(),{redirect:"manual",headers:{"Accept":"text/html"}});
+          const response=await fetch(u.toString(),{redirect:"manual",headers:{"Accept":"text/html"},signal:AbortSignal.timeout(8000)});
           if(response.status<300||response.status>=400)return result({error:"Short link could not be resolved"},422);
           const destination=response.headers.get("Location");
           if(!destination)return result({error:"Missing redirect"},422);
@@ -118,7 +130,7 @@ export class RateLimit {
   async alarm(){await this.ctx.storage.deleteAll();}
 }
 export class RoomSession {
-  constructor(ctx){this.ctx=ctx;}
+  constructor(ctx,env={}){this.ctx=ctx;this.env=env;}
   async fetch(request){
     const url=new URL(request.url),p=url.pathname;
     if(p==="/ping")return reply({ready:true});
@@ -154,7 +166,7 @@ export class RoomSession {
       const pair=new WebSocketPair(),client=pair[0],server=pair[1];
       this.ctx.acceptWebSocket(server,[role]);
       const track=await this.ctx.storage.get("track");
-      server.send(JSON.stringify({type:"ready",mode:room.mode,ice_servers:[{urls:"stun:stun.l.google.com:19302"}],track:track||null}));
+      server.send(JSON.stringify({type:"ready",mode:room.mode,ice_servers:await iceServers(this.env,room.id),track:track||null}));
       for(const other of this.ctx.getWebSockets()){
         if(other!==server)try{
           other.send(JSON.stringify({type:"peer-joined",connection:"internet"}));
@@ -174,7 +186,11 @@ export class RoomSession {
     if(["offer","sync","track","subtitle"].includes(type)&&role!=="host")return;
     if(type==="answer"&&role!=="guest")return;
     if(type==="track"){
-      if(data.value!==null&&(!data.value||typeof data.value!=="object"||!["spotify","anghami"].includes(data.value.provider)))return;
+      if(data.value!==null){
+        const t=data.value;if(!t||typeof t!=='object')return;
+        const valid=t.provider==='spotify'&&/^(track|album|playlist)$/.test(t.kind)&&/^[A-Za-z0-9]{22}$/.test(t.id)||t.provider==='anghami'&&(/^(song|album|playlist|artist)$/.test(t.kind)&&/^[0-9]{1,15}$/.test(t.id)||t.kind==='share'&&/^[A-Za-z0-9_-]{5,60}$/.test(t.id));
+        if(!valid)return;
+      }
       await this.ctx.storage.put("track",data.value);
     }
     let output;

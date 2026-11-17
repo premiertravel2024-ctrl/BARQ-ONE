@@ -20,3 +20,5 @@ Pillow>=10,<13
 # Local speaker embeddings and Windows media transport.
 sherpa-onnx==1.13.8
 winsdk>=1.0.0b10,<2; sys_platform == 'win32'
+
+mutagen>=1.47,<2

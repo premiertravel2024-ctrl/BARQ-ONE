@@ -506,7 +506,7 @@ def room_page(request: Request,room_id:str,role:str="",token:str=""):
 def _page_headers():
     return {"Cache-Control":"no-store","Referrer-Policy":"no-referrer",
             "Content-Security-Policy":("default-src 'self'; img-src 'self' data: blob:; "
-              "media-src blob: https:; frame-src https://open.spotify.com https://play.anghami.com https://widget.anghami.com; connect-src 'self' ws: wss: https://barq-one.ashraf-mohamed.workers.dev; "
+              "media-src blob: https:; frame-src https://open.spotify.com https://play.anghami.com https://widget.anghami.com https://www.anghami.com https://anghami.com; connect-src 'self' ws: wss: https://barq-one.ashraf-mohamed.workers.dev; "
               "style-src 'unsafe-inline'; script-src 'unsafe-inline'")}
 
 
@@ -721,7 +721,7 @@ async def signal_session(ws:WebSocket,room_id:str,*,hosted=False,ice_servers=Non
             if kind not in (allowed_host if role=="host" else allowed_guest):
                 continue
             if kind in ("chat","reaction","typing"):
-                content=str(payload.get("text") or "")[:500]
+                content=str(payload.get("text") or payload.get("value") or "")[:500]
                 payload={"type":kind,"text":content,"role":role}
             elif kind=="track":
                 try:
@@ -757,3 +757,4 @@ async def signal_session(ws:WebSocket,room_id:str,*,hosted=False,ice_servers=Non
 
 
 atexit.register(close_all)
+

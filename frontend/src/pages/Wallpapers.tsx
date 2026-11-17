@@ -99,6 +99,7 @@ export function Wallpapers() {
       });
       if (result.verified) setNotice(ar ? 'محرك خلفيات برق أكد تنفيذ الأمر.' : 'BARQ wallpaper engine confirmed the action.');
       else if (result.status === 'command_sent') setNotice(ar ? 'الأمر اتبعت لمشغّل الخلفيات.' : 'Command sent to the wallpaper player.');
+      await refresh();
     });
   }
 
@@ -176,3 +177,4 @@ export function Wallpapers() {
    </>}
   </div>;
 }
+

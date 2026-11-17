@@ -44,6 +44,24 @@ jobs:
         run: python3 scripts/verify_ci_dependencies.py
       - name: Install EXACT locked dependencies
         run: npm ci --no-audit --no-fund
+      - name: Test catalogue, music metadata and native wallpaper routing
+        working-directory: .
+        run: |
+          python3 -m pip install pytest fastapi httpx mutagen
+          python3 -m pytest -q tests/test_cinema_music_rebuild.py
+      - name: Verify media UI behavior on desktop and mobile
+        run: |
+          npx playwright install --with-deps chromium
+          npm run dev > /tmp/barq-vite.log 2>&1 &
+          for attempt in $(seq 1 30); do curl -fsS http://127.0.0.1:5173/tests/rebuild/index.html > /dev/null && break; sleep 1; done
+          npm run test:media-ui
+      - name: Upload media UI screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: BARQ-media-UI-checks
+          path: frontend/test-results
+          if-no-files-found: warn
       - name: Run frontend backend-adapter behavior tests
         run: npm run test:frontend
       - name: Verify audio recovery under simulated desktop conditions
@@ -144,7 +162,7 @@ jobs:
       - name: Verify EXACT outputs from THIS run
         shell: pwsh
         run: |
-          $releaseVersion = '2.40.2'
+          $releaseVersion = '2.41.0'
           $prefix = "release/BARQ_Setup_$releaseVersion.exe"
           if (!(Test-Path $prefix)) { throw 'Missing freshly built installer' }
           if (!(Test-Path "release/BARQ_Portable_$releaseVersion.zip")) { throw 'Missing portable ZIP' }
@@ -164,7 +182,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: BARQ-v2.40.2-Windows-diagnostics
+          name: BARQ-v2.41.0-Windows-diagnostics
           path: |
             release/*.log
             release/*.xml
@@ -177,21 +195,21 @@ jobs:
         id: upload-windows
         uses: actions/upload-artifact@v4
         with:
-          name: BARQ-v2.40.2-verified-Windows-x64
+          name: BARQ-v2.41.0-verified-Windows-x64
           path: |
-            release/BARQ_Setup_2.40.2.exe
-            release/BARQ_Portable_2.40.2.zip
+            release/BARQ_Setup_2.41.0.exe
+            release/BARQ_Portable_2.41.0.zip
             release/self-test.json
             release/installed-self-test.json
             release/release-evidence.json
-            release/build-ok-v2.40.2.marker
+            release/build-ok-v2.41.0.marker
             release/UI_BUILD_MODE.txt
           if-no-files-found: error
           retention-days: 30
       - name: Download the published Windows artifact
         uses: actions/download-artifact@v4
         with:
-          name: BARQ-v2.40.2-verified-Windows-x64
+          name: BARQ-v2.41.0-verified-Windows-x64
           path: ${{ runner.temp }}/barq-published-artifact
       - name: Verify the installer in the published artifact
         shell: pwsh
@@ -199,7 +217,7 @@ jobs:
           ARTIFACT_URL: ${{ steps.upload-windows.outputs.artifact-url }}
         run: |
           $folder = Join-Path $env:RUNNER_TEMP 'barq-published-artifact'
-          $filename = 'BARQ_Setup_2.40.2.exe'
+          $filename = 'BARQ_Setup_2.41.0.exe'
           $installer = Get-Item -LiteralPath (Join-Path $folder $filename)
           $evidence = Get-Content -LiteralPath (Join-Path $folder 'release-evidence.json') -Raw | ConvertFrom-Json
           $hash = (Get-FileHash -LiteralPath $installer.FullName -Algorithm SHA256).Hash.ToLowerInvariant()

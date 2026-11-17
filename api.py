@@ -87,6 +87,10 @@ from api_routes.feature_command import router as feature_command_router
 app.include_router(feature_command_router)
 from api_routes.watch import router as watch_router
 app.include_router(watch_router)
+from api_routes.cinema import router as cinema_router
+app.include_router(cinema_router)
+from api_routes.music import router as music_router
+app.include_router(music_router)
 from api_routes.automation import router as automation_router
 app.include_router(automation_router)
 from api_routes.openhub_tools import router as openhub_tools_router

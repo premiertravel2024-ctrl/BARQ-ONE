@@ -165,6 +165,9 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid 
 @media(max-width:760px){.room-music .player{min-height:300px;padding:16px}.music-now-art{width:86px;height:86px;border-radius:16px}.music-now-art span{font-size:2.5rem}.room-music #officialMusic iframe{height:235px}.room-music .room-chat{position:static}}
 @media(prefers-reduced-motion:reduce){.music-now.is-playing .music-equalizer i{animation:none}}
 
+
+/* BARQ shared-room identity and touch targets */
+:root{color-scheme:dark}body{background:#0f1115;color:#f3f4f6}.panel,.room-music .room-chat{background:#191d24;border-color:#ffffff14}.player{background:#111419}.room-head,.room-music .room-head{background:#13161b}button,.room-music button{background:#a72c49;border-color:#cb4c6b;color:#fff}input,select,#chatText{background:#111419;border-color:#ffffff20;color:#f5f5f5}button:focus-visible,input:focus-visible,a:focus-visible,select:focus-visible{outline:2px solid #f28ca7;outline-offset:3px}.msg{overflow-wrap:anywhere}.chat-heading span,.sub{color:#a6afbd}@media(max-width:700px){button,input,select{min-height:44px}main,.panel,.grid{min-width:0}#messages{height:230px}#chatText{font-size:16px}.row{gap:8px}iframe{max-width:100%}}
 </style></head>
 <body><main><header class="room-head"><div><span class="room-eyebrow">BARQ ONE · SHARED ROOM</span><h1 id="roomTitle">سينما برق</h1><p class="room-head-note">شاركوا اللحظة، والملفات تفضل على جهاز صاحب الغرفة.</p></div><div id="status" class="status" role="status" aria-live="polite">جاري الاتصال...</div></header>
 <div id="joinPanel" class="panel" hidden><p>ادخل كود الغرفة اللي بعتهولك صاحبها</p><div class="row"><input id="code" maxlength="6" inputmode="numeric" placeholder="Room code"><button id="join">دخول</button></div></div>
@@ -240,6 +243,8 @@ var host=role==='host';
 var paired=params.get('paired')==='1';
 if(paired)document.body.classList.add('room-embedded');
 var turnServers=[],officialTrack=null;
+var reconnectTimer=null,reconnectAttempts=0,lastCode='',leaving=false,typingAt=0;
+window.addEventListener('pagehide',function(){leaving=true;clearTimeout(reconnectTimer);if(socket)socket.close(1000);if(peer)peer.close();});
 var nearby=params.get('lan')==='1'||/^http:\/\/(?:10\.|172\.|192\.168\.|100\.)/.test(location.origin);
 document.getElementById('localWrap').hidden=!host;
 document.getElementById('musicService').hidden=!host||!music;
@@ -256,12 +261,16 @@ function send(type,value){if(socket&&socket.readyState===WebSocket.OPEN){
 }return false;}
 function addMessage(who,text){var box=document.getElementById('messages');var empty=document.getElementById('chatEmpty');if(empty)empty.remove();var row=document.createElement('div');row.className='msg';var meta=document.createElement('small');meta.textContent=who+' · '+new Date().toLocaleTimeString();var span=document.createElement('span');span.textContent=text;row.append(meta,span);box.appendChild(row);if(box.childElementCount>150)box.firstElementChild.remove();box.scrollTop=box.scrollHeight;}
 function connect(code){
+ clearTimeout(reconnectTimer);lastCode=code||lastCode;code=lastCode;
+ if(socket&&(socket.readyState===WebSocket.OPEN||socket.readyState===WebSocket.CONNECTING))return;
  var proto=location.protocol==='https:'?'wss:':'ws:';
  var url=paired?proto+'//'+location.host+'/join-signal/'+encodeURIComponent(roomId):proto+'//'+location.host+'/signal/'+encodeURIComponent(roomId)+'?role='+role+'&token='+encodeURIComponent(token)+'&code='+encodeURIComponent(code||'');
  socket=new WebSocket(url);
- socket.onopen=function(){note('الغرفة متصلة');connected=true;};
+ socket.onopen=function(){note('الغرفة متصلة');connected=true;reconnectAttempts=0;};
  socket.onerror=function(){note('فشل اتصال الغرفة');};
- socket.onclose=function(){connected=false;guestPresent=false;note('اتصال الغرفة اتقطع');if(!host&&!paired)document.getElementById('joinPanel').hidden=false;if(peer){peer.close();peer=null;}};
+ socket.onclose=function(event){connected=false;guestPresent=false;pendingIce=[];note('اتصال الغرفة اتقطع');if(!host&&!paired)document.getElementById('joinPanel').hidden=false;if(peer){peer.close();peer=null;}
+ if(!leaving&&![1000,1008].includes(event.code)&&reconnectAttempts<5){var delay=Math.min(15000,1000*Math.pow(2,reconnectAttempts++));note('الاتصال اتقطع؛ بنحاول نرجع الغرفة…');reconnectTimer=setTimeout(function(){connect(lastCode);},delay);}
+ };
  socket.onmessage=async function(event){
   var packet;try{packet=JSON.parse(event.data);}catch(e){return;}
   if(packet.type==='ready'){turnServers=Array.isArray(packet.ice_servers)?packet.ice_servers:[];if(music&&packet.track)showTrack(packet.track);note(host?'مستني الضيف يدخل':'مستني صاحب الغرفة يشغّل ملف');}
@@ -287,7 +296,7 @@ function makePeer(){
  peer=new RTCPeerConnection({iceServers:nearby?[]:turnServers.length?turnServers:[{urls:'stun:stun.l.google.com:19302'}]});
  peer.onicecandidate=function(e){if(e.candidate)send('ice',e.candidate.toJSON());};
  peer.onconnectionstatechange=function(){if(!peer)return;
-  if(peer.connectionState==='failed')note(turnServers.length?'تعذّر توصيل الوسائط بخادم الترحيل.':'الاتصال المباشر للوسائط فشل. الغرفة دي محتاجة خادم ترحيل علشان تشتغل بين الشبكتين.');
+  if(peer.connectionState==='failed'){var hasTurn=turnServers.some(function(s){return [].concat(s.urls||[]).some(function(u){return /^turns?:/.test(u);});});note(hasTurn?'تعذّر توصيل الوسائط بخادم الترحيل. جرّب إعادة الاتصال.':'الاتصال المباشر فشل. محتاج إعداد TURN لتوصيل الوسائط بين الشبكتين. الدردشة لسه متاحة.');}
   else note('WebRTC: '+peer.connectionState);
  };
  peer.ontrack=function(event){if(!host){video.srcObject=event.streams[0];video.play().catch(function(){note('اضغط تشغيل في المتصفح للسماح بالصوت');});}};
@@ -358,7 +367,9 @@ function showTrack(track){
   frame.title=provider.name;
   frame.style.cssText='width:100%;min-height:195px;height:clamp(195px,34vh,330px);border:0;border-radius:12px';
   frame.allow='autoplay; encrypted-media; fullscreen; picture-in-picture';
+  frame.onerror=function(){note('المشغّل الرسمي ما اتحملش. افتح رابط الخدمة تحت المشغّل.');};
   panel.append(frame);
+  var hint=document.createElement('p');hint.className='sub';hint.textContent='لو المشغّل فاضي أو الصوت مش شغال، افتح الخدمة من الرابط. التشغيل ممكن يحتاج تسجيل دخول؛ كل مشارك بيشغّل المشغّل الرسمي عنده.';panel.append(hint);
  }
  var link=document.createElement('a');
  link.href=provider.url;link.target='_blank';link.rel='noopener noreferrer';
@@ -378,11 +389,13 @@ if(host&&music){
    var url=new URL(document.getElementById('musicServiceUrl').value.trim());
    if(url.protocol!=='https:'||url.username||url.password||url.port)throw Error('استخدم رابط HTTPS من Spotify أو أنغامي.');
    var parts=url.pathname.split('/').filter(Boolean);
+   if(/^intl-[a-z]{2}$/i.test(parts[0]||''))parts.shift();
    if(parts[0]==='embed')parts.shift();
+   if(parts.length>2)throw Error('مسار رابط الموسيقى غير مدعوم.');
    var isShort=url.hostname==='open.anghami.com'&&parts.length===1&&/^[A-Za-z0-9_-]{5,60}$/.test(parts[0]);
    var track=isShort?{provider:'anghami',kind:'share',id:parts[0]}:
      {provider:url.hostname==='open.spotify.com'?'spotify':
-               ['play.anghami.com','www.anghami.com','anghami.com'].includes(url.hostname)?'anghami':'',
+               ['play.anghami.com','open.anghami.com','widget.anghami.com','www.anghami.com','anghami.com'].includes(url.hostname)?'anghami':'',
       kind:parts[0],id:parts[1]};
    if(!providerLink(track))throw Error('الرابط مش مدعوم. استخدم رابط أغنية رسمي من Spotify أو أنغامي.');
    if(isShort){
@@ -469,11 +482,12 @@ if(host){
  document.getElementById('seekRequest').onclick=function(){send('request-seek',30);};
 }
 function chat(){var input=document.getElementById('chatText'),msg=input.value.trim();if(!msg)return;
+ if(!guestPresent){note('الشخص التاني مش متصل؛ رسالتك لسه في خانة الكتابة.');return;}
  if(!send('chat',msg)){note('اتصال الغرفة مش جاهز، جرّب لما يظهر متصل.');return;}
  addMessage(host?'أنا (المضيف)':'أنا (الضيف)',msg);input.value='';send('typing','');
 }
 document.getElementById('send').onclick=chat;
-document.getElementById('chatText').onkeydown=function(e){if(e.key==='Enter'){e.preventDefault();chat();}else send('typing','1');};
+document.getElementById('chatText').onkeydown=function(e){if(e.key==='Enter'){e.preventDefault();chat();}else if(Date.now()-typingAt>1000){typingAt=Date.now();send('typing','1');}};
 document.querySelectorAll('.emoji').forEach(function(btn){btn.onclick=function(){send('reaction',btn.dataset.emoji);addMessage('أنا',btn.dataset.emoji);};});
 })();
 </script></body></html>

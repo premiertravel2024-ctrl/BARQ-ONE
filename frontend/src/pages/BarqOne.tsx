@@ -10,6 +10,7 @@ import './barqMedia.css';
 import {ResourceSaver} from './ResourceSaver';
 import {Wallpapers} from './Wallpapers';
 import {WatchTogether} from './WatchTogether';
+import {MusicPlayer} from './MusicPlayer';
 import {AutomationDashboard} from './AutomationDashboard';
 
 export const sections=[
@@ -24,7 +25,7 @@ export const sections=[
  ['resources','توفير الموارد','Resource Saver',Shield],
  ['wallpapers','الخلفيات الحية','Live Wallpapers',Image],
  ['watch','سينما برق','BARQ Cinema',Radio],
- ['music','غرفة الموسيقى','Music Room',Headphones],
+ ['music','الموسيقى','Music',Headphones],
  ['automation','الأتمتة','Automation',Timer],
  ['settings','الإعدادات','Settings',Settings2],
 ] as const;
@@ -339,9 +340,10 @@ export function BarqOne({page,providers,onVoice,onNavigate,onModels,onQuick}:Pro
   {page==='resources'&&<ResourceSaver/>}
   {page==='wallpapers'&&<Wallpapers/>}
   {page==='watch'&&<WatchTogether mode="video"/>}
-  {page==='music'&&<WatchTogether mode="music"/>}
+  {page==='music'&&<MusicPlayer/>}
   {page==='automation'&&<AutomationDashboard/>}
   {page==='tools'&&<div className="one-panels"><ProviderList providers={providers} onSettings={onModels}/><RuntimeTools/></div>}
   {(page==='tools'||page==='library'||page==='installed')&&<OpenHub mode={page}/>}
  </section>;
 }
+

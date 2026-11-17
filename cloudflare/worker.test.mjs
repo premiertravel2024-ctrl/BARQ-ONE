@@ -103,3 +103,17 @@ test('guest chat and legacy value both reach host with text',async()=>{
   {type:'reaction',text:'👏'},
  ]);
 });
+
+
+test('TURN credentials are time limited and never expose the shared secret',async()=>{
+ const {iceServers}=await import(moduleUrl);
+ const secret='a'.repeat(40);
+ const servers=await iceServers({BARQ_TURN_URLS:'turn:relay.example:3478?transport=udp,turns:relay.example:5349',BARQ_TURN_SECRET:secret},'test-room');
+ assert.equal(servers.length,2);
+ assert.equal(servers[1].urls.length,2);
+ const expires=Number(servers[1].username.split(':')[0]);
+ assert.ok(expires>Date.now()/1000&&expires<Date.now()/1000+7600);
+ assert.notEqual(servers[1].credential,secret);
+ assert.equal((await iceServers({},'room')).length,1);
+ assert.equal((await iceServers({BARQ_TURN_URLS:'https://evil.example',BARQ_TURN_SECRET:secret},'room')).length,1);
+});

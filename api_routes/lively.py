@@ -113,7 +113,12 @@ def _wallpaper(id: str) -> Path:
 def _run(args: list[str]) -> dict:
     _consent()
     if _native_enabled():
-        return _native_command(args)
+        try:
+            return _native_command(args)
+        except ValueError as exc:
+            raise HTTPException(400, str(exc)) from exc
+        except (RuntimeError, OSError) as exc:
+            raise HTTPException(503, str(exc)) from exc
     exe=lively_executable()
     if not exe:
         raise HTTPException(404,"Lively Wallpaper not installed. Download only from the official release.")
@@ -232,8 +237,8 @@ def pick_local_wallpaper():
             chosen=filedialog.askopenfilename(
                 parent=root,title="BARQ — اختر خلفية فيديو أو GIF",
                 filetypes=[
-                    ("Video and animated images","*.mp4 *.webm *.avi *.mov *.gif"),
-                    ("Video","*.mp4 *.webm *.avi *.mov"),
+                    ("Video and animated images","*.mp4 *.webm *.gif"),
+                    ("Video","*.mp4 *.webm"),
                     ("GIF","*.gif"),
                 ])
         finally:
@@ -243,7 +248,7 @@ def pick_local_wallpaper():
     if not chosen:
         return {"status":"cancelled","verified":False}
     path=Path(chosen)
-    if path.suffix.lower() not in {".mp4",".webm",".avi",".mov",".gif"}:
+    if path.suffix.lower() not in {".mp4",".webm",".gif"}:
         raise HTTPException(400,"Unsupported media type")
     try:
         if not path.is_file() or path.is_symlink() or path.stat().st_size<=0:
@@ -273,5 +278,15 @@ def wallpaper_action(request:Action):
     if request.action=="apply":
         if not request.wallpaper_id:
             raise HTTPException(400,"Choose a wallpaper")
+        if _native_enabled():
+            _consent()
+            from services import native_wallpaper as native
+            try:
+                return native.apply(request.wallpaper_id)
+            except ValueError as exc:
+                raise HTTPException(400, str(exc)) from exc
+            except (RuntimeError, OSError) as exc:
+                raise HTTPException(503, str(exc)) from exc
         return _run(["setwp","--file",str(_wallpaper(request.wallpaper_id))])
     raise HTTPException(400,"Unknown action")
+
