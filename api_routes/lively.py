@@ -188,6 +188,7 @@ def wallpaper_status(metrics: bool=True):
         from services import native_wallpaper as native
         return {"capabilities":data["windows"],"lively":data["lively"],
                 "engine":native.state(),"library":native.list_wallpapers(),
+                "features":{"remove_wallpaper":True,"native_engine_handshake":2},
                 "processes":[],"installer":"finished","can_install":False,
                 "autopause":"Embedded BARQ engine; no separate Lively installation"}
     processes=[]

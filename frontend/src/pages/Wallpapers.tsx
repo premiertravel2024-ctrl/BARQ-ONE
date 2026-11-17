@@ -11,6 +11,7 @@ type Reply = {
   lively: {installed: boolean; official_url: string};
   engine?: {integrated: boolean; supported: boolean; running: boolean; backend: string; wallpaper_id?: string};
   library: Wallpaper[];
+  features?: {remove_wallpaper?:boolean;native_engine_handshake?:number};
   installer: 'idle' | 'running' | 'finished' | 'failed';
   can_install: boolean;
 };
@@ -193,7 +194,7 @@ export function Wallpapers({onOpenSettings}:{onOpenSettings?:()=>void}={}) {
       </div>
       <div className="bws-wallpaper-text"><strong dir="auto">{item.title}</strong><small>{data.engine?.wallpaper_id===item.id&&data.engine.running?(ar?'شغالة دلوقتي':'Now playing'):(ar?'محفوظة في المكتبة':'Saved in library')}</small>
        <div className="bws-wallpaper-actions"><button disabled={busy} onClick={()=>invoke('apply',item.id)}><Play size={15}/>{ar?'تطبيق على الجهاز':'Apply to desktop'}</button>
-        {data.engine&&<button className="bws-remove" disabled={busy} aria-label={(ar?'إزالة الخلفية ':'Remove wallpaper ')+item.title} title={ar?'إزالة من المكتبة':'Remove from library'} onClick={()=>setDeleteTarget(item)}><Trash2 size={16}/></button>}</div></div>
+        {data.engine&&data.features?.remove_wallpaper&&<button className="bws-remove" disabled={busy} aria-label={(ar?'إزالة الخلفية ':'Remove wallpaper ')+item.title} title={ar?'إزالة من المكتبة':'Remove from library'} onClick={()=>setDeleteTarget(item)}><Trash2 size={16}/></button>}</div></div>
      </article>)}</div>:<div className="bws-empty"><Image size={30}/><strong>{data.library.length===0?(ar?'مكتبتك لسه فاضية':'Your library is empty'):(ar?'مفيش خلفيات مطابقة':'No matching wallpapers')}</strong><p>{ar?'ضيف ملف فيديو أو GIF من جهازك، أو غيّر البحث.':'Import a video or GIF, or adjust your filters.'}</p><button disabled={busy} onClick={addLocal}><Plus size={16}/>{ar?'إضافة خلفية':'Add wallpaper'}</button></div>}
     </section>
     <details className="bws-player-settings"><summary>{ar?'التحكم في تشغيل الخلفيات':'Playback controls'}</summary>

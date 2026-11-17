@@ -106,3 +106,16 @@ def test_native_wallpaper_publishes_when_loaded_and_attached_irrespective_of_ord
     assert "ready.is_set() or not loaded.is_set()" in source
     assert "w.events.loaded += signal_loaded" in source
     assert "w.events.before_show += attach" in source
+
+
+def test_wallpaper_status_announces_safe_removal_capability(monkeypatch):
+    from api_routes import lively
+    from services import native_wallpaper as native
+    monkeypatch.setattr(lively, "_native_enabled", lambda: True)
+    monkeypatch.setattr(lively, "windows_version", lambda: {"family": "modern"})
+    monkeypatch.setattr(native, "state", lambda: {"running": False, "supported": True})
+    monkeypatch.setattr(native, "list_wallpapers", lambda: [])
+    monkeypatch.setattr("core.desktop_capabilities.status", lambda: {"windows": {"family": "modern"}, "lively": {"installed": False}})
+    response = lively.wallpaper_status(metrics=False)
+    assert response["features"]["remove_wallpaper"] is True
+    assert response["features"]["native_engine_handshake"] == 2
