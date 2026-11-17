@@ -6,7 +6,7 @@ const TTL_MS = 2 * 60 * 60 * 1000;
 const RE_ROOM = /^[A-Za-z0-9_-]{16}$/;
 const MIME_JSON = {"content-type":"application/json; charset=utf-8","cache-control":"no-store","referrer-policy":"no-referrer"};
 const PAGE_HEADERS = {"content-type":"text/html; charset=utf-8","cache-control":"no-store","referrer-policy":"no-referrer",
-  "x-content-type-options":"nosniff","content-security-policy":"default-src 'self'; img-src 'self' data: blob:; media-src blob: https:; frame-src https://open.spotify.com https://play.anghami.com https://widget.anghami.com https://www.anghami.com https://anghami.com; connect-src 'self' ws: wss:; style-src 'unsafe-inline'; script-src 'unsafe-inline'; frame-ancestors 'self' http://127.0.0.1:*"};
+  "x-content-type-options":"nosniff","content-security-policy":"default-src 'self'; img-src 'self' data: blob:; media-src blob: https:; frame-src https://open.spotify.com https://play.anghami.com https://widget.anghami.com https://www.anghami.com https://anghami.com; connect-src 'self' ws: wss:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; script-src 'unsafe-inline'; frame-ancestors 'self' http://127.0.0.1:*"};
 function reply(data,status=200){return new Response(JSON.stringify(data),{status,headers:MIME_JSON});}
 function randomToken(bytes=32){return btoa(String.fromCharCode(...crypto.getRandomValues(new Uint8Array(bytes)))).replaceAll("+","-").replaceAll("/","_").replace(/=+$/,"");}
 async function digest(v){const raw=await crypto.subtle.digest("SHA-256",new TextEncoder().encode(v));return Array.from(new Uint8Array(raw)).map(x=>x.toString(16).padStart(2,"0")).join("");}
