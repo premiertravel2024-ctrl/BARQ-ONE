@@ -320,7 +320,7 @@ input:focus,textarea:focus,select:focus{outline:none;box-shadow:none;border-colo
 #sources .file-cta{padding:3px 6px;font-size:.71rem}
 #sources .file-name{flex:1;min-width:0;margin:0}
 #sources #linkForm{flex-wrap:nowrap;align-items:center;gap:5px}
-#sources #linkForm button,#sources #linkMedia,#sources #musicService button,#sources #musicService input{width:auto;min-height:34px;padding:5px 8px;border-radius:7px}
+#sources #linkForm button,#sources #linkMedia,#sources #musicService button,#sources #musicService input{width:auto;height:34px;min-height:34px;padding:5px 8px;border-radius:7px;line-height:1.25}
 #sources #musicService{margin:0 0 5px;padding:4px;gap:5px}
 #sources .row{gap:6px;margin:4px 0}
 #sources #subtitlePicker,#sources #quality{min-height:30px;padding:4px 7px;border-radius:7px}
@@ -328,7 +328,7 @@ input:focus,textarea:focus,select:focus{outline:none;box-shadow:none;border-colo
 #chatToggle{min-height:34px;padding:5px 9px}
 body.room-focus:not(.room-music) .grid{grid-template-columns:minmax(0,1fr)}
 @media(max-width:540px){
- #sources #linkForm button,#sources #linkMedia,#sources .file-picker{min-height:38px}
+ #sources #linkForm button,#sources #linkMedia,#sources .file-picker{height:auto;min-height:38px}
  #sources .file-picker{flex-wrap:wrap}
  #sources .file-name{flex-basis:100%}
 }
