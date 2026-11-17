@@ -11,6 +11,7 @@ import {OperationsHeader,OperationsRail,ConversationHeader} from './components/l
 import {EmptyState} from './components/chat/EmptyState';import {MessageList} from './components/chat/MessageList';import {BrainStatus} from './components/chat/BrainStatus';import {Composer} from './components/chat/Composer';
 import {HandsFreeVoice,isHandsFreeActive} from './components/chat/HandsFreeVoice';
 import {BarqOne,type OnePage} from './pages/BarqOne';
+import './styles/experienceRefresh.css';
 import {VoiceResultsStrip} from './components/chat/VoiceResultsStrip';
 import {Modal} from './components/ui/Modal';import {Button} from './components/ui/Button';import {ToastViewport} from './components/ui/Toast';import {LauncherPalette} from './components/launcher/LauncherPalette';import {CommandPalette} from './components/ui/CommandPalette';import {Playground} from './pages/Playground';
 // Permission snapshot is kept up to date while the app is alive. We start
