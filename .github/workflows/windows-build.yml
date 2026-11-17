@@ -183,7 +183,12 @@ jobs:
         run: |
           $compiler = & ./scripts/find_inno.ps1
           if ([string]::IsNullOrWhiteSpace($compiler) -or !(Test-Path -LiteralPath $compiler -PathType Leaf)) { throw 'Inno compiler unavailable for incremental update' }
-          if (!(Test-Path 'dist/BARQ/BARQ.exe')) { throw 'Missing newly built executable' }
+          # The short-path builder deliberately keeps only verified release artifacts
+          # in the checkout and removes the temporary PyInstaller staging tree.
+          # Restore the EXACT tested BARQ.exe from this run's portable ZIP, not a stale
+          # or unrelated dist/ file. Verify both ZIP and executable SHA-256 first.
+          py -3.11 scripts/restore_verified_core.py
+          if ($LASTEXITCODE -ne 0) { throw 'Unable to restore the verified core executable for incremental update' }
           if (!(Test-Path 'web/react/index.html')) { throw 'Missing freshly built React UI' }
           & $compiler ./scripts/installer_core_ui_update.iss
           if ($LASTEXITCODE -ne 0) { throw 'Core/React update compilation failed' }
