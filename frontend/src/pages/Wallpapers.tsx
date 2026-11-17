@@ -13,6 +13,8 @@ type Reply = {
   installer: 'idle' | 'running' | 'finished' | 'failed';
   can_install: boolean;
 };
+function Preview({item,native}:{item:Wallpaper;native:boolean}){const [failed,setFailed]=useState(false);const src='/v1/wallpapers/preview/'+encodeURIComponent(item.id);if(!item.preview_available||failed)return <Image size={50}/>;return native&&/^(mp4|webm)$/.test(item.type)?<video src={src+'#t=0.1'} muted playsInline preload="metadata" onError={()=>setFailed(true)}/>:<img alt="" src={src} loading="lazy" onError={()=>setFailed(true)}/>;}
+
 type CommandResult = {status: string; verified?: boolean};
 
 export function Wallpapers() {
@@ -131,7 +133,7 @@ export function Wallpapers() {
      {data?.engine&&<span className={'bws-engine-state'+(data.engine.running?' bws-active':'')}>{data.engine.running?(ar?'الخلفية شغالة حاليًا':'Wallpaper playing'):(ar?'محرك برق جاهز':'BARQ engine ready')}</span>}
     </div>
     <div className="bws-feature-preview" aria-hidden="true">
-     {featured?.preview_available?<img alt="" src={'/v1/wallpapers/preview/'+encodeURIComponent(featured.id)}/>:<Image size={78}/>}
+     {featured?<Preview item={featured} native={!!data?.engine}/>:<Image size={78}/>}
      <span className="bws-feature-badge">{ar?'خلفياتك الحية':'YOUR LIBRARY'}</span>
     </div>
    </header>
@@ -155,7 +157,7 @@ export function Wallpapers() {
       </div>
      </div>
      {list.length?<div className="bws-gallery">{list.map(item=><article key={item.id} className={'bws-wallpaper'+(data.engine?.wallpaper_id===item.id?' is-playing':'')}>
-      <div className="bws-thumb">{item.preview_available?<img alt="" loading="lazy" decoding="async" src={'/v1/wallpapers/preview/'+encodeURIComponent(item.id)}/>:<Image size={36}/>}
+      <div className="bws-thumb"><Preview item={item} native={!!data.engine}/>
        <span className="bws-type">{isGif(item)?'GIF':isVideo(item)?'VIDEO':String(item.type).slice(0,12)}</span>
        <button type="button" className="bws-heart" aria-label={favorites.includes(item.id)?(ar?'إزالة من المفضلة':'Remove favorite'):(ar?'إضافة للمفضلة':'Add favorite')} aria-pressed={favorites.includes(item.id)} onClick={()=>toggleFavorite(item.id)}><Heart size={17} fill={favorites.includes(item.id)?'currentColor':'none'}/></button>
       </div>

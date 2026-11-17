@@ -211,7 +211,11 @@ def wallpaper_status(metrics: bool=True):
 def wallpaper_preview(wallpaper_id:str):
     _consent()
     if _native_enabled():
-        raise HTTPException(404,"A preview is not available for this native wallpaper")
+        from services.native_wallpaper import _file
+        try:
+            return FileResponse(_file(wallpaper_id))
+        except (ValueError, OSError) as exc:
+            raise HTTPException(404, "Wallpaper preview unavailable") from exc
     folder=_wallpaper(wallpaper_id)
     for name in ("thumbnail.jpg","thumbnail.png","preview.jpg"):
         target=folder/name

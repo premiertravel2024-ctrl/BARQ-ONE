@@ -88,3 +88,16 @@ def test_native_apply_routes_to_native_manifest(monkeypatch):
     monkeypatch.setattr(native,'apply',apply)
     assert lively.wallpaper_action(lively.Action(action='apply',wallpaper_id='a'*24))['verified']
     apply.assert_called_once_with('a'*24)
+
+def test_native_decoder_failure_is_preserved(monkeypatch,tmp_path):
+    from services import native_wallpaper as native
+    monkeypatch.setattr(native,'supported',lambda:True)
+    monkeypatch.setattr(native,'_file',lambda ident:tmp_path/'file.mp4')
+    monkeypatch.setattr(native,'_folder',lambda:tmp_path)
+    process=Mock(pid=42);process.poll.return_value=None
+    monkeypatch.setattr(native.subprocess,'Popen',Mock(return_value=process))
+    monkeypatch.setattr(native,'_state',lambda:{'pid':42})
+    monkeypatch.setattr(native,'_request',lambda *a:{'error':'Decoder failed'})
+    def stop():native._process=None
+    monkeypatch.setattr(native,'stop',stop)
+    with pytest.raises(RuntimeError,match='Decoder failed'):native.apply('a'*24)

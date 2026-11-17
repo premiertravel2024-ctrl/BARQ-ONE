@@ -79,7 +79,7 @@ def list_wallpapers():
         except (OSError, ValueError):
             continue
         result.append({"id": identifier, "title": str(record.get("title") or source.name)[:120],
-                       "type": source.suffix.lower().lstrip("."), "preview_available": False})
+                       "type": source.suffix.lower().lstrip("."), "preview_available": True})
     return result[:200]
 
 
@@ -175,13 +175,13 @@ def apply(identifier):
             if current.get("pid") == _process.pid:
                 try:
                     health = _request(current, "status")
-                    if health.get("error"):
-                        stop()
-                        raise RuntimeError(health["error"])
-                    if health.get("ready"):
-                        return {"status": "attached", "verified": True}
                 except RuntimeError:
-                    pass
+                    health = {}
+                if health.get("error"):
+                    stop()
+                    raise RuntimeError(health["error"])
+                if health.get("ready"):
+                    return {"status": "playing", "verified": True}
             time.sleep(0.1)
         code = _process.poll()
         stop()
