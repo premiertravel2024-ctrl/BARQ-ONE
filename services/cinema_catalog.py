@@ -1,6 +1,7 @@
 """Bounded, cached TMDB metadata access. Credentials never leave the backend."""
 from __future__ import annotations
 import os
+import re
 import threading
 import time
 from collections import OrderedDict
@@ -28,6 +29,9 @@ def token():
 
 def configure(value):
     # Validate before replacing the working credential.
+    value = value.strip()
+    if os.getenv('TMDB_READ_TOKEN', '').strip():
+        raise CatalogError('TMDB_READ_TOKEN is configured in the environment and overrides saved settings. Update or remove it, restart BARQ, then retry.', 409)
     _fetch('configuration', {}, credential=value, cache=False)
     try:
         import keyring
@@ -42,7 +46,16 @@ def _fetch(path, params, credential=None, cache=True):
     secret = credential or token()
     if not secret:
         raise CatalogError('TMDB_SETUP_REQUIRED', 503)
-    key = (path, tuple(sorted(params.items())))
+    # TMDB v3 API Key uses api_key=...; read-access JWT uses a Bearer header.
+    # Credentials stay in the local backend; keep caller parameters unmodified.
+    api_key = bool(re.fullmatch(r'[A-Fa-f0-9]{32}', secret))
+    request_params = dict(params)
+    request_headers = {'Accept': 'application/json'}
+    if api_key:
+        request_params['api_key'] = secret
+    else:
+        request_headers['Authorization'] = 'Bearer ' + secret
+    key = (secret, path, tuple(sorted(params.items())))
     now = time.monotonic()
     with _lock:
         entry = _cache.get(key)
@@ -53,15 +66,15 @@ def _fetch(path, params, credential=None, cache=True):
             raise CatalogError('TMDB rate limit. Please retry shortly.', 429)
     try:
         with httpx.Client(timeout=12, follow_redirects=False) as client:
-            response = client.get('https://api.themoviedb.org/3/'+path, params=params,
-                                  headers={'Authorization': 'Bearer '+secret, 'Accept':'application/json'})
+            response = client.get('https://api.themoviedb.org/3/'+path, params=request_params,
+                                  headers=request_headers)
         if response.status_code == 429:
             try: delay = min(120, max(1, int(response.headers.get('retry-after','10'))))
             except ValueError: delay = 10
             with _lock: _retry_at = time.monotonic()+delay
             raise CatalogError('TMDB rate limit. Please retry shortly.', 429)
         if response.status_code in (401, 403):
-            raise CatalogError('TMDB token rejected. Update the API Read Access Token in setup.', 401)
+            raise CatalogError('TMDB credentials rejected (401/403). Check the API Key or API Read Access Token in TMDB settings.', 401)
         if response.status_code == 404:
             raise CatalogError('Title unavailable.', 404)
         response.raise_for_status()

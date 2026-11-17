@@ -101,3 +101,45 @@ def test_native_decoder_failure_is_preserved(monkeypatch,tmp_path):
     def stop():native._process=None
     monkeypatch.setattr(native,'stop',stop)
     with pytest.raises(RuntimeError,match='Decoder failed'):native.apply('a'*24)
+
+
+def test_tmdb_v3_api_key_uses_query_param_not_bearer(monkeypatch):
+    """A 32-char API Key is not a Bearer token."""
+    key = 'abcdef0123456789abcdef0123456789'
+    response = Mock(status_code=200)
+    response.json.return_value = {'images': {}}
+    client = Mock()
+    client.__enter__ = Mock(return_value=client)
+    client.__exit__ = Mock(return_value=False)
+    client.get.return_value = response
+    monkeypatch.setattr(catalog.httpx, 'Client', Mock(return_value=client))
+    params = {'language': 'ar-SA'}
+    result = catalog._fetch('configuration', params, credential=key, cache=False)
+    assert result == {'images': {}}
+    call = client.get.call_args
+    assert call.kwargs['params']['api_key'] == key
+    assert call.kwargs['params']['language'] == 'ar-SA'
+    assert 'Authorization' not in call.kwargs['headers']
+    assert params == {'language': 'ar-SA'}
+
+
+def test_tmdb_full_read_token_remains_bearer(monkeypatch):
+    token = 'eyJhbGciOiJIUzI1NiJ9.eyJzY29wZXMiOlsiYXBpX3JlYWQiXX0.signature'
+    response = Mock(status_code=200)
+    response.json.return_value = {'images': {}}
+    client = Mock()
+    client.__enter__ = Mock(return_value=client)
+    client.__exit__ = Mock(return_value=False)
+    client.get.return_value = response
+    monkeypatch.setattr(catalog.httpx, 'Client', Mock(return_value=client))
+    catalog._fetch('configuration', {}, credential=token, cache=False)
+    call = client.get.call_args
+    assert call.kwargs['headers']['Authorization'] == 'Bearer ' + token
+    assert 'api_key' not in call.kwargs['params']
+
+
+def test_gui_setup_never_saves_credential_hidden_by_env(monkeypatch):
+    monkeypatch.setenv('TMDB_READ_TOKEN', 'existing-environment-token')
+    with pytest.raises(catalog.CatalogError, match='overrides saved settings') as e:
+        catalog.configure('abcdef0123456789abcdef0123456789')
+    assert e.value.status == 409
