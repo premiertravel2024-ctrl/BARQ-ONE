@@ -11,3 +11,51 @@
 @media(max-width:770px){.bs-hero{grid-template-columns:minmax(0,1fr);min-height:0}.bs-hero-text{padding:25px}.bs-feature{height:235px}.bs-feature-book{width:145px}.bs-hero h1{font-size:2.5rem}.bs-reader{grid-template-columns:minmax(0,1fr)}.bs-reader-sidebar{grid-template-columns:100px minmax(0,1fr)}.bs-reader-sidebar>.bs-cover{width:100px}.bs-book-about{align-self:center}.bs-chapters{grid-column:1/-1}.bs-reader-narrator{grid-column:1;grid-row:auto}.bs-grid{grid-template-columns:repeat(auto-fill,minmax(min(100%,145px),1fr));gap:11px}}
 @media(max-width:470px){.bs-header{align-items:stretch}.bs-brand{width:100%}.bs-header-actions{gap:5px}.bs-header-actions button{flex:1;min-width:0;padding:9px 8px;font-size:.7rem}.bs-hero-text{padding:21px}.bs-hero h1{font-size:2.2rem}.bs-hero p{font-size:.79rem}.bs-hero-caption{font-size:.65rem}.bs-feature{height:205px}.bs-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}.bs-card-copy{padding:9px}.bs-card-title{font-size:.81rem}.bs-card-meta{font-size:.61rem}.bs-card-copy p{font-size:.66rem}.bs-title-row{align-items:stretch}.bs-search{flex:1 1 100%}.bs-article{padding:22px 16px}.bs-prose{line-height:2.1}.bs-reader-toolbar{padding:9px 12px}.bs-reader-sidebar{padding:10px}.bs-reader-bottom{padding:14px 10px}.bs-reader-narrator{padding:12px}.bs-continue-row{grid-template-columns:1fr}}
 @media(prefers-reduced-motion:reduce){.bs-card,.bs-feature-book{transition:none}}
+
+.bs-hub .bs-catalog-hero {
+  min-height: 240px; grid-template-columns: minmax(0,1fr) minmax(220px,.7fr);
+  align-items: center; gap: 20px; padding: clamp(18px,4vw,36px);
+  border: 1px solid #50404d; background: linear-gradient(135deg,#24222e,#36303c 55%,#3f2b34);
+}
+.bs-catalog-hero::before, .bs-catalog-hero::after { display: none; }
+.bs-catalog-hero .bs-hero-text { padding: 0; }
+.bs-catalog-hero h1 { font-size: clamp(2rem,5vw,4rem); line-height: 1.15; }
+.bs-hero-books { min-height: 142px; display: flex; align-items: center; justify-content: center; gap: 4px; }
+.bs-hero-books span, .bs-published-card .bs-real-cover {
+  background: linear-gradient(135deg,#3e4963,#242939); color: #fff9ee; border: 1px solid #ffffff30;
+  border-inline-start: 4px solid #ffffff3c; box-shadow: 0 9px 18px #0005;
+}
+.bs-hero-books span {
+  width: clamp(57px,9vw,99px); aspect-ratio: 2 / 3; display: grid; align-content: center; text-align: center;
+  border-radius: 4px 10px 10px 4px; font-size: clamp(.72rem,1.7vw,1.12rem); font-weight: 800;
+}
+.bs-hero-books span:first-child { background: linear-gradient(145deg,#93455a,#482839); transform: rotate(9deg); }
+.bs-hero-books span:nth-child(2) { background: linear-gradient(145deg,#4d6f68,#243d3b); transform: translateY(-9px); z-index: 1; }
+.bs-hero-books span:last-child { transform: rotate(-9deg); }
+.bs-hub .bs-real-heading { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-block: 0 10px; }
+.bs-real-heading > span { color: #bec1ce; font-size: .8rem; }
+.bs-real-heading h3 { font-weight: 750; }
+.bs-hub .bs-real-grid { display: grid; grid-template-columns: repeat(auto-fit,minmax(min(100%,260px),1fr)); gap: 12px; }
+.bs-hub .bs-published-card { display: grid; min-width: 0; grid-template-columns: minmax(72px,92px) minmax(0,1fr); gap: 12px; align-items: start; padding: 11px; border: 1px solid #49414f; border-radius: 13px; background: #23222d; }
+.bs-published-card .bs-real-cover {
+  display: grid; place-content: center; justify-items: center; gap: 6px; text-align: center;
+  min-width: 0; width: 100%; aspect-ratio: 2 / 3; padding: 6px; border-radius: 4px 9px 9px 4px;
+}
+.bs-published-card .bs-real-cover strong { font-size: .78rem; line-height: 1.4; }
+.bs-published-card .bs-real-cover span, .bs-published-card .bs-real-cover small { font-size: .62rem; line-height: 1.4; }
+.bs-published-card[data-genre="رعب"] .bs-real-cover { background: linear-gradient(135deg,#6f304e,#341d38); }
+.bs-published-card[data-genre="مغامرة"] .bs-real-cover { background: linear-gradient(135deg,#7a4a2e,#443324); }
+.bs-published-card[data-genre="أدب كلاسيكي"] .bs-real-cover { background: linear-gradient(135deg,#3b655a,#213d38); }
+.bs-published-card[data-genre="فانتازيا"] .bs-real-cover { background: linear-gradient(135deg,#66508d,#34294c); }
+.bs-published-card .bs-real-copy { display: grid; gap: 4px; min-width: 0; }
+.bs-published-card .bs-real-copy h4 { font-size: 1rem; font-weight: 750; }
+.bs-published-card .bs-real-copy :is(p,strong,span) { font-size: .77rem; line-height: 1.6; }
+.bs-published-card .bs-real-copy :is(p,strong) { color: #c6c6d1; }
+.bs-published-actions { display: flex; align-items: center; justify-content: space-between; gap: 5px; }
+.bs-published-actions a { display: inline-flex; align-items: center; gap: 5px; color: #ffc0d2; font-size: .77rem; min-height: 35px; }
+.bs-published-actions .bs-favorite { min-width: 34px; min-height: 34px; display: grid; place-items: center; }
+.bs-published-actions .bs-favorite[aria-pressed="true"] { color: #ff94b0; }
+@media (max-width: 670px) {
+  .bs-hub .bs-catalog-hero { grid-template-columns: 1fr; gap: 5px; }
+  .bs-hero-books { min-height: 122px; }
+}

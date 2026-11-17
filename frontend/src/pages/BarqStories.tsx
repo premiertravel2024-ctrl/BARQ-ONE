@@ -1,23 +1,20 @@
 import {useEffect,useMemo,useRef,useState,type ChangeEvent} from 'react';
-import {ArrowLeft,ArrowRight,BookOpen,Check,ChevronLeft,ChevronRight,Clock3,Feather,Headphones,Heart,Minus,Pause,Play,Plus,Search,Sparkles,Square,Upload,WandSparkles,X} from 'lucide-react';
+import {ArrowLeft,ArrowRight,BookOpen,Check,ChevronLeft,ChevronRight,Clock3,Headphones,Heart,Minus,Pause,Play,Plus,Search,Sparkles,Square,Upload,WandSparkles,X} from 'lucide-react';
 import {streamChat} from '../lib/backend';
 import {useApp,uid,type Message} from '../store';
 import {Modal} from '../components/ui/Modal';
 import {originals,type BarqStory,type StoryChapter,type StoryMood} from './barqStoriesData';
+import {publishedBooks} from './publishedBooks';
 import './barqStories.css';
 
 type Shelf={stories:BarqStory[];favorites:string[];progress:Record<string,number>};
 const KEY='barq-stories-v1';
-const genres=['الكل','روايات مصرية','روايات عالمية','فانتازيا','غموض','خيال علمي','مغامرة','رعب','مكتبتي'];
-// Verified publisher/library links: books are opened at their lawful source,
-// not silently copied or represented as BARQ-written chapters.
-const realNovels=[
- {id:'egy-zenab',title:'زينب',author:'محمد حسين هيكل',category:'روايات مصرية',year:1914,url:'https://downloads.hindawi.org/books/28493759.pdf',publisher:'مؤسسة هنداوي',description:'من الروايات المبكرة في الأدب المصري الحديث، عن الريف والحب والتقاليد.'},
- {id:'egy-east',title:'عصفور من الشرق',author:'توفيق الحكيم',category:'روايات مصرية',year:1938,url:'https://downloads.hindawi.org/books/74917046.pdf',publisher:'مؤسسة هنداوي',description:'رواية مصرية عن التقاء الشرق والغرب وتجربة الشاب محسن في باريس.'},
- {id:'world-pride',title:'كبرياء وتحامل / Pride and Prejudice',author:'Jane Austen',category:'روايات عالمية',year:1813,url:'https://www.gutenberg.org/ebooks/1342',publisher:'Project Gutenberg',description:'رواية كلاسيكية إنجليزية عن العائلة والمكانة الاجتماعية والحب.'},
- {id:'world-time',title:'آلة الزمن / The Time Machine',author:'H. G. Wells',category:'روايات عالمية',year:1895,url:'https://www.gutenberg.org/ebooks/35',publisher:'Project Gutenberg',description:'من كلاسيكيات الخيال العلمي والرحلة إلى مستقبل بعيد.'},
- {id:'world-sherlock',title:'مغامرات شيرلوك هولمز',author:'Arthur Conan Doyle',category:'روايات عالمية',year:1892,url:'https://www.gutenberg.org/ebooks/1661',publisher:'Project Gutenberg',description:'مجموعة قصص بوليسية عالمية لشيرلوك هولمز.'},
-] as const;
+const genres=[
+ ['الكل','All'],['سلاسل مصرية','Egyptian series'],['روايات مصرية','Egyptian books'],['روايات عالمية','World literature'],
+ ['رعب','Horror'],['أدب كلاسيكي','Classics'],['فانتازيا','Fantasy'],['غموض','Mystery'],
+ ['خيال علمي','Science fiction'],['مغامرة','Adventure'],['كوميكس','Comics'],['مكتبتي','My library'],
+];
+const searchable=(value:string)=>value.toLowerCase().replace(/[\u064b-\u065f\u0670\u0640]/g,'').replace(/[أإآ]/g,'ا').replace(/ى/g,'ي');
 const covers:StoryMood[]=['ember','ocean','violet','gold','forest'];
 function readShelf():Shelf{
  try{
@@ -59,9 +56,15 @@ export function BarqStories(){
  const book=items.find(x=>x.id===opened);
  const currentIndex=book?Math.max(0,Math.min(book.chapters.length-1,shelf.progress[book.id]||0)):0;
  const chapter=book?.chapters[currentIndex];
- const matches=items.filter(x=>(genre==='الكل'||(genre==='مكتبتي'?x.source!=='original':x.genre===genre))&&(x.title+' '+x.summary).toLowerCase().includes(query.trim().toLowerCase()));
+ const terms=searchable(query.trim()).split(/\s+/);
+ const includes=(...parts:string[])=>terms.every(term=>searchable(parts.join(' ')).includes(term));
+ const matches=items.filter(x=>(genre==='الكل'||(genre==='مكتبتي'?x.source!=='original'||shelf.favorites.includes(x.id):x.genre===genre))&&includes(x.title,x.summary,x.author));
  const recents=items.filter(s=>(shelf.progress[s.id]||0)>0);
- const realMatches=realNovels.filter(book=>(genre==='الكل'||genre===book.category)&&(book.title+' '+book.author+' '+book.description).toLowerCase().includes(query.trim().toLowerCase()));
+ const realMatches=publishedBooks.filter(book=>{
+  const visible=genre==='الكل'||genre===book.category||genre===book.genre||
+   (genre==='سلاسل مصرية'&&book.series)||(genre==='مكتبتي'&&shelf.favorites.includes(book.id));
+  return visible&&includes(book.title,book.author,book.description,book.genre);
+ });
  const label=(a:string,b:string)=>ar?a:b;
  useEffect(()=>{try{localStorage.setItem(KEY,JSON.stringify(shelf))}catch{setError('مش قادر أحفظ المكتبة محليًا. راجع المساحة المتاحة على الجهاز.')}},[shelf]);
  useEffect(()=>()=>{abortAI.current?.abort();abortSpeech.current?.abort();playingAudio.current?.pause()},[]);
@@ -145,7 +148,7 @@ export function BarqStories(){
   else{el.pause();setPaused(true)}
  }
  return <div className="bs-hub" dir={ar?'rtl':'ltr'}>
-  <header className="bs-header"><div className="bs-brand"><span className="bs-brand-mark"><BookOpen size={22}/></span><div><small>BARQ ORIGINALS</small><strong>{label('حكايات برق','BARQ STORIES')}</strong></div></div>
+  <header className="bs-header"><div className="bs-brand"><span className="bs-brand-mark"><BookOpen size={22}/></span><div><strong>{label('مكتبة برق','BARQ LIBRARY')}</strong></div></div>
    <div className="bs-header-actions">{book&&<button onClick={()=>{stopVoice();setOpened(null)}} className="bs-muted-btn"><ArrowRight size={16}/>{label('رجوع للمكتبة','Back to library')}</button>}
     <button className="bs-muted-btn" onClick={()=>fileInput.current?.click()}><Upload size={16}/>{label('استيراد TXT','Import TXT')}</button>
     <button className="bs-primary" onClick={()=>{setError('');setCreating(true)}}><WandSparkles size={17}/>{label('اكتب مع برق','Create with BARQ')}</button></div>
@@ -154,32 +157,30 @@ export function BarqStories(){
   {error&&<div className="bs-alert" role="alert">{error}<button aria-label="Dismiss" onClick={()=>setError('')}><X size={16}/></button></div>}
   {notice&&<div className="bs-alert bs-alert-success" role="status"><Check size={17}/>{notice}<button aria-label="Dismiss" onClick={()=>setNotice('')}><X size={16}/></button></div>}
   {!book?<div className="bs-library">
-   <section className="bs-hero">
-    <div className="bs-hero-text"><span className="bs-kicker"><Sparkles size={14}/> STORIES BEYOND THE SCREEN</span><h1>{label('كل حكاية،','Every story,')}<br/><em>{label('عالم جديد.','a new world.')}</em></h1>
-    <p>{label('اقرأ حكايات أصلية، اسمعها بصوت برق، واختار بنفسك اللي يحصل في الفصل اللي بعده.','Read original stories, listen with BARQ, and decide what happens next.')}</p>
-    <div className="bs-hero-actions"><button className="bs-primary" onClick={()=>openBook(originals[0].id)}><Play size={17} fill="currentColor"/>{label('ابدأ الحكاية','Start reading')}</button>
-     <button className="bs-outline" onClick={()=>setCreating(true)}><Feather size={17}/>{label('اكتب عالمك','Create your world')}</button></div>
-    <div className="bs-hero-caption"><strong>{items.length.toString().padStart(2,'0')}</strong> {label('حكايات في مكتبتك','stories')} <i/><Headphones size={15}/> {label('بصوت برق','BARQ narration')}</div>
+   <section className="bs-hero bs-catalog-hero">
+    <div className="bs-hero-text"><h1>{label('مكتبة برق','BARQ Library')}</h1>
+     <p>{label('سلاسل مصرية، أدب رعب وكلاسيكيات، وحكايات تقراها أو تسمعها بصوت برق.','Egyptian series, horror, classics, and original stories you can read or listen to.')}</p>
+     <div className="bs-hero-actions"><button className="bs-primary" onClick={()=>{setGenre('سلاسل مصرية');setQuery('');document.getElementById('barq-books')?.scrollIntoView({block:'start'})}}><BookOpen size={17}/>{label('السلاسل المصرية','Egyptian series')}</button>
+      <button className="bs-outline" onClick={()=>openBook(originals[0].id)}><Play size={17}/>{label('حكايات برق','BARQ stories')}</button></div>
     </div>
-    <button className="bs-feature" onClick={()=>openBook(originals[0].id)} aria-label={label('افتح قصة الأسبوع','Open featured story')}>
-     <div className="bs-feature-book"><Cover story={originals[0]}/></div><span className="bs-feature-label">{label('قصة الأسبوع','FEATURED PICK')}<strong>{originals[0].title}</strong></span>
-    </button>
+    <div className="bs-hero-books" aria-hidden="true"><span>رجل<br/>المستحيل</span><span>ما وراء<br/>الطبيعة</span><span>ملف<br/>المستقبل</span></div>
    </section>
    {recents.length>0&&<section className="bs-continue"><div className="bs-title"><span>YOUR READING JOURNEY</span><h2>{label('كمّل من مكانك','Pick up where you left off')}</h2></div><div className="bs-continue-row">
     {recents.map(s=><button onClick={()=>openBook(s.id)} key={s.id} className="bs-resume"><Cover story={s} mini/><span><strong>{s.title}</strong><small>{label('الفصل','Chapter')} {(shelf.progress[s.id]||0)+1} / {s.chapters.length}</small><i><b style={{width:Math.round(((shelf.progress[s.id]||0)+1)/s.chapters.length*100)+'%'}}/></i></span><ChevronLeft size={19}/></button>)}
    </div></section>}
-   <section className="bs-collection"><div className="bs-title-row"><div className="bs-title"><span>EXPLORE THE COLLECTION</span><h2>{label('اكتشف حكايتك الجاية','Find your next story')}</h2><p>{label('من الغموض للفانتازيا والخيال العلمي.','Fantasy, mystery, and new worlds.')}</p></div>
-    <label className="bs-search"><Search size={18}/><input aria-label={label('ابحث في القصص','Search stories')} placeholder={label('ابحث عن حكاية...','Search stories...')} value={query} onChange={e=>setQuery(e.target.value)}/></label></div>
-    <div className="bs-filters" role="group" aria-label={label('تصنيف القصص','Story categories')}>{genres.map(g=><button type="button" key={g} aria-pressed={genre===g} onClick={()=>setGenre(g)}>{g}</button>)}</div>
-    {(genre==='الكل'||genre==='روايات مصرية'||genre==='روايات عالمية')&&<section className="bs-real-library" aria-label={label('الروايات الحقيقية','Published novels')}>
-      <div className="bs-real-heading"><div><span>{label('مكتبة موثّقة','VERIFIED BOOKS')}</span><h3>{label('روايات مصرية وعالمية حقيقية','Real Egyptian and world literature')}</h3><p>{label('كتب منشورة بأسماء مؤلفيها الأصليين. القراءة من المصدر الرسمي؛ المحتوى مش مولّد بالذكاء الاصطناعي.','Published works with their original authors. Read at the library or publisher source.')}</p></div><BookOpen size={22}/></div>
-      <div className="bs-real-grid">{realMatches.map(novel=><article className="bs-real-card" key={novel.id}>
-       <div className="bs-real-cover" aria-hidden="true"><BookOpen size={28}/><small>{novel.year}</small></div>
-       <div className="bs-real-copy"><span>{novel.category} · {novel.publisher}</span><h4>{novel.title}</h4><strong>{novel.author}</strong><p>{novel.description}</p>
-        <a href={novel.url} target="_blank" rel="noopener noreferrer">{label('اقرأ من المصدر الأصلي','Open official source')}<ArrowLeft size={15}/></a></div>
+   <section className="bs-collection" id="barq-books"><div className="bs-title-row"><div className="bs-title"><h2>{label('تصفّح المكتبة','Browse the library')}</h2></div>
+    <label className="bs-search"><Search size={18}/><input aria-label={label('ابحث في القصص','Search stories')} placeholder={label('اسم كتاب، سلسلة، مؤلف…','Book, series, author…')} value={query} onChange={e=>setQuery(e.target.value)}/></label></div>
+    <div className="bs-filters" role="group" aria-label={label('تصنيف القصص','Story categories')}>{genres.map(([id,en])=><button type="button" key={id} aria-pressed={genre===id} onClick={()=>setGenre(id)}>{label(id,en)}</button>)}</div>
+    {!!realMatches.length&&<section className="bs-real-library" aria-label={label('الكتب والسلاسل المنشورة','Published books and series')}>
+      <div className="bs-real-heading"><h3>{label('الكتب والسلاسل المنشورة','Published books and series')}</h3><span>{realMatches.length} {label('عنوان','titles')}</span></div>
+      <div className="bs-real-grid">{realMatches.map(novel=><article className="bs-real-card bs-published-card" key={novel.id} data-genre={novel.genre}>
+       <div className="bs-real-cover" aria-hidden="true"><span>{novel.series?label('سلسلة','Series'):novel.year||label('رواية','Novel')}</span><BookOpen size={24}/><strong>{novel.title.split(' / ')[0]}</strong><small>{novel.author}</small></div>
+       <div className="bs-real-copy"><span>{novel.genre}</span><h4 dir="auto">{novel.title}</h4><strong dir="auto">{novel.author}</strong><p>{novel.description}</p>
+        <div className="bs-published-actions"><a href={novel.url} title={novel.publisher} target="_blank" rel="noopener noreferrer">{novel.series?label('أعداد السلسلة','Browse issues'):novel.store?label('صفحة الكتاب','Book page'):label('افتح الكتاب','Open book')}<ArrowLeft size={15}/></a>
+         <button className="bs-favorite" type="button" aria-label={label('احفظ ','Save ')+novel.title} aria-pressed={shelf.favorites.includes(novel.id)} onClick={()=>fav(novel.id)}><Heart size={17} fill={shelf.favorites.includes(novel.id)?'currentColor':'none'}/></button></div></div>
       </article>)}</div>
-      {realMatches.length===0&&<p className="bs-real-empty">{label('مفيش روايات مطابقة للبحث.','No published books match this search.')}</p>}
      </section>}
+    {!!matches.length&&<div className="bs-title"><h2>{label('حكايات تقراها جوه برق','Read inside BARQ')}</h2></div>}
     {matches.length?<div className="bs-grid">{matches.map(s=><article className="bs-card" key={s.id}>
      <button className="bs-card-cover" type="button" onClick={()=>openBook(s.id)} aria-label={label('افتح ','Open ')+s.title}><Cover story={s}/><span className="bs-card-open"><BookOpen size={19}/></span></button>
      <div className="bs-card-copy"><div className="bs-card-meta"><span>{s.genre}</span><span><Clock3 size={13}/>{s.chapters.length} {label('فصل','chapters')}</span></div>
@@ -187,7 +188,7 @@ export function BarqStories(){
        <div className="bs-card-footer"><button onClick={()=>openBook(s.id)}>{label('افتح الحكاية','Read story')}<ArrowLeft size={15}/></button>
         <button className="bs-favorite" aria-label={label('المفضلة','Favorite')} aria-pressed={shelf.favorites.includes(s.id)} onClick={()=>fav(s.id)}><Heart size={17} fill={shelf.favorites.includes(s.id)?'currentColor':'none'}/></button></div>
      </div>
-    </article>)}</div>:(genre==='روايات مصرية'||genre==='روايات عالمية')?null:<div className="bs-empty"><BookOpen size={32}/><strong>{label('مفيش حكايات مطابقة','No stories found')}</strong><p>{label('جرّب تصنيف أو بحث مختلف.','Try another search or category.')}</p></div>}
+    </article>)}</div>:realMatches.length?null:<div className="bs-empty"><BookOpen size={32}/><strong>{label('مفيش حكايات مطابقة','No stories found')}</strong><p>{label('جرّب تصنيف أو بحث مختلف.','Try another search or category.')}</p></div>}
    </section></div>
   :<section className="bs-reader" ref={reader}>
     <aside className="bs-reader-sidebar"><Cover story={book}/><div className="bs-book-about"><span>{book.genre}</span><h2>{book.title}</h2><p>{book.summary}</p>
@@ -216,7 +217,7 @@ export function BarqStories(){
   <Modal open={creating} onClose={()=>{if(!busy)setCreating(false)}} title={label('اصنع حكايتك مع برق','Create a story with BARQ')} wide>
    <form className="bs-create-modal" onSubmit={e=>{e.preventDefault();void create()}}><div className="bs-create-icon"><WandSparkles size={27}/></div>
     <p>{label('اختار نوع الحكاية واحكي لبرق فكرتك. هيكتب الفصل الأول وتقدر تختار مسار الفصول اللي بعده.','Pick a genre and describe your idea. BARQ writes chapter one and offers choices for what happens next.')}</p>
-    <label>{label('النوع','Genre')}<select value={ideaGenre} onChange={e=>setIdeaGenre(e.target.value)}>{genres.filter(g=>!['الكل','مكتبتي'].includes(g)).map(g=><option key={g}>{g}</option>)}</select></label>
+    <label>{label('النوع','Genre')}<select value={ideaGenre} onChange={e=>setIdeaGenre(e.target.value)}>{genres.filter(([id])=>['فانتازيا','غموض','خيال علمي','مغامرة','رعب'].includes(id)).map(([id,en])=><option key={id} value={id}>{label(id,en)}</option>)}</select></label>
     <label>{label('فكرة الحكاية','Story idea')}<textarea rows={5} maxLength={1200} placeholder={label('مثلاً: مدينة بتختفي كل ليلة، وأنا آخر شخص فاكرها...','A city disappears every night, and I am the last person who remembers...')} value={idea} onChange={e=>setIdea(e.target.value)} required minLength={12}/></label>
     <div className="bs-create-actions"><button type="button" onClick={()=>{if(!busy)setCreating(false)}} disabled={busy} className="bs-muted-btn">{label('إلغاء','Cancel')}</button>
       <button type="submit" disabled={busy||idea.trim().length<12} className="bs-primary"><Sparkles size={16}/>{busy?label('برق بيكتب...','Writing...'):label('ابدأ التأليف','Create story')}</button></div>

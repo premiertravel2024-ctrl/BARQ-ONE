@@ -18,7 +18,7 @@ export function OperationsHeader({page,navigate,search,settings}:Actions){
   <nav aria-label={ar?'التنقل الرئيسي':'Main navigation'}>
    {(['center','chat','library','tools','monitor'] as const).map(key=>{
     const item=sections.find(section=>section[0]===key)!;
-    return <button key={key} type="button" onClick={()=>navigate(key)} aria-current={page===key?'page':undefined}>{item[ar?1:2]}</button>;
+    return <button key={key} className={key==='chat'?'ops-mobile-chat':undefined} type="button" onClick={()=>navigate(key)} aria-current={page===key?'page':undefined}>{item[ar?1:2]}</button>;
    })}
   </nav>
   <div className="ops-header-actions">
@@ -41,7 +41,7 @@ export function OperationsRail({page,navigate}:Pick<Actions,'page'|'navigate'>&{
     <button className="ops-rail-close" type="button" aria-label={ar?'إغلاق':'Close'} onClick={()=>setOpen(false)}><X size={17}/></button>
    </div>
    <nav aria-label={ar?'أقسام التطبيق':'Application sections'}>
-    {sections.filter(([key])=>key!=='chat').map(([key,label,english,Icon])=><button key={key} type="button" title={ar?label:english} aria-current={page===key?'page':undefined} aria-label={ar?label:english} onClick={()=>choose(key)}><i><Icon size={15}/></i><span>{ar?label:english}</span></button>)}
+    {sections.filter(([key])=>key!=='chat').map(([key,label,english,Icon])=><button key={key} data-section={key} type="button" title={ar?label:english} aria-current={page===key?'page':undefined} aria-label={ar?label:english} onClick={()=>choose(key)}><i><Icon size={15}/></i><span>{ar?label:english}</span></button>)}
    </nav>
   </aside>
  </>;

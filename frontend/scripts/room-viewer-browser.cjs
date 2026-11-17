@@ -46,6 +46,14 @@ fs.mkdirSync(pictures,{recursive:true});
    assert.ok(Math.abs(sizes.stageHeight-sizes.videoHeight)<3,'video must fill the entire stage height '+JSON.stringify(sizes));
    assert.ok(sizes.overflow<=2,'unexpected horizontal scroll on '+label+' '+JSON.stringify(sizes));
    assert.equal(await page.locator('#guestWrap').isVisible(),true);
+   await page.locator('#chatToggle').click();
+   assert.equal(await page.locator('#roomChat').isVisible(),false);
+   assert.equal(await page.locator('#chatToggle').getAttribute('aria-expanded'),'false');
+   const focusWidth=await page.locator('#videoStage').evaluate(stage=>stage.getBoundingClientRect().width);
+   assert.ok(focusWidth+2>=sizes.stageWidth,'hiding chat must preserve or expand the stage');
+   await page.locator('#chatToggle').click();
+   assert.equal(await page.locator('#roomChat').isVisible(),true);
+
    await page.locator('#chatText').fill('رسالة تجربة من الضيف');
    await page.locator('#send').click();
    const packets=await page.evaluate(()=>window.__roomSent);

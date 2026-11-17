@@ -39,6 +39,7 @@ export function WatchTogether({mode = 'video'}: {mode?: Mode}) {
   const [copied, setCopied] = useState(false);
   const [invite, setInvite] = useState('');
   const [joinOpen, setJoinOpen] = useState(false);
+  const [hostOpen, setHostOpen] = useState(false);
   const current = room?.mode === mode ? room : null;
   const roomId = room?.room_id;
   const mutation = useRef(0);
@@ -134,14 +135,20 @@ export function WatchTogether({mode = 'video'}: {mode?: Mode}) {
       </div>
       {music?<div className="bma-vinyl" aria-hidden="true"><div className="bma-vinyl-center"><Headphones size={28}/></div><div className="bma-bars"><i/><i/><i/><i/><i/><i/><i/></div></div>:<div className="barq-watch-live-label">{ar ? 'جلسة خاصة' : 'Private session'}</div>}
     </header>}
-    {!music && !current && !guest && <CinemaDiscovery ar={ar} roomActive={false} onRoom={() => start(false)} onJoin={() => {setError('');setJoinOpen(true);}}/>}
+    {!music && !current && !guest && <CinemaDiscovery ar={ar} roomActive={false} onRoom={() => { setError(''); setHostOpen(true); }} onJoin={() => {setError('');setJoinOpen(true);}}/>}
+    {!music&&<Modal open={hostOpen} onClose={()=>setHostOpen(false)} title={ar?'افتح غرفة مشاهدة':'Host a watch room'}>
+      <div className="barq-cinema-join-form">
+        <p>{ar?'اختار طريقة الدعوة على حسب مكان صاحبك. بعد ما الغرفة تفتح، اختار الفيديو من جهازك.':'Choose how to invite your guest, then select a video from your device.'}</p>
+        <button className="bc-primary" type="button" disabled={busy} onClick={()=>{setHostOpen(false);start(false)}}><ExternalLink size={16}/>{ar?'دعوة عبر الإنترنت':'Internet invite'}</button>
+        <button className="bc-join" type="button" disabled={busy} onClick={()=>{setHostOpen(false);start(true)}}><Radio size={16}/>{ar?'نفس شبكة الواي فاي':'Same Wi-Fi network'}</button>
+      </div>
+    </Modal>}
     {!music&&<Modal open={joinOpen} onClose={()=>{if(!busy)setJoinOpen(false)}} title={ar?'الدخول بكود الغرفة':'Join with room code'}>
       <form className="barq-cinema-join-form" onSubmit={e=>{e.preventDefault();join();}}>
         <p>{ar?'الصق كود دعوة برق اللي بيبدأ بـ BARQ- علشان تدخل غرفة صاحبك.':'Paste the BARQ- invitation code your friend sent.'}</p>
         <label htmlFor="cinema-join-code">{ar?'كود الدعوة':'Invite code'}</label>
         <input id="cinema-join-code" autoFocus dir="ltr" value={invite} maxLength={950} placeholder="BARQ-…" onChange={e=>setInvite(e.target.value)} required/>
         <button className="bc-primary" type="submit" disabled={busy||!invite.trim()}>{ar?'دخول الغرفة':'Join room'}</button>
-        <button className="bc-lan-create" type="button" disabled={busy} onClick={()=>{setJoinOpen(false);start(true)}}>{ar?'إنشاء غرفة على نفس الشبكة':'Create a local-network room'}</button>
       </form>
     </Modal>}
     {error && <p className="barq-media-error" role="alert">{error}</p>}

@@ -27,7 +27,7 @@ export const sections=[
  ['wallpapers','الخلفيات الحية','Live Wallpapers',Image],
  ['watch','سينما برق','BARQ Cinema',Radio],
  ['music','الموسيقى','Music',Headphones],
- ['stories','حكايات برق','BARQ Stories',LibraryBig],
+ ['stories','مكتبة القراءة','Reading Library',LibraryBig],
  ['automation','الأتمتة','Automation',Timer],
  ['settings','الإعدادات','Settings',Settings2],
 ] as const;
@@ -323,8 +323,9 @@ type Props={page:Exclude<OnePage,'chat'|'settings'>;providers:RouterProvider[];o
 export function BarqOne({page,providers,onVoice,onNavigate,onModels,onQuick}:Props){
  const ar=useApp(s=>s.language)==='ar';
  const title=sections.find(([key])=>key===page);
- return <section className="one-page">
-  {!['watch','music','wallpapers','stories'].includes(page)&&<header className="one-page-head"><div><h1>{title?.[ar?1:2]}</h1></div>
+ const PageIcon=title?.[3];
+ return <section className="one-page" data-page={page}>
+  {!['watch','music','wallpapers','stories'].includes(page)&&<header className="one-page-head"><div className="one-page-heading">{PageIcon&&<span className="one-page-heading-icon" aria-hidden="true"><PageIcon size={22}/></span>}<h1>{title?.[ar?1:2]}</h1></div>
    {page==='center'&&<button type="button" onClick={()=>onNavigate('voice')}><AudioLines size={17}/>{ar?'المساعد الصوتي':'Voice assistant'}</button>}</header>}
   {page==='center'&&<>
    <div className="one-quick-ribbon" aria-label={ar?'أوامر سريعة':'Quick commands'}>

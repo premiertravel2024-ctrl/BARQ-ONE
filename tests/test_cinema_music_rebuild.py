@@ -143,3 +143,35 @@ def test_gui_setup_never_saves_credential_hidden_by_env(monkeypatch):
     with pytest.raises(catalog.CatalogError, match='overrides saved settings') as e:
         catalog.configure('abcdef0123456789abcdef0123456789')
     assert e.value.status == 409
+
+
+def test_music_search_only_returns_official_playable_results(monkeypatch):
+    from services import music_discovery
+
+    def search(query):
+        assert query == 'site:play.anghami.com تملى معاك'
+        return [
+            {'url': 'https://play.anghami.com/song/102704?lang=ar', 'title': 'تملى معاك | Anghami'},
+            {'url': 'https://play.anghami.com.evil.test/song/4', 'title': 'Untrusted host'},
+            {'url': 'https://play.anghami.com/artist/not-a-number', 'title': 'Invalid artist ID'},
+            {'url': 'https://play.anghami.com/song/102704', 'title': 'تملى معاك'},
+        ]
+
+    monkeypatch.setattr(music_discovery, '_ddg_search', search)
+    assert music_discovery.find_tracks('anghami', 'تملى معاك', 'SA') == {
+        'items': [{'kind': 'song', 'id': '102704', 'title': 'تملى معاك'}], 'source': 'index'
+    }
+
+
+def test_music_search_prefers_spotify_catalog_and_reports_offline(monkeypatch):
+    from services import music_discovery
+
+    results = [{'kind': 'track', 'id': 'a' * 22, 'title': 'Test track'}]
+    monkeypatch.setattr(music_discovery, 'spotify_tracks', lambda q, country: results)
+
+    def offline(query):
+        raise music_discovery.ResearchError('offline')
+
+    monkeypatch.setattr(music_discovery, '_ddg_search', offline)
+    assert music_discovery.find_tracks('spotify', 'Test', 'EG') == {'items': results, 'source': 'provider'}
+    assert music_discovery.find_tracks('anghami', 'Test', 'EG') == {'items': [], 'source': 'unavailable'}

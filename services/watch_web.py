@@ -253,9 +253,37 @@ button{transition:background-color .16s ease,border-color .16s ease}
 button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid #ff789a;outline-offset:3px}
 @media(max-width:950px){.grid{grid-template-columns:1fr}.room-chat{position:static!important}}
 @media(prefers-reduced-motion:reduce){button{transition:none}}
+
+/* Viewing controls stay by the player, including when the chat is tucked away. */
+.room-head-actions { display: flex; gap: 9px; align-items: center; flex-wrap: wrap; }
+.room-head-note { margin-block-start: 4px; }
+.room-role { color: #c2c9d8; font-size: .78rem; }
+.room-guest-controls { border: 1px solid #353c48; border-radius: 12px; padding: 8px; background: #171c25; }
+.room-guest-controls button, #chatToggle { min-height: 42px; padding: 8px 12px; }
+#chatToggle { margin-inline-start: auto; background: #222a36; border-color: #495465; color: #f0f3f8; }
+#chatToggle:hover { background: #3d2e43; border-color: #a56889; }
+.room-focus .grid { grid-template-columns: minmax(0, 1fr); }
+.room-focus .room-media-panel { width: min(100%, 1310px); margin-inline: auto; }
+.room-guest .room-media-panel { background: #12161e; }
+.room-guest .room-chat { background: #181d27; }
+.room-guest #joinPanel:not([hidden]) { margin-top: 12px; }
+.room-guest #joinPanel input { min-height: 44px; max-width: 100%; }
+.room-guest .room-waiting { padding: 16px; }
+.room-guest .room-waiting small { color: #c8cddd; }
+.room-chat .chat-compose button { min-height: 44px; }
+.room-chat .msg { background: #242b37; }
+.room-chat .msg small { color: #dbb2c4; }
+@media(max-width:700px){
+ .room-guest-controls .guest-tools-label { flex: 1 0 100%; }
+ .room-guest-controls button, #chatToggle { flex: 1 1 auto; margin: 0; min-height: 44px; }
+ .room-head-actions { width: 100%; justify-content: space-between; }
+}
 </style></head>
-<body><main><header class="room-head"><div><span class="room-eyebrow">BARQ ONE · SHARED ROOM</span><h1 id="roomTitle">سينما برق</h1><p class="room-head-note">شاركوا اللحظة، والملفات تفضل على جهاز صاحب الغرفة.</p></div><div id="status" class="status" role="status" aria-live="polite">جاري الاتصال...</div></header>
-<div id="joinPanel" class="panel" hidden><p>ادخل كود الغرفة اللي بعتهولك صاحبها</p><div class="row"><input id="code" maxlength="6" inputmode="numeric" placeholder="Room code"><button id="join">دخول</button></div></div>
+<body><main><header class="room-head">
+ <div><h1 id="roomTitle">غرفة المشاهدة</h1><p class="room-head-note">BARQ ONE</p></div>
+ <div class="room-head-actions"><span id="roomRole" class="room-role">مشاهد</span><div id="status" class="status" role="status" aria-live="polite">جاري الاتصال...</div></div>
+</header>
+<div id="joinPanel" class="panel" hidden><p>ادخل كود الغرفة اللي بعتهولك صاحبها</p><div class="row"><input id="code" maxlength="6" inputmode="numeric" placeholder="كود الغرفة" aria-label="كود الغرفة" autocomplete="one-time-code"><button id="join">دخول</button></div></div>
 <div class="grid">
 <section class="panel room-media-panel">
  <div id="localWrap" hidden>
@@ -274,11 +302,11 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid 
   <strong id="musicNowTitle">اختار أغنية نسمعها سوا</strong><small id="musicNowSource">ملف صوتي من جهازك أو رابط رسمي</small>
   <div class="music-equalizer" aria-hidden="true"><i/><i/><i/><i/><i/><i/><i/><i/><i/></div>
  </div><video id="video" controls playsinline></video><div id="waitingOverlay" class="room-waiting" role="status" aria-live="polite"><span class="room-waiting-icon" aria-hidden="true">BARQ</span><strong id="waitingTitle">في انتظار الفيديو</strong><small id="waitingDescription">الفيديو هيظهر أول ما المضيف يشغّله</small></div><div id="captions" class="captions" dir="auto" aria-live="off"></div><div class="player-screen-actions" id="screenActions"><button type="button" id="fitMode" title="اختيار طريقة عرض الفيديو" aria-pressed="false">ملء الإطار</button><button type="button" id="enterFullscreen" title="عرض الفيديو على حجم الشاشة">ملء الشاشة</button></div></div>
- <div class="row room-guest-controls" id="guestWrap" hidden aria-label="أدوات المشاهدة"><span class="guest-tools-label">التحكم في المشاهدة</span><button id="resumePlayback" title="تشغيل الصوت والفيديو">تشغيل بالصوت</button><button id="pauseRequest" title="طلب تشغيل أو إيقاف مؤقت">تشغيل / إيقاف</button><button id="seekRequest" title="طلب تقديم 30 ثانية">تقديم 30 ثانية</button></div>
+ <div class="row room-guest-controls" id="guestWrap" hidden aria-label="أدوات المشاهدة"><span class="guest-tools-label">التحكم في المشاهدة</span><button id="resumePlayback" title="تشغيل الصوت والفيديو">تشغيل بالصوت</button><button id="pauseRequest" title="طلب تشغيل أو إيقاف مؤقت">اطلب تشغيل / إيقاف</button><button id="seekRequest" title="طلب تقديم 30 ثانية">اطلب تقديم ٣٠ ثانية</button><button type="button" id="chatToggle" aria-expanded="true" aria-controls="roomChat">إخفاء الدردشة</button></div>
  <section id="officialMusic" hidden class="row"></section>
  <p class="sub" id="mediaNote" role="status"></p>
 </section>
-<aside class="panel room-chat"><div class="chat-heading"><h2>الدردشة <span class="chat-active-indicator" aria-hidden="true"></span></h2><span>لحظية · مش محفوظة</span></div><div id="messages" aria-live="polite"><p class="chat-empty" id="chatEmpty">مفيش رسايل لسه. ابدأوا كلامكم هنا.</p></div><div class="row chat-compose"><input id="chatText" maxlength="500" placeholder="اكتب رسالة..." aria-label="Chat message"><button id="send">إرسال</button></div><p class="sub" id="typing"></p><p class="sub room-chat-disclaimer">المحادثة مؤقتة ومش بتتسجل.</p></aside>
+<aside id="roomChat" class="panel room-chat" aria-label="دردشة الغرفة"><div class="chat-heading"><h2>الدردشة <span class="chat-active-indicator" aria-hidden="true"></span></h2><span>محادثة مؤقتة</span></div><div id="messages" aria-live="polite"><p class="chat-empty" id="chatEmpty">مفيش رسايل لسه. ابدأوا كلامكم هنا.</p></div><div class="row chat-compose"><input id="chatText" maxlength="500" placeholder="اكتب رسالة..." aria-label="اكتب رسالة"><button id="send">إرسال</button></div><p class="sub" id="typing"></p></aside>
 </div></main>
 <script>
 (function(){
@@ -326,6 +354,16 @@ fitButton.onclick=function(){
 
 var status=document.getElementById('status');
 var host=role==='host';
+if(host)document.getElementById('roomRole').textContent='مضيف';
+else document.body.classList.add('room-guest');
+var roomChat=document.getElementById('roomChat');
+var chatToggle=document.getElementById('chatToggle');
+chatToggle.onclick=function(){
+ roomChat.hidden=!roomChat.hidden;
+ document.body.classList.toggle('room-focus',roomChat.hidden);
+ chatToggle.setAttribute('aria-expanded',String(!roomChat.hidden));
+ chatToggle.textContent=roomChat.hidden?'إظهار الدردشة':'إخفاء الدردشة';
+};
 var waitingOverlay=document.getElementById('waitingOverlay');
 function showWaiting(waiting,title,description){
  if(music||!waitingOverlay)return;
@@ -587,4 +625,3 @@ document.getElementById('chatText').onkeydown=function(e){if(e.key==='Enter'){e.
 })();
 </script></body></html>
 """
-

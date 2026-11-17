@@ -36,3 +36,18 @@
 .bm-player .bm-show-queue .bm-cover{display:none!important}
 .bm-player .bm-show-queue .bm-now h3:first-child{display:none}
 .bm-player .bm-show-queue .bm-now h4,.bm-player .bm-show-queue .bm-now p{display:none}
+
+.bm-player .bm-header { align-items: center; gap: 12px; background: linear-gradient(135deg,#28202d,#1a1e27 66%); padding: clamp(12px,2vw,20px); border: 1px solid #3c3948; border-radius: 17px; }
+.bm-player .bm-header h2 { font-size: clamp(1.45rem,3vw,2.45rem); margin: 0; line-height: 1.25; }
+.bm-player .bm-switch { gap: 5px; }
+.bm-player .bm-switch button { min-height: 44px; padding: 8px 13px; transition: background-color .15s, border-color .15s; }
+.bm-player .bm-switch button[aria-pressed="true"] { border-color: #e28ba6; background: #4f2c40; }
+.bm-player .bm-track:hover, .bm-player .bm-track:focus-within { background: #292735; }
+.bm-player .bm-track.is-current { border-color: #c96886; }
+.bm-player .bm-dock { border-color: #484053; background: #1c2029; }
+.bm-player .bm-library-hero { border-radius: 16px; }
+@media (max-width: 640px) {
+ .bm-player .bm-switch { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); width: 100%; }
+ .bm-player .bm-switch button { justify-content: center; white-space: normal; }
+}
+@media (prefers-reduced-motion: reduce) { .bm-player .bm-switch button { transition: none; } }
