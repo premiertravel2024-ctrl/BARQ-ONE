@@ -1,5 +1,5 @@
 import {useState} from 'react';
-import {AudioLines,Ellipsis,Menu,Copy,MessageSquare,PanelLeftClose,PanelLeftOpen,Pencil,Plus,Search,Settings2,Trash2,X} from 'lucide-react';
+import {AudioLines,Ellipsis,Menu,Copy,PanelLeftClose,PanelLeftOpen,Pencil,Plus,Search,Settings2,Trash2,X} from 'lucide-react';
 import {useApp} from '../../store';
 import {sections,type OnePage} from '../../pages/BarqOne';
 import {ModelSelector} from '../chat/ModelSelector';
@@ -28,7 +28,7 @@ export function OperationsHeader({page,navigate,search,settings}:Actions){
  </header>;
 }
 
-export function OperationsRail({page,navigate,onPlayground}:Pick<Actions,'page'|'navigate'>&{newChat:()=>void;onDelete:(id:string)=>void;onPlayground:()=>void}){
+export function OperationsRail({page,navigate}:Pick<Actions,'page'|'navigate'>&{newChat:()=>void;onDelete:(id:string)=>void;onPlayground:()=>void}){
  const ar=useApp(s=>s.language)==='ar',open=useApp(s=>s.sidebarOpen),setOpen=useApp(s=>s.setSidebarOpen);
  const collapsed=useApp(s=>s.sidebarCollapsed),setCollapsed=useApp(s=>s.setSidebarCollapsed);
  function choose(target:OnePage){navigate(target);setOpen(false);}
