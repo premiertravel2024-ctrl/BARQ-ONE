@@ -12,6 +12,7 @@ import {Wallpapers} from './Wallpapers';
 import {WatchTogether} from './WatchTogether';
 import {MusicPlayer} from './MusicPlayer';
 import {AutomationDashboard} from './AutomationDashboard';
+import {BarqStories} from './BarqStories';
 
 export const sections=[
  ['center','مركز الأوامر','Command Center',LayoutDashboard],
@@ -26,6 +27,7 @@ export const sections=[
  ['wallpapers','الخلفيات الحية','Live Wallpapers',Image],
  ['watch','سينما برق','BARQ Cinema',Radio],
  ['music','الموسيقى','Music',Headphones],
+ ['stories','حكايات برق','BARQ Stories',LibraryBig],
  ['automation','الأتمتة','Automation',Timer],
  ['settings','الإعدادات','Settings',Settings2],
 ] as const;
@@ -322,7 +324,7 @@ export function BarqOne({page,providers,onVoice,onNavigate,onModels,onQuick}:Pro
  const ar=useApp(s=>s.language)==='ar';
  const title=sections.find(([key])=>key===page);
  return <section className="one-page">
-  {!['watch','music','wallpapers'].includes(page)&&<header className="one-page-head"><div><h1>{title?.[ar?1:2]}</h1></div>
+  {!['watch','music','wallpapers','stories'].includes(page)&&<header className="one-page-head"><div><h1>{title?.[ar?1:2]}</h1></div>
    {page==='center'&&<button type="button" onClick={()=>onNavigate('voice')}><AudioLines size={17}/>{ar?'المساعد الصوتي':'Voice assistant'}</button>}</header>}
   {page==='center'&&<>
    <div className="one-quick-ribbon" aria-label={ar?'أوامر سريعة':'Quick commands'}>
@@ -341,6 +343,7 @@ export function BarqOne({page,providers,onVoice,onNavigate,onModels,onQuick}:Pro
   {page==='wallpapers'&&<Wallpapers/>}
   {page==='watch'&&<WatchTogether mode="video"/>}
   {page==='music'&&<MusicPlayer/>}
+  {page==='stories'&&<BarqStories/>}
   {page==='automation'&&<AutomationDashboard/>}
   {page==='tools'&&<div className="one-panels"><ProviderList providers={providers} onSettings={onModels}/><RuntimeTools/></div>}
   {(page==='library'||page==='installed')&&<OpenHub mode={page}/>} 

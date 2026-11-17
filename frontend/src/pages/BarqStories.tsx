@@ -1,5 +1,5 @@
 import {useEffect,useMemo,useRef,useState,type ChangeEvent} from 'react';
-import {ArrowLeft,ArrowRight,BookOpen,Bookmark,Check,ChevronLeft,ChevronRight,Clock3,Feather,Headphones,Heart,Minus,Pause,Play,Plus,Search,Sparkles,Square,Upload,WandSparkles,X} from 'lucide-react';
+import {ArrowLeft,ArrowRight,BookOpen,Check,ChevronLeft,ChevronRight,Clock3,Feather,Headphones,Heart,Minus,Pause,Play,Plus,Search,Sparkles,Square,Upload,WandSparkles,X} from 'lucide-react';
 import {streamChat} from '../lib/backend';
 import {useApp,uid,type Message} from '../store';
 import {Modal} from '../components/ui/Modal';

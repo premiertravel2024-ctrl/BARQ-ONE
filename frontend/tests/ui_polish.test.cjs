@@ -78,3 +78,17 @@ test('voice controller remains functional but has no floating overlay',()=>{
   assert.doesNotMatch(composer,/handsfreeActive|barq-handsfree-state/);
   assert.match(read('App.tsx'),/barq-start-live-voice/);
 });
+
+
+test('BARQ Stories is a real navigable application section, not a landing mockup',()=>{
+  const one=read('src/pages/BarqOne.tsx');
+  const stories=read('src/pages/BarqStories.tsx');
+  const library=read('src/pages/barqStoriesData.ts');
+  assert.match(one,/\['stories','حكايات برق','BARQ Stories'/);
+  assert.match(one,/page==='stories'&&<BarqStories\/>/);
+  assert.match(stories,/\/v1\/voice\/speak/);
+  assert.match(stories,/streamChat\(/);
+  assert.match(stories,/localStorage\.setItem/);
+  assert.match(stories,/saveStory\(/);
+  assert.match(library,/b-portal/);
+});
