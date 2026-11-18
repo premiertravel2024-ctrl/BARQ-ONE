@@ -32,7 +32,7 @@ export function Button({children,variant='secondary',size='md',icon,trailingIcon
   function schedule(fn:()=>void,time:number){timers.current.push(setTimeout(fn,time))}
   async function activate(e:MouseEvent<HTMLButtonElement>){
     if(blocked)return;
-    if(!reduced){
+    if(magnetic&&!reduced){
       const b=e.currentTarget.getBoundingClientRect(),size=Math.max(b.width,b.height)*2.2;
       const id=++seq.current;setRipples(r=>[...r,{id,x:e.detail===0?b.width/2:e.clientX-b.left,y:e.detail===0?b.height/2:e.clientY-b.top,size}]);
       schedule(()=>setRipples(r=>r.filter(p=>p.id!==id)),motionTokens.duration.ripple*1000);
@@ -53,11 +53,11 @@ export function Button({children,variant='secondary',size='md',icon,trailingIcon
   }
   const iconOnly=variant==='icon';
   return <motion.button ref={ref} {...rest} type={rest.type||'button'}
-    disabled={blocked} aria-busy={current==='loading'}
+    data-barq-button={variant} disabled={blocked} aria-busy={current==='loading'}
     onClick={activate} onPointerMove={onPointerMove} onPointerLeave={()=>setOffset({x:0,y:0})}
-    onHoverStart={()=>{if(variant==='primary'&&!reduced)setShineKey(i=>i+1)}}
-    whileHover={!blocked&&!reduced?{y:motionTokens.distance.lift,filter:'brightness(1.08)',scale:1.005}:undefined}
-    whileTap={!blocked&&!reduced?{scale:.96,boxShadow:'0 1px 2px rgba(0,0,0,.10)'}:undefined}
+    onHoverStart={()=>{if(magnetic&&variant==='primary'&&!reduced)setShineKey(i=>i+1)}}
+    whileHover={!blocked&&!reduced?{filter:'brightness(1.08)'}:undefined}
+    whileTap={!blocked&&!reduced?{scale:.985}:undefined}
     animate={current==='error'&&!reduced?{x:[0,-5,5,-4,4,0],backgroundColor:['rgba(239,68,68,.18)','rgba(239,68,68,.55)','rgba(239,68,68,.18)']}:
       current==='success'?{backgroundColor:['rgba(34,197,94,.7)','rgba(34,197,94,.7)','rgba(34,197,94,0)'],x:offset.x,y:offset.y}:{x:offset.x,y:offset.y}}
     transition={current==='error'?{duration:.3}:{...motionTokens.spring.press}}

@@ -47,7 +47,7 @@ export function Composer({prefill,onPrefillUsed}:{prefill?:string;onPrefillUsed?
     <div className="barq-composer-toolbar col-span-full flex w-full items-center justify-end gap-1 px-2 pb-1 sm:col-span-1 sm:w-auto sm:shrink-0 sm:gap-0 sm:pb-0 sm:ps-0 sm:pe-2">
      <div className="barq-composer-actions flex items-center gap-1"><span className={`hidden px-2 text-[11px] sm:inline ${value.length>12000?'text-warning':'text-muted'}`}>{value.length>9000?`${value.length.toLocaleString()} ${t('count')}`:''}</span>
       {streaming?<Button variant="danger" icon={<Square size={16}/>} onClick={stopGeneration} size="sm" aria-label={t('stop')}>{t('stop')}</Button>:
-       <Button variant="primary" magnetic size="sm" icon={<ArrowUp size={19} className="transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5"/>} onClick={()=>void send()} disabled={!value.trim()&&!files.length} aria-label={t('send')} className="barq-send-button !min-w-11 !px-3"/>}
+       <Button variant="primary" size="sm" icon={<ArrowUp size={19} className="transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5"/>} onClick={()=>void send()} disabled={!value.trim()&&!files.length} aria-label={t('send')} className="barq-send-button !min-w-11 !px-3"><span className="hidden md:inline">{t('send')}</span></Button>}
      </div>
     </div>
   </div>
