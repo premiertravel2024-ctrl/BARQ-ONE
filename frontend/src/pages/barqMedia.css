@@ -170,3 +170,15 @@
  .barq-watch-player .barq-room-actions { width: 100%; }
  .barq-watch-player .barq-room-actions > :is(button,details) { min-height: 44px; }
 }
+
+.barq-connection-choices.barq-button-group{display:grid;gap:8px}
+.barq-connection-choices .barq-button-group-item{justify-content:flex-start;gap:12px;padding:13px;white-space:normal;text-align:start}
+.barq-connection-choices span{display:grid;gap:3px}
+.barq-connection-choices small{font-size:.75rem;font-weight:400;opacity:.87}
+.barq-browser-invite{display:flex;align-items:center;gap:7px;width:max-content;padding:6px 0;color:#edbed0}
+.barq-room-launch{padding:12px 15px;background:#191d24;border:1px solid #ffffff19;border-radius:12px}
+.barq-room-launch button{border-radius:8px;padding:8px 14px}
+.barq-watch-player-top .barq-invite-primary{background:#a53155;border-color:#c6597d}
+.barq-watch-player>.barq-room-provider-picker{border-width:0 0 1px;border-radius:0}
+.barq-watch-player>.barq-room-provider-picker>summary{min-height:40px}
+.barq-watch-player>.barq-room-provider-picker .bm-room-discovery{margin-top:8px}
