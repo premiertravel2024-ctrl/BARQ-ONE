@@ -2,7 +2,7 @@
 setlocal EnableExtensions DisableDelayedExpansion
 set "ENTRY=%~dp0"
 set "ROOT="
-rem Main v2.41.1 layout, anchored to this script's own folder.
+rem Main v2.41.2 layout, anchored to this script's own folder.
 if exist "%ENTRY%scripts\build_windows.ps1" set "ROOT=%ENTRY%"
 rem Compatibility when a launcher was moved one folder down or a legacy zip was extracted.
 if not defined ROOT if exist "%ENTRY%..\scripts\build_windows.ps1" set "ROOT=%ENTRY%..\"
@@ -19,7 +19,7 @@ if not defined ROOT (
 )
 for %%I in ("%ROOT%.") do set "ROOT=%%~fI\"
 set "SCRIPT=%ROOT%scripts\build_windows.ps1"
-set "VERSION=2.41.1"
+set "VERSION=2.41.2"
 echo ================================================================
 echo BARQ AI %VERSION% - Windows setup builder
 echo Build order: auto-install build tools - React - tests - PyInstaller - EXE check - Inno Setup

@@ -1,5 +1,6 @@
 import {lazy,Suspense,useCallback,useRef,useState,type ChangeEvent} from 'react';
 import {ArrowLeft,BookOpen,ExternalLink,Heart,Search,Upload,X} from 'lucide-react';
+import {ButtonGroup, ButtonGroupItem} from '../components/ui/ButtonGroup';
 import {Modal} from '../components/ui/Modal';
 import {useAppView} from '../lib/appContext';
 import {useApp} from '../store';
@@ -102,9 +103,9 @@ export function BarqStories(){
       {query&&<button type="button" className="bs-clear-search" aria-label={label('امسح البحث','Clear search')} onClick={()=>setQuery('')}><X size={16}/></button>}
      </div>
     </div>
-    <div className="bs-filters" role="group" aria-label={label('تصنيف الكتب','Book categories')}>
-     {genres.map(([id,en])=><button type="button" key={id} aria-pressed={genre===id} onClick={()=>setGenre(id)}>{label(id,en)}</button>)}
-    </div>
+    <ButtonGroup className="bs-filters" size="sm" aria-label={label('تصنيف الكتب','Book categories')}>
+     {genres.map(([id,en])=><ButtonGroupItem key={id} aria-pressed={genre===id} onClick={()=>setGenre(id)}>{label(id,en)}</ButtonGroupItem>)}
+    </ButtonGroup>
     <p className="bs-result-count" role="status">{label('عدد الكتب والسلاسل','Books and series')}{' · '}{results.length.toLocaleString(ar?'ar-EG':'en')}</p>
     {results.length?<div className="bs-real-grid">{results.map(book=><article className="bs-real-card bs-published-card" key={book.id} data-genre={book.genre}>
      <Cover book={book}/>

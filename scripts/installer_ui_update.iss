@@ -1,6 +1,6 @@
-; BARQ ONE v2.41.1 FRONTEND-ONLY UPDATE
+; BARQ ONE v2.41.2 FRONTEND-ONLY UPDATE
 ; This installer never replaces Python executables, models, or application settings.
-#define AppVersion "2.41.1"
+#define AppVersion "2.41.2"
 #define ReactDir AddBackslash(SourcePath) + "..\web\react"
 #if !FileExists(ReactDir + "\index.html")
  #error "Build fresh React UI before packaging the update."
@@ -13,14 +13,14 @@
 AppId={{9BB70D04-1EC5-4BC6-B811-64B08F5C8977}
 AppName=BARQ ONE
 AppVersion={#AppVersion}
-AppVerName=BARQ ONE 2.41.1 UI Update
+AppVerName=BARQ ONE 2.41.2 UI Update
 AppPublisher=BARQ ONE
 DefaultDirName={localappdata}\Programs\AI Router Agent
 UsePreviousAppDir=yes
 DisableDirPage=no
 DefaultGroupName=BARQ ONE
 OutputDir=..\release
-OutputBaseFilename=BARQ_UI_Update_2.41.1
+OutputBaseFilename=BARQ_UI_Update_2.41.2
 Compression=lzma2
 SolidCompression=yes
 WizardStyle=modern
@@ -56,7 +56,7 @@ begin
   AppPath := ExpandConstant('{app}\BARQ.exe');
   Target := ReactTarget('');
   if not FileExists(AppPath) then begin
-    Result := 'This is a UI-only update. Install BARQ ONE v2.41.1 first. The full application was not found in the selected directory.';
+    Result := 'This is a UI-only update. Install BARQ ONE v2.41.2 first. The full application was not found in the selected directory.';
     Exit;
   end;
   if not FileExists(AddBackslash(Target) + 'index.html') then begin

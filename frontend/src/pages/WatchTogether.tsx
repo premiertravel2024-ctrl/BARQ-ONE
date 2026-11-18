@@ -2,6 +2,7 @@ import {useCallback, useEffect, useRef, useState} from 'react';
 import {Copy, ExternalLink, Headphones, Link2, Radio, Video, XCircle} from 'lucide-react';
 import {requestJSON} from '../lib/backend';
 import {useApp} from '../store';
+import {ButtonGroup, ButtonGroupItem} from '../components/ui/ButtonGroup';
 import {Modal} from '../components/ui/Modal';
 import {useAppView} from '../lib/appContext';
 import {MusicServices,type RoomTrack} from './MusicServices';
@@ -172,10 +173,10 @@ export function WatchTogether({mode = 'video',track,onTrack,requestedProvider,on
   }
 
   const picker=music&&!guest&&onTrack&&<section className="barq-music-providers">
-      <div role="group" aria-label={ar?'مصدر الموسيقى':'Music source'}>
-        <button type="button" aria-pressed={provider==='anghami'} onClick={()=>setProvider(provider==='anghami'?undefined:'anghami')}>{ar?'أنغامي':'Anghami'}</button>
-        <button type="button" aria-pressed={provider==='spotify'} onClick={()=>setProvider(provider==='spotify'?undefined:'spotify')}>Spotify</button>
-      </div>
+      <ButtonGroup size="sm" aria-label={ar?'مصدر الموسيقى':'Music source'}>
+        <ButtonGroupItem aria-pressed={provider==='anghami'} onClick={()=>setProvider(provider==='anghami'?undefined:'anghami')}>{ar?'أنغامي':'Anghami'}</ButtonGroupItem>
+        <ButtonGroupItem aria-pressed={provider==='spotify'} onClick={()=>setProvider(provider==='spotify'?undefined:'spotify')}>Spotify</ButtonGroupItem>
+      </ButtonGroup>
       {provider&&<MusicServices key={provider} provider={provider} ar={ar} roomOnly onShare={onTrack}/>}
     </section>;
   return <div className={'barq-media barq-watch-room'+(music?' barq-music-app':'')} dir={ar ? 'rtl' : 'ltr'}>
@@ -189,8 +190,10 @@ export function WatchTogether({mode = 'video',track,onTrack,requestedProvider,on
     {!music&&<Modal open={hostOpen} onClose={()=>setHostOpen(false)} title={ar?'افتح غرفة مشاهدة':'Host a watch room'}>
       <div className="barq-cinema-join-form">
         <p>{ar?'اختار طريقة الدعوة على حسب مكان صاحبك. بعد ما الغرفة تفتح، اختار الفيديو من جهازك.':'Choose how to invite your guest, then select a video from your device.'}</p>
-        <button className="bc-primary" type="button" disabled={busy} onClick={()=>{setHostOpen(false);start(false)}}><ExternalLink size={16}/>{ar?'دعوة عبر الإنترنت':'Internet invite'}</button>
-        <button className="bc-join" type="button" disabled={busy} onClick={()=>{setHostOpen(false);start(true)}}><Radio size={16}/>{ar?'نفس شبكة الواي فاي':'Same Wi-Fi network'}</button>
+        <ButtonGroup aria-label={ar?'طريقة الدعوة':'Invite method'}>
+        <ButtonGroupItem className="bc-primary" type="button" disabled={busy} onClick={()=>{setHostOpen(false);start(false)}}><ExternalLink size={16}/>{ar?'دعوة عبر الإنترنت':'Internet invite'}</ButtonGroupItem>
+        <ButtonGroupItem className="bc-join" type="button" disabled={busy} onClick={()=>{setHostOpen(false);start(true)}}><Radio size={16}/>{ar?'نفس شبكة الواي فاي':'Same Wi-Fi network'}</ButtonGroupItem>
+        </ButtonGroup>
       </div>
     </Modal>}
     {!music&&<Modal open={joinOpen} onClose={()=>{if(!busy)setJoinOpen(false)}} title={ar?'الدخول بكود الغرفة':'Join with room code'}>

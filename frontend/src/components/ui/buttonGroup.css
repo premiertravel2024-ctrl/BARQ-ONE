@@ -1,0 +1,8 @@
+.barq-button-group { display: flex; align-items: stretch; flex-wrap: wrap; gap: 6px; }
+.barq-button-group-item { display: inline-flex; align-items: center; justify-content: center; gap: 6px; white-space: nowrap; font-weight: 600; }
+.barq-button-group-item[data-size="sm"] { padding-inline: 12px; }
+.barq-button-group-item[data-size="md"] { min-height: 44px; padding-inline: 14px; }
+.barq-button-group-item:enabled:hover { filter: brightness(1.16); }
+.barq-button-group-item:focus-visible { position: relative; z-index: 1; outline: 2px solid #db91ab; outline-offset: 2px; }
+.barq-button-group-item:disabled { cursor: default; opacity: .55; }
+.barq-cinema-join-form .barq-button-group-item { flex: 1 1 auto; }
