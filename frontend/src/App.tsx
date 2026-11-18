@@ -12,6 +12,7 @@ import {EmptyState} from './components/chat/EmptyState';import {MessageList} fro
 import {HandsFreeVoice,isHandsFreeActive} from './components/chat/HandsFreeVoice';
 import {BarqOne,sections,type OnePage} from './pages/BarqOne';
 import './styles/experienceRefresh.css';
+import './styles/barqVisualSystem.css';
 import {keepAppContextFresh,publishBookCatalogue,trackSection,type AppAction} from './lib/appContext';
 import {publishedBooks} from './pages/publishedBooks';
 import {VoiceResultsStrip} from './components/chat/VoiceResultsStrip';
@@ -140,11 +141,11 @@ export default function App(){
  const renderSection=(page:Exclude<OnePage,'chat'|'settings'>)=><BarqOne page={page} providers={providers} onVoice={openConsentedVoiceSession} onNavigate={navigateOne}
    onModels={()=>{setSettingsTab('models');setSettings(true)}} onAssistantSettings={()=>{setSettingsTab('assistant');setSettings(true)}}
    onQuick={command=>{navigateOne('chat');setPrefill(command)}}/>;
- return <div data-release-marker="v2.41.1-build-gated-ui" className="ops-shell" dir={language==='ar'?'rtl':'ltr'}>
+ return <div data-release-marker="v2.41.4-build-gated-ui" className="ops-shell" dir={language==='ar'?'rtl':'ltr'}>
   <OperationsHeader page={onePage} navigate={navigateOne} search={()=>setPalette(true)} settings={()=>navigateOne('settings')}/>
   <div className={playground?'hidden':'ops-body'} dir="ltr">
    <OperationsRail page={onePage} navigate={navigateOne} newChat={()=>{newChat();navigateOne('chat')}} onDelete={setDeleteId} onPlayground={openPlayground}/>
-   <main className="ops-stage" dir={language==='ar'?'rtl':'ltr'} aria-label={language==='ar'?'مساحة التطبيق':'Application workspace'}>
+   <main className={onePage==='chat'?'ops-stage ops-chat-stage':'ops-stage'} dir={language==='ar'?'rtl':'ltr'} aria-label={language==='ar'?'مساحة التطبيق':'Application workspace'}>
     {media&&<div hidden={onePage!==media} className="ops-media-page" key={media}>{renderSection(media)}</div>}
     {onePage==='settings'?<SettingsModal embedded open initialTab={settingsTab} onWorkspace={()=>navigateOne('chat')} onClose={()=>navigateOne('center')}/>
     :onePage!=='chat'?<>

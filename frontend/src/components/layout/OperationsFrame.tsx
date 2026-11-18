@@ -65,10 +65,12 @@ export function ConversationHeader({onDelete,onVoice,onNew}:{onDelete:()=>void;o
   {name===undefined?<h1 dir="auto">{chat?.title||(ar?'المحادثة':'Conversation')}</h1>:
    <input autoFocus className="ui-input" value={name} aria-label={ar?'اسم المحادثة':'Conversation name'} onChange={e=>setName(e.target.value)} onBlur={save}
     onKeyDown={e=>{if(e.key==='Enter')save();if(e.key==='Escape')setName(undefined)}}/>}
-  <div>
+  <div className="barq-conversation-actions">
    <ModelSelector compact/>
+   <button type="button" className="barq-new-conversation" onClick={onNew} aria-label={ar?'محادثة جديدة':'New chat'}>
+    <Plus size={16}/><span>{ar?'محادثة جديدة':'New chat'}</span>
+   </button>
    <Dropdown trigger={<IconButton label={ar?'خيارات المحادثة':'Conversation options'} icon={<Ellipsis size={17}/>}/>} items={[
-    {id:'new',label:ar?'محادثة جديدة':'New chat',icon:<Plus size={15}/>,onClick:onNew},
     {id:'voice',label:ar?'المساعد الصوتي':'Voice assistant',icon:<AudioLines size={15}/>,onClick:onVoice},
     {id:'rename',label:ar?'تعديل الاسم':'Rename',icon:<Pencil size={15}/>,disabled:!chat,onClick:()=>setName(chat?.title)},
     {id:'copy',label:ar?'نسخ المحادثة':'Copy conversation',icon:<Copy size={15}/>,disabled:!chat?.messages.length,onClick:()=>void share()},

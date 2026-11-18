@@ -358,6 +358,32 @@ body:not(.room-music) #videoStage:is(:fullscreen, :-webkit-full-screen){height:1
 #roomChat #send:disabled{background:#282936;border-color:#3c4050;color:#9298aa;opacity:1;cursor:default}
 @media(max-width:700px){#roomChat #send{width:44px;height:42px;min-height:42px}}
 @media(prefers-reduced-motion:reduce){#roomChat #send{transition:none}}
+/* Keep the stage and chat aligned while leaving comfortable tap targets on mobile. */
+.room-media-panel,.room-chat{border-color:#35313b}
+.room-chat .chat-heading h2{margin:0;font-size:.95rem}
+#roomChat #messages{height:clamp(180px,36dvh,360px);scrollbar-gutter:stable;overscroll-behavior:contain}
+#roomChat #chatText:focus-visible,#roomChat #send:focus-visible,#chatToggle:focus-visible,#enterFullscreen:focus-visible{
+ outline:2px solid #db91ab;outline-offset:2px
+}
+@media(min-width:821px){.grid{align-items:start}.room-chat{position:sticky;top:12px}}
+@media(max-width:700px){
+ .room-viewer-actions{gap:6px}
+ .room-viewer-actions #chatToggle{min-height:44px}
+ #videoStage #enterFullscreen{width:44px;height:44px}
+}
+
+/* A single player canvas with a separate conversation column. */
+.room-embedded main{max-width:none;padding:clamp(10px,1.35vw,21px)}
+.room-embedded .room-media-panel{padding:0;border:0}
+.room-embedded #videoStage{border-radius:14px}
+.room-embedded .room-chat{background:#191d24;border:1px solid #ffffff19;border-radius:14px}
+#roomChat #messages{border:0;background:#13161b}
+.room-music #musicNow{display:grid;justify-items:start;align-content:center;text-align:start;padding:20px 24px;min-height:120px}
+.room-music #musicNow .music-now-art{display:grid;place-items:center;width:46px;height:46px;border-radius:12px;margin:0;background:#523248;color:#ffd4e2}
+.room-music .room-media-panel> #localWrap{order:1}
+.room-music #videoStage{padding:0}
+.room-music #videoStage:before{display:none}
+@media(max-width:700px){.room-embedded main{padding:8px}.room-music #musicNow{padding:14px}}
 </style></head>
 <body><main><header class="room-head">
  <div><h1 id="roomTitle">غرفة المشاهدة</h1><p class="room-head-note">BARQ ONE</p></div>

@@ -124,3 +124,19 @@
 .bs-document[data-paper="warm"] canvas{filter:sepia(.28)}
 .bs-document[data-paper="night"] article{background:#181b22;color:#dce2ed;border-color:#373d4b}
 .bs-document[data-paper="night"] canvas{filter:invert(.91) hue-rotate(180deg)}
+
+.bs-result-count { margin: 0; color: #bec2cf; font-size: .76rem; }
+.bs-hub .bs-search input { flex: 1; min-width: 0; }
+.bs-search input::-webkit-search-cancel-button { display: none; }
+.bs-clear-search { display: grid; place-items: center; flex: none; min-width: 36px; min-height: 36px; color: #ebd6e1; border-radius: 7px; }
+.bs-clear-search:hover { background: #382b39; }
+.bs-hub :is(button, a):focus-visible { outline: 2px solid #db91ab; outline-offset: 2px; }
+.bs-hub .bs-published-card { border-color: #37333e; border-radius: 12px; }
+.bs-hub .bs-published-card:focus-within { border-color: #775368; }
+@media (max-width: 600px) {
+ .bs-hub .bs-title-row { align-items: stretch; flex-direction: column; }
+ .bs-hub .bs-title-row .bs-search { flex: 0 0 auto; width: 100%; max-width: none; }
+ .bs-hub .bs-filters { flex-wrap: nowrap; overflow-x: auto; padding: 4px; }
+ .bs-hub .bs-filters button { flex: none; }
+ .bs-hub .bs-document-toolbar { gap: 6px; }
+}

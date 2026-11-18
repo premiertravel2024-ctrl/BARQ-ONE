@@ -1,5 +1,6 @@
 import {lazy,Suspense,useCallback,useRef,useState,type ChangeEvent} from 'react';
-import {ArrowLeft,BookOpen,ExternalLink,Heart,Search,Upload} from 'lucide-react';
+import {ArrowLeft,BookOpen,ExternalLink,Heart,Search,Upload,X} from 'lucide-react';
+import {ButtonGroup, ButtonGroupItem} from '../components/ui/ButtonGroup';
 import {Modal} from '../components/ui/Modal';
 import {useAppView} from '../lib/appContext';
 import {useApp} from '../store';
@@ -97,12 +98,15 @@ export function BarqStories(){
    </header>
    <section className="bs-collection">
     <div className="bs-title-row"><h2>{label('الكتب والسلاسل','Books and series')}</h2>
-     <label className="bs-search"><Search size={18}/><input aria-label={label('ابحث في الكتب','Search books')}
-      placeholder={label('اسم كتاب، سلسلة، مؤلف…','Book, series, author…')} value={query} onChange={event=>setQuery(event.target.value)}/></label>
+     <div className="bs-search"><Search size={18} aria-hidden="true"/><input type="search" dir="auto" aria-label={label('ابحث في الكتب','Search books')}
+      placeholder={label('اسم كتاب، سلسلة، مؤلف…','Book, series, author…')} value={query} onChange={event=>setQuery(event.target.value)}/>
+      {query&&<button type="button" className="bs-clear-search" aria-label={label('امسح البحث','Clear search')} onClick={()=>setQuery('')}><X size={16}/></button>}
+     </div>
     </div>
-    <div className="bs-filters" role="group" aria-label={label('تصنيف الكتب','Book categories')}>
-     {genres.map(([id,en])=><button type="button" key={id} aria-pressed={genre===id} onClick={()=>setGenre(id)}>{label(id,en)}</button>)}
-    </div>
+    <ButtonGroup className="bs-filters" size="sm" aria-label={label('تصنيف الكتب','Book categories')}>
+     {genres.map(([id,en])=><ButtonGroupItem key={id} aria-pressed={genre===id} onClick={()=>setGenre(id)}>{label(id,en)}</ButtonGroupItem>)}
+    </ButtonGroup>
+    <p className="bs-result-count" role="status">{label('عدد الكتب والسلاسل','Books and series')}{' · '}{results.length.toLocaleString(ar?'ar-EG':'en')}</p>
     {results.length?<div className="bs-real-grid">{results.map(book=><article className="bs-real-card bs-published-card" key={book.id} data-genre={book.genre}>
      <Cover book={book}/>
      <div className="bs-real-copy"><span>{book.genre}</span><h3 dir="auto">{book.title}</h3><strong dir="auto">{book.author}</strong><p>{book.description}</p>
