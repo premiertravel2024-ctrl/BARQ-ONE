@@ -358,6 +358,20 @@ body:not(.room-music) #videoStage:is(:fullscreen, :-webkit-full-screen){height:1
 #roomChat #send:disabled{background:#282936;border-color:#3c4050;color:#9298aa;opacity:1;cursor:default}
 @media(max-width:700px){#roomChat #send{width:44px;height:42px;min-height:42px}}
 @media(prefers-reduced-motion:reduce){#roomChat #send{transition:none}}
+/* Keep the stage and chat aligned while leaving comfortable tap targets on mobile. */
+.room-media-panel,.room-chat{border-color:#35313b}
+.room-chat .chat-heading h2{margin:0;font-size:.95rem}
+#roomChat #messages{height:clamp(180px,36dvh,360px);scrollbar-gutter:stable;overscroll-behavior:contain}
+#roomChat #chatText:focus-visible,#roomChat #send:focus-visible,#chatToggle:focus-visible,#enterFullscreen:focus-visible{
+ outline:2px solid #db91ab;outline-offset:2px
+}
+@media(min-width:821px){.grid{align-items:start}.room-chat{position:sticky;top:12px}}
+@media(max-width:700px){
+ .room-viewer-actions{gap:6px}
+ .room-viewer-actions #chatToggle{min-height:44px}
+ #videoStage #enterFullscreen{width:44px;height:44px}
+}
+
 </style></head>
 <body><main><header class="room-head">
  <div><h1 id="roomTitle">غرفة المشاهدة</h1><p class="room-head-note">BARQ ONE</p></div>

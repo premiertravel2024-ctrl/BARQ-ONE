@@ -228,6 +228,10 @@ export function WatchTogether({mode = 'video',track,onTrack,requestedProvider,on
       })}>{ar ? 'إغلاق الغرفة المفتوحة' : 'End active room'}</button>
     </section>}
     {!music&&(guest||current)&&<WatchContext status={roomStatus}/>}
+    {current&&picker&&<details className="barq-room-provider-picker">
+      <summary><Headphones size={17} aria-hidden="true"/>{ar?'اختار أغنية من Spotify أو أنغامي':'Choose music from Spotify or Anghami'}</summary>
+      {picker}
+    </details>}
     {(guest || current) && <section className={'barq-room-frame barq-watch-player'+(music?'':' barq-cinema-player')}>
       <div className="barq-watch-player-top">
         <div><Icon size={17}/><strong>{music ? (ar ? 'غرفة الموسيقى' : 'Music room') : (ar ? 'سينما برق' : 'BARQ Cinema')}</strong></div>
@@ -254,6 +258,5 @@ export function WatchTogether({mode = 'video',track,onTrack,requestedProvider,on
       </div>}
       <iframe ref={frame} title={ar ? 'مشغّل الغرفة' : 'Room player'} src={guest || current?.host_url} allow="autoplay; encrypted-media; fullscreen; picture-in-picture" allowFullScreen referrerPolicy="no-referrer"/>
     </section>}
-    {current&&picker}
   </div>;
 }
