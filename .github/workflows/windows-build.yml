@@ -296,7 +296,7 @@ jobs:
           "Installer artifact: $env:ARTIFACT_URL"
 
   publish-app-update:
-    name: Publish signed BARQ update to Cloudflare R2
+    name: Publish signed BARQ update
     if: github.ref_type == 'tag' && vars.BARQ_UPDATE_ORIGIN != ''
     needs: windows-x64
     runs-on: ubuntu-latest
@@ -330,7 +330,32 @@ jobs:
         run: |
           python -m pip install "cryptography>=42,<51" "httpx>=0.27,<1"
           python -m scripts.publish_update sign --tag "$GITHUB_REF_NAME"
-      - name: Upload versioned installer, then advertise it
+      - name: Publish installer and manifest together on GitHub Releases
+        if: startsWith(vars.BARQ_UPDATE_ORIGIN, 'https://github.com/')
+        env:
+          GH_TOKEN: ${{ secrets.BARQ_UPDATE_GITHUB_TOKEN }}
+          VERSION: ${{ steps.version.outputs.number }}
+        run: |
+          repo="${BARQ_UPDATE_ORIGIN%/}"
+          repo="${repo#https://github.com/}"
+          installer="BARQ_Setup_$VERSION.exe"
+          if draft="$(gh release view "$GITHUB_REF_NAME" --repo "$repo" --json isDraft --jq .isDraft)"; then
+            if [ "$draft" = true ]; then
+              gh release upload "$GITHUB_REF_NAME" "verified-windows/$installer" verified-windows/latest.json --repo "$repo" --clobber
+            fi
+          else
+            gh release create "$GITHUB_REF_NAME" "verified-windows/$installer" verified-windows/latest.json \
+              --repo "$repo" --draft --title "BARQ ONE $VERSION" --notes "Windows x64."
+            draft=true
+          fi
+          if [ "$draft" = true ]; then
+            gh release edit "$GITHUB_REF_NAME" --repo "$repo" --draft=false --latest
+          fi
+          curl --fail --silent --show-error --location --retry 4 --retry-all-errors \
+            "$BARQ_UPDATE_ORIGIN/releases/latest/download/latest.json" --output verified-windows/public-latest.json
+          cmp verified-windows/latest.json verified-windows/public-latest.json
+      - name: Upload versioned installer, then advertise it on R2
+        if: "!startsWith(vars.BARQ_UPDATE_ORIGIN, 'https://github.com/')"
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.BARQ_R2_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.BARQ_R2_SECRET_ACCESS_KEY }}
