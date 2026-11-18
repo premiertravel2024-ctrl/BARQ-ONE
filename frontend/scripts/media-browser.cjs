@@ -138,7 +138,8 @@ const composer=page.locator('#chatComposer');
 await composer.fill('افتح أنغامي');
 await composer.press('Enter');
 await page.getByRole('searchbox',{name:'البحث في أنغامي'}).waitFor();
-await page.getByRole('button',{name:/تملى معاك عمرو دياب.*أغنية/}).click();
+const requestedPicker=page.locator('.barq-room-provider-picker[open]');
+await requestedPicker.getByRole('button',{name:/تملى معاك عمرو دياب.*أغنية/}).click();
 
 const preservedView=page.locator('.ops-media-page iframe[title="مشغّل الغرفة"]');
 await preservedView.waitFor();

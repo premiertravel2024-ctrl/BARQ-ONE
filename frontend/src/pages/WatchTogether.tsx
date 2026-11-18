@@ -45,8 +45,13 @@ export function WatchTogether({mode = 'video',track,onTrack,requestedProvider,on
   const [joinOpen, setJoinOpen] = useState(false);
   const [hostOpen, setHostOpen] = useState(false);
   const [provider,setProvider]=useState<RoomTrack['provider']>();
-  useEffect(()=>{if(requestedProvider)setProvider(requestedProvider);},[requestedProvider]);
   const current = room?.mode === mode ? room : null;
+  const providerPicker = useRef<HTMLDetailsElement>(null);
+  useEffect(() => {
+    if (!requestedProvider) return;
+    setProvider(requestedProvider);
+    if (providerPicker.current) providerPicker.current.open = true;
+  }, [requestedProvider, current?.room_id]);
   const frame=useRef<HTMLIFrameElement>(null);
   const pendingShare=useRef('');
   const sharedSelection=useRef(false);
@@ -231,7 +236,7 @@ export function WatchTogether({mode = 'video',track,onTrack,requestedProvider,on
       })}>{ar ? 'إغلاق الغرفة المفتوحة' : 'End active room'}</button>
     </section>}
     {!music&&(guest||current)&&<WatchContext status={roomStatus}/>}
-    {current&&picker&&<details className="barq-room-provider-picker">
+    {current&&picker&&<details ref={providerPicker} className="barq-room-provider-picker">
       <summary><Headphones size={17} aria-hidden="true"/>{ar?'اختار أغنية من Spotify أو أنغامي':'Choose music from Spotify or Anghami'}</summary>
       {picker}
     </details>}
