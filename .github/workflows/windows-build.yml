@@ -201,7 +201,7 @@ jobs:
           # in the checkout and removes the temporary PyInstaller staging tree.
           # Restore the EXACT tested BARQ.exe from this run's portable ZIP, not a stale
           # or unrelated dist/ file. Verify both ZIP and executable SHA-256 first.
-          py -3.11 scripts/restore_verified_core.py --with-ui
+          py -3.11 scripts/restore_verified_core.py --with-ui --version 2.41.2
           if ($LASTEXITCODE -ne 0) { throw 'Unable to restore verified Core+UI from this run portable archive' }
           if (!(Test-Path 'dist/BARQ/BARQ.exe')) { throw 'Verified BARQ.exe missing after recovery' }
           if (!(Test-Path 'web/react/index.html')) { throw 'Verified React UI missing after recovery' }
