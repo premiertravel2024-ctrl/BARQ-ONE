@@ -57,3 +57,41 @@ def test_download_rejects_tampering_and_only_commits_verified_data(monkeypatch, 
     assert list(tmp_path.iterdir()) == []
     data = expected
     assert app_updates.download_release(channel, release, tmp_path).read_bytes() == expected
+
+
+def test_github_release_redirects_remain_on_trusted_hosts(monkeypatch, tmp_path):
+    key = Ed25519PrivateKey.generate()
+    body = b'MZinstaller'
+    channel = app_updates.Channel(
+        app_updates.usable_origin('https://github.com/example/barq-updates/'),
+        key.public_key().public_bytes_raw(),
+    )
+    file = 'BARQ_Setup_2.41.2.exe'
+    asset_host = 'release-assets.githubusercontent.com'
+    client = httpx.Client
+
+    def respond(request):
+        path = request.url.path
+        if request.url.host == 'github.com':
+            if path.endswith('/latest/download/latest.json'):
+                return httpx.Response(302, headers={
+                    'location': '/example/barq-updates/releases/download/v2.41.2/latest.json',
+                })
+            assert path in (
+                '/example/barq-updates/releases/download/v2.41.2/latest.json',
+                '/example/barq-updates/releases/download/v2.41.2/' + file,
+            )
+            return httpx.Response(302, headers={
+                'location': 'https://' + asset_host + '/asset/' + path.rsplit('/', 1)[-1],
+            })
+        assert request.url.host == 'release-assets.githubusercontent.com'
+        return httpx.Response(200, content=manifest(key, release_fields(body)) if path.endswith('.json') else body)
+
+    monkeypatch.setattr(app_updates.httpx, 'Client', lambda **kwargs: client(
+        transport=httpx.MockTransport(respond), **kwargs,
+    ))
+    release = app_updates.check_release(channel)
+    assert app_updates.download_release(channel, release, tmp_path).read_bytes() == body
+    asset_host = 'untrusted.example'
+    with pytest.raises(ValueError, match='Untrusted update redirect'):
+        app_updates.check_release(channel)

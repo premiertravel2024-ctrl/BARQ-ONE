@@ -9,10 +9,11 @@ import re
 import subprocess
 import sys
 import threading
+from contextlib import contextmanager
 from dataclasses import dataclass
 from pathlib import Path
 from tempfile import NamedTemporaryFile
-from urllib.parse import urlsplit
+from urllib.parse import urljoin, urlsplit
 
 import httpx
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PublicKey
@@ -37,8 +38,14 @@ def installer_name(version: str) -> str:
 
 def usable_origin(value: str) -> str:
     parsed = urlsplit(value)
+    if parsed.hostname == 'github.com':
+        valid_path = re.fullmatch(r'/[A-Za-z0-9_-]+/[A-Za-z0-9_.-]+/?', parsed.path)
+        if not valid_path or parsed.path.rstrip('/').rsplit('/', 1)[-1] in ('.', '..'):
+            raise ValueError('Invalid GitHub update repository')
+    elif parsed.path not in ('', '/'):
+        raise ValueError('Invalid update server')
     if (parsed.scheme != 'https' or not parsed.hostname or parsed.username or parsed.password
-            or parsed.path not in ('', '/') or parsed.query or parsed.fragment or parsed.port not in (None, 443)):
+            or parsed.query or parsed.fragment or parsed.port not in (None, 443)):
         raise ValueError('Invalid update server')
     return value.rstrip('/')
 
@@ -84,9 +91,44 @@ class Release:
         return cls(data['version'], data['size'], data['sha256'], data['notes'])
 
 
+@contextmanager
+def update_response(client: httpx.Client, channel: Channel, path: str):
+    github = urlsplit(channel.origin).hostname == 'github.com'
+    if not github:
+        with client.stream('GET', channel.origin + path) as response:
+            yield response
+        return
+
+    prefix = urlsplit(channel.origin).path + '/releases/download/'
+    if path == '/latest.json':
+        url = channel.origin + '/releases/latest/download/latest.json'
+        filename = 'latest.json'
+    else:
+        _, _, version, filename = path.split('/')
+        url = channel.origin + f'/releases/download/v{version}/{filename}'
+
+    for _ in range(4):
+        with client.stream('GET', url) as response:
+            if not response.is_redirect:
+                yield response
+                return
+            target = urljoin(url, response.headers.get('location', ''))
+            parsed = urlsplit(target)
+            valid_release = parsed.hostname == 'github.com' and re.fullmatch(
+                re.escape(prefix) + r'v[0-9]{1,4}\.[0-9]{1,4}\.[0-9]{1,4}/' + re.escape(filename),
+                parsed.path,
+            )
+            valid_asset = parsed.hostname in {'release-assets.githubusercontent.com', 'objects.githubusercontent.com'}
+            if (parsed.scheme != 'https' or parsed.port not in (None, 443) or parsed.username
+                    or parsed.password or parsed.fragment or not (valid_release or valid_asset)):
+                raise ValueError('Untrusted update redirect')
+            url = target
+    raise ValueError('Too many update redirects')
+
+
 def check_release(channel: Channel) -> Release:
     with httpx.Client(timeout=12, follow_redirects=False) as client:
-        with client.stream('GET', channel.origin + '/latest.json') as response:
+        with update_response(client, channel, '/latest.json') as response:
             response.raise_for_status()
             chunks = bytearray()
             for chunk in response.iter_bytes(chunk_size=4096):
@@ -105,7 +147,7 @@ def download_release(channel: Channel, release: Release, directory: Path) -> Pat
             count = 0
             digest = hashlib.sha256()
             with httpx.Client(timeout=httpx.Timeout(30, connect=12), follow_redirects=False) as client:
-                with client.stream('GET', channel.origin + release.path) as response:
+                with update_response(client, channel, release.path) as response:
                     response.raise_for_status()
                     for chunk in response.iter_bytes(chunk_size=1024 * 1024):
                         count += len(chunk)
