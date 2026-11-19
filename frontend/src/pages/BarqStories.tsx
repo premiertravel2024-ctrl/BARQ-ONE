@@ -49,7 +49,7 @@ export function BarqStories(){
   ?issue.number===Number(issueTerm):searchKey(issue.title).includes(issueTerm))||[];
 
  const driveBooks=pickedDriveBooks();
- const cloudBooks=useCloudBooks();
+ const {books:cloudBooks,loading:cloudLoading,failed:cloudFailed,retry:retryCloud}=useCloudBooks();
  const [edition,setEdition]=useState<ReadingEdition>();
  const [error,setError]=useState('');
  const upload=useRef<HTMLInputElement>(null);
@@ -127,6 +127,7 @@ export function BarqStories(){
  }
  return <div className="bs-hub" dir={ar?'rtl':'ltr'}>
   <input ref={upload} type="file" accept="application/pdf,.pdf" hidden onChange={openFile}/>
+  {!edition&&cloudLoading&&<p className="bs-result-count" role="status">{label('جاري تحميل الكتب…','Loading books…')}</p>}
   {error&&<p className="bs-alert" role="alert">{error}</p>}
   {edition?<Suspense fallback={<p role="status">{label('جاري فتح القارئ…','Opening reader…')}</p>}>
    <BookReader key={edition.id} book={edition} ar={ar} onClose={()=>setEdition(undefined)}/>
@@ -167,7 +168,7 @@ export function BarqStories(){
    </section>
   </>}
   <Modal open={!!series&&!edition} onClose={closeSeries} title={series?.title||''} wide bodyClassName="bs-series-scroll"
-   footer={series&&!driveSeries.length&&<div className="bs-reading-options">
+   footer={series&&!cloudLoading&&!cloudFailed&&!driveSeries.length&&<div className="bs-reading-options">
     {series.id==='paranormal'&&<a className="bs-primary" href={paranormalEbooks} target="_blank" rel="noopener noreferrer">
      {label('النسخ الإلكترونية على Google Play','Ebooks on Google Play')}
     </a>}
@@ -175,6 +176,11 @@ export function BarqStories(){
     {series.id==='paranormal'?label('المجموعة الكاملة عند الناشر','Complete set from the publisher'):label('كل الأعداد عند الناشر','All issues at the publisher')}
     </a>
    </div>}>
+   {series&&cloudLoading&&!readableIssues.length&&<p className="bs-empty" role="status">{label('جاري تحميل الأعداد…','Loading issues…')}</p>}
+   {series&&cloudFailed&&!readableIssues.length&&<div className="bs-reader-error" role="alert">
+    <p>{label('تعذّر تحميل الأعداد.','Could not load issues.')}</p>
+    <button type="button" onClick={retryCloud}>{label('إعادة المحاولة','Retry')}</button>
+   </div>}
    {series&&readableIssues.length>0&&<section className="bs-series-detail" dir={ar?'rtl':'ltr'}>
     <label className="bs-search"><Search size={17}/><input type="search" value={issueQuery} onChange={event=>setIssueQuery(event.target.value)}
      aria-label={label('ابحث عن عدد','Find an issue')} placeholder={label('اسم العدد أو رقمه…','Issue title or number…')}/></label>
@@ -184,7 +190,7 @@ export function BarqStories(){
      <button className="bs-series-open" type="button" onClick={()=>setEdition(item.edition)}>{label('اقرأ في برق','Read in BARQ')}</button>
     </li>)}</ol>:<p>{label('مفيش أعداد مطابقة للبحث.','No matching issues.')}</p>}
    </section>}
-   {series&&!driveSeries.length&&<section className="bs-series-detail"  dir={ar?'rtl':'ltr'}>
+   {series&&!cloudLoading&&!cloudFailed&&!driveSeries.length&&<section className="bs-series-detail"  dir={ar?'rtl':'ltr'}>
     <strong>{series.author}</strong><p>{series.description}</p>
     <p>{label('لو عندك نسخة PDF من العدد، افتحها هنا في برق.','If you have a PDF of an issue, open it here in BARQ.')}</p>
     {!!series.issues?.length&&<>

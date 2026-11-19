@@ -29,6 +29,7 @@ await page.route('**/v1/**',route=>{if(route.request().url().includes('/v1/music
  }
  return route.fulfill({status:200,headers:{...headers,'Content-Length':String(pcm.length)},body:pcm});
 }const u=new URL(route.request().url());
+if(u.pathname==='/v1/reading/drive/status')return route.fulfill({json:{connected:false}});
 if(u.pathname==='/v1/reading/books/egy-zenab')return route.fulfill({contentType:'application/pdf',body:smallPdf()});
 let data;if(u.pathname==='/v1/cinema/status')data={configured:true};if(u.pathname==='/v1/cinema/genres')data={genres:[{id:18,name:'Drama'}]};if(u.pathname==='/v1/cinema/browse')data={results:[title],page:Number(u.searchParams.get('page')||1),total_pages:2,total_results:40};if(u.pathname.startsWith('/v1/cinema/details/'))data={...title,genre_names:['Drama'],cast:[],related:[],runtime:120};if(u.pathname==='/v1/music/discover')data={source:'index',items:[{kind:'song',id:'102704',title:'تملى معاك'}]};if(u.pathname==='/v1/music/library')data={tracks:[{id:'a'.repeat(24),title:'QA local track',artist:'Tagged artist',album:'Tagged album',duration:20,artwork:false}]};if(u.pathname==='/v1/watchrooms/active')data={room:musicRoom};
 if(u.pathname==='/v1/app-context/state'&&route.request().method()==='PUT')appContextState=route.request().postDataJSON();
@@ -76,6 +77,7 @@ await page.getByRole('heading',{name:'رجل المستحيل',exact:true}).wait
 await page.locator('article').filter({has:page.getByRole('heading',{name:'ما وراء الطبيعة',exact:true})})
  .getByRole('button',{name:'أعداد السلسلة'}).click();
 const issues=page.getByRole('dialog',{name:'ما وراء الطبيعة'});
+await issues.locator('li').first().waitFor();
 assert.equal(await issues.locator('li').count(),81);
 assert.equal(await issues.getByRole('link',{name:/Google Play/}).getAttribute('href'),'https://play.google.com/store/books/series?id=lW27GwAAABAvdM');
 await issues.locator('.bs-series-scroll').evaluate(el=>{el.scrollTop=el.scrollHeight;});
@@ -100,31 +102,34 @@ await page.getByRole('button',{name:'الكل',exact:true}).click();
 await page.getByRole('searchbox',{name:'ابحث في الكتب'}).fill('زينب');
 await page.getByRole('button',{name:'اقرأ في برق',exact:true}).click();
 await page.getByLabel('PDF 1',{exact:true}).waitFor();
-await page.getByRole('button',{name:'الصفحة التالية',exact:true}).click();
+await page.locator('.bs-pdf-scroll').focus();
+await page.keyboard.press('End');
 await page.waitForFunction(()=>{
  const canvas=document.querySelector('canvas[aria-label="PDF 2"]');
  if(!canvas)return false;
  const box=canvas.getBoundingClientRect();
  return box.width>0&&Math.abs(box.height/box.width-.8)<.02&&canvas.width>0&&canvas.height/canvas.width<.82;
 });
-await page.getByRole('button',{name:'الصفحة السابقة',exact:true}).click();
+await page.keyboard.press('Home');
 const cMaps=await page.request.get('http://127.0.0.1:5173/assets/pdfjs/cmaps/Adobe-Japan1-UCS2.bcmap');
 const font=await page.request.get('http://127.0.0.1:5173/assets/pdfjs/standard_fonts/LiberationSans-Regular.ttf');
 assert.ok(cMaps.ok()&&(await cMaps.body()).length>100,'PDF character maps must be reachable');
 assert.equal((await font.body()).readUInt32BE(0),0x00010000,'PDF standard fonts must be served as font files');
-await page.getByRole('button',{name:'تكبير القراءة',exact:true}).click();
-await page.getByText('120%',{exact:true}).waitFor();
+const readerCanvas=page.getByLabel('PDF 1',{exact:true});
+await readerCanvas.waitFor();
+const oldWidth=await readerCanvas.evaluate(canvas=>canvas.getBoundingClientRect().width);
+await page.locator('.bs-pdf-scroll').dispatchEvent('wheel',{ctrlKey:true,deltaY:-100,cancelable:true,bubbles:true});
+await page.waitForFunction(width=>document.querySelector('canvas[aria-label="PDF 1"]')?.getBoundingClientRect().width>width,oldWidth);
 await page.getByRole('combobox',{name:'ألوان القراءة'}).selectOption('warm');
 assert.equal(await page.locator('.bs-document').getAttribute('data-paper'),'warm');
-const pageNumber=page.getByRole('spinbutton',{name:'انتقل إلى صفحة'});
-await pageNumber.fill('2');
-await pageNumber.press('Enter');
-await page.waitForFunction(()=>document.querySelector('.bs-page-jump input')?.value==='2');
+await page.locator('.bs-pdf-scroll').focus();
+await page.keyboard.press('End');
+await page.waitForFunction(()=>document.querySelector('.bs-reader-progress')?.value===2);
 await page.getByRole('button',{name:'علّم الصفحة',exact:true}).click();
 assert.equal(await page.getByRole('button',{name:'علّم الصفحة'}).getAttribute('aria-pressed'),'true');
 await page.getByRole('button',{name:'رجوع للمكتبة'}).click();
 await page.getByRole('button',{name:'اقرأ في برق',exact:true}).click();
-await page.waitForFunction(()=>document.querySelector('.bs-page-jump input')?.value==='2');
+await page.waitForFunction(()=>document.querySelector('.bs-reader-progress')?.value===2);
 
 await page.addInitScript(()=>{
  window.pywebview={api:{
