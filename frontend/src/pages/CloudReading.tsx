@@ -1,6 +1,6 @@
 import {useCallback,useEffect,useState,type FormEvent} from 'react';
 import {Cloud,RefreshCw} from 'lucide-react';
-import {requestJSON} from '../lib/backend';
+import {APIError,requestJSON} from '../lib/backend';
 import type {DriveBook} from './DriveBooks';
 
 type Connection={connected:boolean;pending:boolean;failed:boolean;folder:string};
@@ -17,14 +17,20 @@ export async function loadCloudBooks(){
 
 export function useCloudBooks(){
  const [books,setBooks]=useState<DriveBook[]>();
+ const [loading,setLoading]=useState(true);
+ const [failed,setFailed]=useState(false);
+ const [attempt,setAttempt]=useState(0);
  useEffect(()=>{
   let live=true;
+  setLoading(true);setFailed(false);
   void requestJSON<Connection>(root+'/status')
    .then(status=>status.connected?loadCloudBooks():undefined)
-   .then(items=>{if(live)setBooks(items);}).catch(()=>{});
+   .then(items=>{if(live)setBooks(items);})
+   .catch(error=>{if(live&&(!(error instanceof APIError)||error.status!==404))setFailed(true);})
+   .finally(()=>{if(live)setLoading(false);});
   return()=>{live=false;};
- },[]);
- return books;
+ },[attempt]);
+ return {books,loading,failed,retry:()=>setAttempt(value=>value+1)};
 }
 
 export function CloudReading({ar}:{ar:boolean}){
