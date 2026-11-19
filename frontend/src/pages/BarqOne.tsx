@@ -1,3 +1,4 @@
+import {Switch} from '../components/ui/Switch';
 import {useAppView} from '../lib/appContext';
 import type {OnePage} from '../lib/appNavigation';
 export type {OnePage} from '../lib/appNavigation';
@@ -131,11 +132,11 @@ function OpenHub({mode}:{mode:'library'|'installed'|'tools'}){
     {categories.map(c=><option key={c} value={c}>{ar?categoryLabels[c]:c}</option>)}
    </select>
    <button type="button" aria-pressed={onlyFavorites} onClick={()=>setOnlyFavorites(!onlyFavorites)}><Star size={16}/>{ar?'المفضلة':'Favorites'}</button>
-   {mode==='tools'&&autoTools!==undefined&&<label className="one-auto-tools"><input type="checkbox" checked={autoTools} disabled={busy} onChange={async e=>{
+   {mode==='tools'&&autoTools!==undefined&&<Switch checked={autoTools} disabled={busy} showLabel onChange={async enabled=>{
     setBusy(true);setError('');
-    try{const r=await requestJSON<{enabled:boolean}>('/v1/openhub/auto-tools',{method:'POST',body:JSON.stringify({enabled:e.target.checked})});setAutoTools(r.enabled);}
+    try{const r=await requestJSON<{enabled:boolean}>('/v1/openhub/auto-tools',{method:'POST',body:JSON.stringify({enabled})});setAutoTools(r.enabled);}
     catch{setError(ar?'تعذّر حفظ إعداد أدوات البناء.':'Could not save automatic tools setting.');}finally{setBusy(false);}
-   }}/>{ar?'تجهيز أدوات البناء المعتمدة تلقائيًا':'Set up tools automatically for approved builds'}</label>}
+   }} label={ar?'تجهيز أدوات البناء المعتمدة تلقائيًا':'Set up tools automatically for approved builds'}/>}
    <button type="button" disabled={!catalog?.winget||busy} onClick={()=>void refresh()}>{ar?'فحص البرامج المثبّتة':'Scan installed software'}</button>
    {!!chosen.length&&mode!=='installed'&&<button type="button" disabled={busy} onClick={()=>setApproval('download')}><Download size={16}/>{ar?'تنزيل المحدد':'Download selection'} ({chosen.length})</button>}
    {!!chosen.length&&<button type="button" disabled={busy} onClick={()=>setApproval(mode==='installed'?'upgrade':'install')}><Download size={16}/>{mode==='installed'?(ar?'تحديث المحدد':'Upgrade selection'):(ar?'تثبيت المحدد':'Install selection')} ({chosen.length})</button>}

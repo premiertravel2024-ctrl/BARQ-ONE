@@ -1,6 +1,7 @@
 import {useCallback,useEffect,useState,type FormEvent} from 'react';
 import {Cloud,RefreshCw} from 'lucide-react';
 import {APIError,requestJSON} from '../lib/backend';
+import {Switch} from '../components/ui/Switch';
 import {driveSyncDevice} from '../lib/driveSync';
 import type {DriveBook} from './DriveBooks';
 
@@ -44,7 +45,8 @@ export function CloudReading({ar}:{ar:boolean}){
  const [url,setUrl]=useState('');
  const [busy,setBusy]=useState(false);
  const [error,setError]=useState('');
- const [primary,setPrimary]=useState(false);
+ const [primary,setPrimary]=useState<boolean>();
+ const [primaryError,setPrimaryError]=useState(false);
  const [revision,setRevision]=useState(0);
  const label=(a:string,e:string)=>ar?a:e;
  const refresh=useCallback(async()=>{
@@ -80,6 +82,18 @@ export function CloudReading({ar}:{ar:boolean}){
   return()=>{stopped=true;window.clearTimeout(timer);};
  },[ar,refresh,revision]);
 
+ useEffect(()=>{
+  if(!connection?.sync || connection.pending){setPrimary(undefined);setPrimaryError(false);return;}
+  let active=true;
+  const readPrimary=()=>{
+   void requestJSON<{covers_primary:boolean}>(root+'/covers-primary?'+new URLSearchParams({device:driveSyncDevice()}))
+    .then(result=>{if(active){setPrimary(result.covers_primary);setPrimaryError(false);}})
+    .catch(()=>{if(active)setPrimaryError(true);});
+  };
+  readPrimary();
+  return()=>{active=false;};
+ },[connection?.sync,connection?.pending,connection?.folder]);
+
  async function connect(event:FormEvent){
   event.preventDefault();setBusy(true);setError('');
   try{
@@ -106,7 +120,7 @@ export function CloudReading({ar}:{ar:boolean}){
  async function disconnect(){
   try{
    await requestJSON(root+'/connection',{method:'DELETE'});
-   setConnection(undefined);setPrimary(false);setRevision(n=>n+1);
+   setConnection(undefined);setPrimary(undefined);setRevision(n=>n+1);
   }catch{setError(label('تعذّر فصل Google Drive.','Could not disconnect Google Drive.'));}
  }
 
@@ -117,10 +131,13 @@ export function CloudReading({ar}:{ar:boolean}){
    {connection?.connected&&<button className="bs-muted-btn" type="button" disabled={busy||connection.pending} onClick={()=>void refresh()}>
     <RefreshCw size={15}/>{label('حدّث الروايات','Refresh books')}</button>}
   </div>
-  {connection?.sync&&<div className="bs-drive-header">
-   <button className="bs-muted-btn" type="button" disabled={busy||connection.pending||primary} onClick={()=>void makePrimary()}>
-    {primary?label('الجهاز الأساسي للأغلفة','Primary cover device'):label('خلّي الجهاز ده هو الأساسي للأغلفة','Make this the primary cover device')}
-   </button>
+  {connection?.sync&&<div className="bs-primary-cover">
+   <Switch checked={primary===true} disabled={busy||connection.pending||primary!==false||primaryError}
+    onChange={()=>void makePrimary()} showLabel label={label('الجهاز الأساسي للأغلفة','Primary cover device')}/>
+   <small role="status">{primaryError?label('تعذّر التحقق من الجهاز الأساسي','Could not check the primary device'):
+    primary===undefined?label('جاري التحقق…','Checking…'):
+    primary?label('الأغلفة بتتزامن من الجهاز ده','Covers sync from this device'):
+    label('فعّل الخيار على الجهاز اللي عليه أغلفتك','Enable on the device with your covers')}</small>
   </div>}
   {config&&<form className="bs-cloud-config" onSubmit={connect}>
    <p>{label('استخدم بيانات عميل OAuth من نوع Desktop app في مشروع Google Cloud مفعّل فيه Drive API.',
@@ -129,8 +146,8 @@ export function CloudReading({ar}:{ar:boolean}){
    <label>{label('رابط فولدر الروايات','Drive library folder URL')}<input required value={folder} dir="ltr" onChange={event=>setFolder(event.target.value)}/></label>
    <label>OAuth Client ID<input required value={client} dir="ltr" autoComplete="off" onChange={event=>setClient(event.target.value)}/></label>
    <label>OAuth Client Secret<input required type="password" value={secret} dir="ltr" autoComplete="off" onChange={event=>setSecret(event.target.value)}/></label>
-   <label><input type="checkbox" checked={sync} onChange={event=>setSync(event.target.checked)}/>
-    {label('زامن إعدادات برق والمحادثات وبيانات القراءة على حساب Google ده','Sync BARQ preferences, conversations and reading data with this Google account')}</label>
+   <Switch checked={sync} onChange={setSync} showLabel
+    label={label('زامن إعدادات برق والمحادثات وبيانات القراءة على حساب Google ده','Sync BARQ preferences, conversations and reading data with this Google account')}/>
    <div className="bs-drive-header">
     <button className="bs-muted-btn" disabled={busy||connection?.pending} type="submit">{label('سجّل دخول بـ Google','Sign in with Google')}</button>
     {connection?.connected&&<button className="bs-muted-btn" type="button" onClick={()=>void disconnect()}>{label('افصل الحساب','Disconnect')}</button>}

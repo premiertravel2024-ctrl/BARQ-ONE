@@ -302,6 +302,15 @@ SYNC_LOCK = RLock()
 SYNC_MAX = 8 * 1024 * 1024
 
 
+@router.get('/covers-primary')
+def cover_primary_status(device: str):
+    if not re.fullmatch(r'[a-f0-9]{32}', device):
+        raise HTTPException(422, 'Invalid BARQ device ID')
+    with SYNC_LOCK:
+        primary = exchange_sync(device, {})['primary']
+    return {'covers_primary': bool(primary and primary['device'] == device)}
+
+
 @router.post('/sync')
 async def sync_data(request: Request):
     received = bytearray()

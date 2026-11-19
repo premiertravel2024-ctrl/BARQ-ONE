@@ -1,3 +1,4 @@
+import {Switch} from '../ui/Switch';
 import {useCallback,useEffect,useRef,useState} from 'react';
 import {Download,RefreshCw} from 'lucide-react';
 import {Modal} from '../ui/Modal';
@@ -99,15 +100,14 @@ export function AppUpdates({ar}:{ar:boolean}){
      {!!check.size&&<small><bdi>{(check.size/1024/1024).toFixed(0)} MB</bdi></small>}
      {check.notes&&<p dir="auto">{check.notes}</p>}
     </div>}
-    <label><input type="checkbox" disabled={blocked} checked={auto} onChange={event=>{
-      const enabled=event.target.checked;
+    <Switch disabled={blocked} checked={auto} showLabel onChange={enabled=>{
       localStorage.setItem('barq-auto-download-updates',enabled?'on':'off');
       setAuto(enabled);
       if(!enabled){
        setStaged(undefined);
        void desktopUpdater()?.cancel_staged_update?.().then(()=>setStaged(undefined)).catch(()=>{});
       }
-    }}/>{ar?'نزّل التحديثات تلقائيًا وثبّتها عند الخروج':'Download updates automatically and install on exit'}</label>
+    }} label={ar?'نزّل التحديثات تلقائيًا وثبّتها عند الخروج':'Download updates automatically and install on exit'}/>
     <p role="status">{summary}</p>
     {(background||install==='working')&&percent!==undefined&&<div>
      <progress max={100} value={percent} aria-label={ar?'نسبة تنزيل التحديث':'Update download progress'}/>

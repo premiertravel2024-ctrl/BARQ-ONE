@@ -198,3 +198,17 @@
 .bs-paper-picker{gap:4px;padding-inline-start:7px;border:1px solid #83445b70;border-radius:8px;background:#18151d}
 .bs-paper-picker select{border:0;background:transparent}
 .bs-pdf-scroll .bs-text-chunk{margin:0 auto 12px;line-height:1.9}
+
+.bs-cloud-reading { display: grid; gap: 12px; min-inline-size: 0; }
+.bs-cloud-reading .bs-drive-header > button {
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  min-block-size: 36px; min-inline-size: 0; max-inline-size: 100%;
+  padding: 7px 12px; white-space: normal; overflow-wrap: anywhere;
+}
+.bs-cloud-reading .bs-drive-header svg { flex: none; }
+.bs-cloud-reading .bs-cloud-config { margin: 0; inline-size: 100%; box-sizing: border-box; min-inline-size: 0; }
+.bs-primary-cover {
+  display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between;
+  gap: 8px 16px; padding: 10px 12px; border: 1px solid var(--stroke, #4d4350); border-radius: 9px;
+}
+.bs-primary-cover small { line-height: 1.45; overflow-wrap: anywhere; }

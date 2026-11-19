@@ -1,3 +1,4 @@
+import {Switch} from '../components/ui/Switch';
 import {useAppView} from '../lib/appContext';
 import {useEffect, useState} from 'react';
 import {AlarmClock, Bell, CalendarDays, Check, Clock3, Cloud, CloudRain, CloudSun, Compass, Droplets, MapPin, Pause, Play, Plus, RefreshCw, Sun, Sunrise, Trash2, Wind} from 'lucide-react';

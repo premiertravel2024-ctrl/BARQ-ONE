@@ -62,16 +62,16 @@ export function Button({children,variant='secondary',size='md',icon,trailingIcon
       current==='success'?{backgroundColor:['rgba(34,197,94,.7)','rgba(34,197,94,.7)','rgba(34,197,94,0)'],x:offset.x,y:offset.y}:{x:offset.x,y:offset.y}}
     transition={current==='error'?{duration:.3}:{...motionTokens.spring.press}}
     style={{...style,minWidth:steadyWidth??style?.minWidth,position:'relative',isolation:'isolate',overflow:'hidden',...(variant==='primary'?{backgroundSize:'220% 100%'}:{}),opacity:disabled?.45:1} as CSSProperties}
-    className={`group inline-flex items-center justify-center whitespace-nowrap select-none font-semibold transition-[background-color,color,border-color,box-shadow,filter] duration-200 ease-out focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent-2)] ${sizes[size]} ${variants[variant]} ${iconOnly?'!min-w-11 !px-2 !rounded-xl':'rounded-xl'} ${variant==='pill'?'!rounded-full':''} ${blocked?'cursor-not-allowed':'cursor-pointer'} ${className}`}>
+    className={`group inline-flex items-center justify-center min-w-0 max-w-full select-none font-semibold transition-[background-color,color,border-color,box-shadow,filter] duration-200 ease-out focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent-2)] ${sizes[size]} ${variants[variant]} ${iconOnly?'!min-w-11 !px-2 !rounded-xl':'rounded-xl'} ${variant==='pill'?'!rounded-full':''} ${blocked?'cursor-not-allowed':'cursor-pointer'} ${className}`}>
     {variant==='primary'&&shineKey>0&&!reduced&&<motion.span key={shineKey} className="pointer-events-none absolute inset-y-[-40%] -left-[65%] w-[35%] rotate-[25deg] bg-gradient-to-r from-transparent via-white/25 to-transparent" initial={{x:0}} animate={{x:'480%'}} transition={{duration:motionTokens.duration.shine,ease:'easeInOut'}}/>}
     {!reduced&&ripples.map(r=><motion.span key={r.id} aria-hidden className="pointer-events-none absolute rounded-full bg-white/25" style={{width:r.size,height:r.size,left:r.x-r.size/2,top:r.y-r.size/2}} initial={{scale:0,opacity:.42}} animate={{scale:1,opacity:0}} transition={{duration:motionTokens.duration.ripple,ease:'easeOut'}}/>)}
     <span className="relative z-10 inline-flex items-center justify-center gap-inherit" style={{gap:iconOnly?0:8,minWidth:0}}>
       <AnimatePresence mode="wait" initial={false}>
         {current==='loading'?<motion.span key="load" initial={{opacity:0,scale:.8}} animate={{opacity:1,scale:1}} exit={{opacity:0,scale:.7}} className="inline-flex items-center justify-center" aria-label="Loading"><LoaderCircle size={18} className="animate-spin"/></motion.span>:
         current==='success'?<motion.svg key="check" aria-label="Success" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><motion.path d="M5 12l5 5L20 7" initial={{pathLength:0}} animate={{pathLength:1}} transition={{duration:motionTokens.duration.success}}/></motion.svg>:
-        <motion.span key="normal" className="inline-flex items-center justify-center gap-2" initial={{opacity:0}} animate={{opacity:1}} exit={{opacity:0}}>
+        <motion.span key="normal" className="inline-flex min-w-0 items-center justify-center gap-2" initial={{opacity:0}} animate={{opacity:1}} exit={{opacity:0}}>
           {icon&&<span className="inline-flex shrink-0 transition-transform duration-200 group-hover:scale-110">{icon}</span>}
-          {children}{trailingIcon&&<span className="inline-flex shrink-0">{trailingIcon}</span>}
+          {children!=null&&<span className="min-w-0 whitespace-normal [overflow-wrap:anywhere] text-center">{children}</span>}{trailingIcon&&<span className="inline-flex shrink-0">{trailingIcon}</span>}
         </motion.span>}
       </AnimatePresence>
     </span>
