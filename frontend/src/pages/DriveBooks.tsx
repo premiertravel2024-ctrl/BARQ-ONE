@@ -1,3 +1,4 @@
+import {EditableCover} from './EditableCover';
 import {useEffect,useRef,useState,type ChangeEvent} from 'react';
 import {BookOpen,FolderOpen} from 'lucide-react';
 import type {ReadingEdition} from './BookReader';
@@ -110,7 +111,7 @@ export function DriveBooks({books,ar,onOpen,heading=true,collectionLabel}:{books
  }
  function cards(items:DriveBook[]){
   return <div className="bs-real-grid">{items.map(book=><article className="bs-real-card bs-published-card" key={book.edition.id}>
-   <DriveCover book={book}/>
+   <EditableCover id={book.edition.id} title={book.edition.title} ar={ar}><DriveCover book={book}/></EditableCover>
    <div className="bs-real-copy"><h3 dir="auto">{book.edition.title}</h3>
     <button className="bs-series-open" type="button" onClick={()=>onOpen(book.edition)}>{ar?'اقرأ':'Read'}</button>
    </div>
