@@ -7,7 +7,7 @@ let appContextState;
 function smallPdf(){
  const rows=['<< /Type /Catalog /Pages 2 0 R >>','<< /Type /Pages /Count 2 /Kids [3 0 R 4 0 R] >>',
   '<< /Type /Page /Parent 2 0 R /MediaBox [0 0 240 300] /Contents 5 0 R >>',
-  '<< /Type /Page /Parent 2 0 R /MediaBox [0 0 240 300] /Contents 5 0 R >>','<< /Length 0 >>\nstream\nendstream'];
+  '<< /Type /Page /Parent 2 0 R /MediaBox [0 0 240 300] /Rotate 90 /Contents 5 0 R >>','<< /Length 0 >>\nstream\nendstream'];
  let body='%PDF-1.4\n';const offsets=[0];
  for(const [index,row] of rows.entries()){offsets.push(body.length);body+=(index+1)+' 0 obj\n'+row+'\nendobj\n';}
  const xref=body.length;
@@ -100,6 +100,14 @@ await page.getByRole('button',{name:'الكل',exact:true}).click();
 await page.getByRole('searchbox',{name:'ابحث في الكتب'}).fill('زينب');
 await page.getByRole('button',{name:'اقرأ في برق',exact:true}).click();
 await page.getByLabel('PDF 1',{exact:true}).waitFor();
+await page.getByRole('button',{name:'الصفحة التالية',exact:true}).click();
+await page.waitForFunction(()=>{
+ const canvas=document.querySelector('canvas[aria-label="PDF 2"]');
+ if(!canvas)return false;
+ const box=canvas.getBoundingClientRect();
+ return box.width>0&&Math.abs(box.height/box.width-.8)<.02&&canvas.width>0&&canvas.height/canvas.width<.82;
+});
+await page.getByRole('button',{name:'الصفحة السابقة',exact:true}).click();
 const cMaps=await page.request.get('http://127.0.0.1:5173/assets/pdfjs/cmaps/Adobe-Japan1-UCS2.bcmap');
 const font=await page.request.get('http://127.0.0.1:5173/assets/pdfjs/standard_fonts/LiberationSans-Regular.ttf');
 assert.ok(cMaps.ok()&&(await cMaps.body()).length>100,'PDF character maps must be reachable');
