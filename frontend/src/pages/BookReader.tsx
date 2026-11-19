@@ -3,7 +3,7 @@ import {ReadingSound} from './ReadingSound';
 import type {PDFDocumentProxy} from 'pdfjs-dist';
 import {ArrowRight,Bookmark,ChevronLeft,ChevronRight,Minus,Plus} from 'lucide-react';
 
-export type ReadingEdition={id:string;title:string;format:'pdf'|'text';file?:File};
+export type ReadingEdition={id:string;title:string;format:'pdf'|'text';file?:File;driveId?:string};
 type Progress={page:number;marks:number[]};
 function saved(id:string):Progress{
  try{
@@ -74,7 +74,7 @@ export default function BookReader({book,ar,onClose}:{book:ReadingEdition;ar:boo
   let stage:'source'|'pdf'='source';
   setPdf(undefined);setText(undefined);setError(undefined);
   void (async()=>{
-   const response=book.file||await fetch('/v1/reading/books/'+encodeURIComponent(book.id),{signal:controller.signal});
+   const response=book.file||await fetch(book.driveId?'/v1/reading/drive/media/'+encodeURIComponent(book.driveId):'/v1/reading/books/'+encodeURIComponent(book.id),{signal:controller.signal});
    if(response instanceof Response&&!response.ok)throw new Error('Edition unavailable');
    if(book.format==='text'){
     const edition=(await response.text()).replace(/\r\n/g,'\n');

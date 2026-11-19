@@ -2,7 +2,7 @@ import {useEffect,useRef,useState,type ChangeEvent} from 'react';
 import {BookOpen,FolderOpen} from 'lucide-react';
 import type {ReadingEdition} from './BookReader';
 
-export type DriveBook={edition:ReadingEdition;cover?:File;group:string};
+export type DriveBook={edition:ReadingEdition;cover?:File;coverId?:string;group:string};
 const maxPdf=64*1024*1024;
 
 export function scanDriveFolder(files:File[]):DriveBook[]{
@@ -29,10 +29,14 @@ export function scanDriveFolder(files:File[]):DriveBook[]{
 }
 
 function DriveCover({book}:{book:DriveBook}){
- const {cover,edition}=book;
+ const {cover,coverId,edition}=book;
  const [src,setSrc]=useState('');
  const frame=useRef<HTMLDivElement>(null);
  useEffect(()=>{
+  if(coverId){
+   setSrc('/v1/reading/drive/media/'+encodeURIComponent(coverId));
+   return;
+  }
   if(cover){
    const url=URL.createObjectURL(cover);
    setSrc(url);
@@ -40,8 +44,9 @@ function DriveCover({book}:{book:DriveBook}){
   }
   setSrc('');
   const element=frame.current;
-  if(!element||!edition.file)return;
+  if(!element||(!edition.file&&!edition.driveId))return;
   const file=edition.file;
+  const abort=new AbortController();
   let cancelled=false;
   let destroy:(()=>Promise<void>)|undefined;
   const observer=new IntersectionObserver(entries=>{
@@ -49,7 +54,8 @@ function DriveCover({book}:{book:DriveBook}){
    observer.disconnect();
    void (async()=>{
     const [{GlobalWorkerOptions,getDocument},{default:workerUrl},data]=await Promise.all([
-     import('pdfjs-dist/legacy/build/pdf.mjs'),import('pdfjs-dist/legacy/build/pdf.worker.min.mjs?url'),file.arrayBuffer(),
+     import('pdfjs-dist/legacy/build/pdf.mjs'),import('pdfjs-dist/legacy/build/pdf.worker.min.mjs?url'),file?file.arrayBuffer():fetch('/v1/reading/drive/media/'+encodeURIComponent(edition.driveId||''),{signal:abort.signal})
+      .then(response=>{if(!response.ok)throw new Error('Book unavailable');return response.arrayBuffer();}),
     ]);
     if(cancelled)return;
     GlobalWorkerOptions.workerSrc=workerUrl;
@@ -71,10 +77,11 @@ function DriveCover({book}:{book:DriveBook}){
   observer.observe(element);
   return ()=>{
    cancelled=true;
+   abort.abort();
    observer.disconnect();
    const cleanup=destroy;destroy=undefined;void cleanup?.().catch(()=>{});
   };
- },[cover,edition.file]);
+ },[cover,coverId,edition.file,edition.driveId]);
  return <div className="bs-real-cover" aria-hidden="true" ref={frame}>
   {src?<img src={src} alt="" onError={()=>setSrc('')}/>:<><BookOpen size={24}/><strong>{edition.title}</strong></>}
  </div>;
@@ -95,7 +102,7 @@ export function DriveFolderButton({ar,onSelect}:{ar:boolean;onSelect:(books:Driv
  </>;
 }
 
-export function DriveBooks({books,ar,onOpen}:{books:DriveBook[];ar:boolean;onOpen:(edition:ReadingEdition)=>void}){
+export function DriveBooks({books,ar,onOpen,heading=true}:{books:DriveBook[];ar:boolean;onOpen:(edition:ReadingEdition)=>void;heading?:boolean}){
  const groups=new Map<string,DriveBook[]>();
  for(const book of books){
   const key=book.group||'';
@@ -110,10 +117,10 @@ export function DriveBooks({books,ar,onOpen}:{books:DriveBook[];ar:boolean;onOpe
   </article>)}</div>;
  }
  return <section className="bs-drive-section" aria-label="Google Drive">
-  <h2>Google Drive</h2>
+  {heading&&<h2>{ar?'رواياتي على Google Drive':'My Google Drive books'}</h2>}
   {books.length===0?<p role="status">{ar?'مفيش ملفات PDF متاحة في الفولدر (الحد 64 ميجابايت للملف).':'No readable PDFs in this folder (64 MB limit per file).'}</p>:
    Array.from(groups,([title,items])=>title&&items.length>1?
-    <details open className="bs-drive-group" key={title}><summary dir="auto">{title} · {items.length}</summary>{cards(items)}</details>:
+    <details open={!heading} className="bs-drive-group" key={title}><summary dir="auto">{title} · {items.length}</summary>{cards(items)}</details>:
     <div key={title}>{cards(items)}</div>)}
  </section>;
 }

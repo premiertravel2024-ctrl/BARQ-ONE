@@ -166,3 +166,13 @@
  .bs-hub .bs-document-toolbar{grid-template-columns:minmax(0,1fr)}
  .bs-document-actions{justify-content:flex-start}
 }
+.bs-cloud-reading{margin-block:10px}
+.bs-cloud-config{display:grid;gap:10px;padding:12px;margin-top:8px;width:min(100%,640px);background:#211b26;border:1px solid #644659;border-radius:12px}
+.bs-cloud-config p{margin:0;line-height:1.6}
+.bs-cloud-config label{display:grid;gap:4px;min-width:0}
+.bs-cloud-config input{min-width:0;width:100%;border:1px solid #51404d;background:#12141a;border-radius:7px;padding:7px;color:#fff}
+.bs-cloud-config a{color:#ffb1c9}
+.bs-sound-panel{width:min(300px,75vw);max-height:70dvh;overflow:auto}
+.bs-sound-panel select{width:100%;min-width:0}
+.bs-sound-meta{line-height:1.5;overflow-wrap:anywhere;font-size:.76rem;color:#d5c3d0}
+.bs-sound-controls{display:flex;justify-content:center;gap:7px}

@@ -1,0 +1,99 @@
+import {useCallback,useEffect,useState,type FormEvent} from 'react';
+import {Cloud,RefreshCw} from 'lucide-react';
+import {requestJSON} from '../lib/backend';
+import type {DriveBook} from './DriveBooks';
+
+type Connection={connected:boolean;pending:boolean;failed:boolean;folder:string};
+type Item={id:string;title:string;group:string;cover:string|null};
+const root='/v1/reading/drive';
+
+export function CloudReading({ar,onBooks}:{ar:boolean;onBooks:(books:DriveBook[]|undefined)=>void}){
+ const [connection,setConnection]=useState<Connection>();
+ const [config,setConfig]=useState(false);
+ const [folder,setFolder]=useState('');
+ const [client,setClient]=useState('');
+ const [secret,setSecret]=useState('');
+ const [url,setUrl]=useState('');
+ const [busy,setBusy]=useState(false);
+ const [error,setError]=useState('');
+ const [revision,setRevision]=useState(0);
+ const label=(a:string,e:string)=>ar?a:e;
+ const refresh=useCallback(async()=>{
+  setBusy(true);
+  setError('');
+  try{
+   const result=await requestJSON<{books:Item[]}>(root+'/catalogue');
+   onBooks(result.books.map(item=>({
+    edition:{id:'google:'+item.id,title:item.title,format:'pdf',driveId:item.id},
+    group:item.group,coverId:item.cover||undefined,
+   })).sort((a,b)=>a.edition.title.localeCompare(b.edition.title,undefined,{numeric:true})));
+  }catch{
+   setError(ar?'تعذّر تحميل مكتبة Drive. راجع صلاحية الفولدر أو أعد الربط.':'Could not load Drive books. Check folder access or reconnect.');
+  }finally{setBusy(false);}
+ },[ar,onBooks]);
+
+ useEffect(()=>{
+  let stopped=false;
+  let timer:number|undefined;
+  let checks=0;
+  async function check(){
+   try{
+    const current=await requestJSON<Connection>(root+'/status');
+    if(stopped)return;
+    setConnection(current);
+    if(current.pending&&checks++<150){timer=window.setTimeout(()=>void check(),2000);return;}
+    if(current.failed){
+     setError(ar?'ربط Google ما اكتملش. راجع إعدادات OAuth وحاول تاني.':'Google connection failed. Check your OAuth setup and retry.');
+     setConfig(true);
+    }else if(current.connected){
+     setFolder(current.folder);setConfig(false);setUrl('');await refresh();
+    }else{setUrl('');}
+   }catch{if(!stopped)setError(ar?'ميزة الربط تتطلب نسخة برق المكتبية المحدّثة.':'Cloud linking requires the updated BARQ desktop app.');}
+  }
+  void check();
+  return()=>{stopped=true;window.clearTimeout(timer);};
+ },[ar,refresh,revision]);
+
+ async function connect(event:FormEvent){
+  event.preventDefault();setBusy(true);setError('');
+  try{
+   const result=await requestJSON<{opened:boolean;url:string}>(root+'/connect',{
+    method:'POST',body:JSON.stringify({folder,client_id:client.trim(),client_secret:secret.trim()}),
+   });
+   setSecret('');
+   setUrl(result.opened?'':result.url);
+   setRevision(n=>n+1);
+  }catch{setError(label('راجع بيانات عميل OAuth ورابط فولدر Drive.','Check the desktop OAuth credentials and Drive folder link.'));}
+  finally{setBusy(false);}
+ }
+ async function disconnect(){
+  try{
+   await requestJSON(root+'/connection',{method:'DELETE'});
+   setConnection(undefined);onBooks(undefined);setRevision(n=>n+1);
+  }catch{setError(label('تعذّر فصل Google Drive.','Could not disconnect Google Drive.'));}
+ }
+
+ return <div className="bs-cloud-reading">
+  <div className="bs-drive-header">
+   <button className="bs-muted-btn" type="button" onClick={()=>setConfig(!config)} aria-expanded={config}><Cloud size={16}/>
+    {connection?.connected?label('Google Drive متصل','Google Drive connected'):label('اربط Google Drive','Connect Google Drive')}</button>
+   {connection?.connected&&<button className="bs-muted-btn" type="button" disabled={busy||connection.pending} onClick={()=>void refresh()}>
+    <RefreshCw size={15}/>{label('حدّث الروايات','Refresh books')}</button>}
+  </div>
+  {config&&<form className="bs-cloud-config" onSubmit={connect}>
+   <p>{label('استخدم بيانات عميل OAuth من نوع Desktop app في مشروع Google Cloud مفعّل فيه Drive API.',
+    'Use Desktop app OAuth credentials from a Google Cloud project with Drive API enabled.')}
+    {' '}<a href="https://console.cloud.google.com/apis/credentials" target="_blank" rel="noreferrer">{label('إعدادات Google Cloud','Google Cloud credentials')}</a></p>
+   <label>{label('رابط فولدر الروايات','Drive library folder URL')}<input required value={folder} dir="ltr" onChange={event=>setFolder(event.target.value)}/></label>
+   <label>OAuth Client ID<input required value={client} dir="ltr" autoComplete="off" onChange={event=>setClient(event.target.value)}/></label>
+   <label>OAuth Client Secret<input required type="password" value={secret} dir="ltr" autoComplete="off" onChange={event=>setSecret(event.target.value)}/></label>
+   <div className="bs-drive-header">
+    <button className="bs-muted-btn" disabled={busy||connection?.pending} type="submit">{label('سجّل دخول بـ Google','Sign in with Google')}</button>
+    {connection?.connected&&<button className="bs-muted-btn" type="button" onClick={()=>void disconnect()}>{label('افصل الحساب','Disconnect')}</button>}
+   </div>
+  </form>}
+  {connection?.pending&&<p role="status">{label('كمّل موافقة Google في المتصفح وارجع لبرق.','Complete Google consent in your browser and return to BARQ.')}</p>}
+  {url&&<a href={url} target="_blank" rel="noreferrer">{label('افتح موافقة Google','Open Google consent')}</a>}
+  {error&&<p className="bs-alert" role="alert">{error}</p>}
+ </div>;
+}
