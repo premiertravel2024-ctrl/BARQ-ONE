@@ -14,7 +14,7 @@ export function scanDriveFolder(files:File[]):DriveBook[]{
   const folder=file.webkitRelativePath.slice(0,-file.name.length);
   folderCounts.set(folder,(folderCounts.get(folder)||0)+1);
  }
- return books.map(file=>{
+ return books.map<DriveBook>(file=>{
   const path=file.webkitRelativePath;
   const folder=path.slice(0,-file.name.length);
   const title=file.name.replace(/\.pdf$/i,'');
