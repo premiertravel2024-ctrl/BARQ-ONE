@@ -35,6 +35,19 @@ def configure() -> None:
     }), encoding='utf-8')
 
 
+def should_publish() -> bool:
+    channel = configured_channel()
+    if channel is None:
+        raise SystemExit('The signed update channel is not configured')
+    try:
+        previous = check_release(channel)
+    except httpx.HTTPStatusError as error:
+        if error.response.status_code == 404:
+            return True
+        raise
+    return version_key(VERSION) > version_key(previous.version)
+
+
 def sign(artifact: Path, tag: str) -> None:
     channel = configured_channel()
     if channel is None or tag != 'v' + VERSION:
@@ -69,11 +82,13 @@ def sign(artifact: Path, tag: str) -> None:
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('command', choices=('configure', 'sign'))
+    parser.add_argument('command', choices=('configure', 'sign', 'should-publish'))
     parser.add_argument('--artifact', type=Path, default=Path('verified-windows'))
     parser.add_argument('--tag', default='')
     args = parser.parse_args()
     if args.command == 'configure':
         configure()
+    elif args.command == 'should-publish':
+        print('true' if should_publish() else 'false')
     else:
         sign(args.artifact, args.tag)
