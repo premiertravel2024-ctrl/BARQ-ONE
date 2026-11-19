@@ -506,6 +506,7 @@ body button:not(:disabled):hover { background-color:#ffffff10; }
 body button:not(:disabled):active { transform:scale(.95); }
 body button svg { transition:transform .18s ease; }
 body .room-viewer-actions button:not(:disabled):hover svg { transform:translateY(-1px); }
+@supports selector(::-webkit-scrollbar) { html,body,body * { scrollbar-width:auto; } }
 @keyframes room-menu-in { from { opacity:0;transform:translateY(-5px) scale(.98); } to { opacity:1;transform:none; } }
 @media(max-width:800px) {
  body .grid { grid-template-columns:1fr; }

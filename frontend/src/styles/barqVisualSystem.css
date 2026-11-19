@@ -199,3 +199,6 @@
  .ops-shell *, .one-page * { animation:none!important;transition:none!important;scroll-behavior:auto!important; }
  .ops-shell button:hover>svg,.one-page button:hover>svg { transform:none; }
 }
+@supports selector(::-webkit-scrollbar) {
+ :is(.ops-shell,.one-page),:is(.ops-shell,.one-page) * { scrollbar-width:auto; }
+}
