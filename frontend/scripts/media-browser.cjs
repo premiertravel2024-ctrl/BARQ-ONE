@@ -66,7 +66,7 @@ await page.getByRole('button',{name:'أنغامي',exact:true}).click();
 await page.getByRole('searchbox',{name:'البحث في أنغامي'}).fill('تملي معاك');
 await page.getByRole('button',{name:'ابحث',exact:true}).click();
 await page.getByRole('button',{name:'تملى معاك أغنية',exact:true}).click();
-await page.getByText('الأغنية ظهرت في الغرفة. كل مشارك يقدر يشغّلها عنده.').waitFor();
+await page.getByText('الأغنية ظهرت في الغرفة. كل مشارك يقدر يشغّلها عنده.').waitFor({state:'attached'});
 const hostFrame=page.frames().find(frame=>frame.url().includes('/room-test/'));
 assert.ok(await hostFrame.evaluate(()=>window.__sentPackets.some(packet=>packet.type==='track'&&packet.value.id==='102704')));
 await page.goto('http://127.0.0.1:5173/tests/rebuild/index.html?books');

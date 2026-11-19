@@ -245,10 +245,10 @@ export function WatchTogether({mode = 'video',track,onTrack,requestedProvider,on
         {guest&&<IconButton label={ar?'مغادرة الغرفة':'Leave room'} icon={<LogOut size={17}/>} onClick={()=>setGuest('')}/>}
       </div>
       {current&&picker&&<Modal open={providerOpen} onClose={()=>setProviderOpen(false)} title={ar?'اختار أغنية':'Choose music'} wide dialogClassName="barq-room-dialog">{picker}</Modal>}
-      {music&&track&&current&&!guest&&<div className="barq-room-track-status">
+      {music&&track&&current&&!guest&&<div className={sharedSelection.current?'barq-sr-only':'barq-room-track-status'}>
         {!sharedSelection.current&&<strong dir="auto">{track.title}</strong>}
         {!sharedSelection.current&&<button type="button" onClick={sendTrack}>{ar?'شارك الاختيار':'Share selection'}</button>}
-        <span className="barq-sr-only" role="status">{trackStatus}</span>
+        <span role="status">{trackStatus}</span>
       </div>}
       <iframe ref={frame} title={ar ? 'مشغّل الغرفة' : 'Room player'} src={guest || current?.host_url} allow="autoplay; encrypted-media; fullscreen; picture-in-picture" allowFullScreen referrerPolicy="no-referrer"/>
     </section>}
