@@ -322,9 +322,20 @@ async def sync_data(request: Request):
                 raise ValueError
             if 'value' not in entry:
                 raise ValueError
-        return await run_in_threadpool(exchange_sync, device, records)
+        if any(key.startswith('cover:') for key in records):
+            raise ValueError
+        return await run_in_threadpool(sync_with_covers, device, records)
     except (TypeError, KeyError, ValueError):
         raise HTTPException(422, 'Invalid BARQ sync data') from None
+
+
+def sync_with_covers(device, records):
+    from api_routes.reading import apply_cover_sync, cover_sync_snapshot
+
+    result = exchange_sync(device, {**records, **cover_sync_snapshot()})
+    covers = {key: entry for key, entry in result['records'].items() if key.startswith('cover:')}
+    return {'records': {key: entry for key, entry in result['records'].items() if not key.startswith('cover:')},
+            'covers_changed': apply_cover_sync(covers)}
 
 
 def exchange_sync(device, records):

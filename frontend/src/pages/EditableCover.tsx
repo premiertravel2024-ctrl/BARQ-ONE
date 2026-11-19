@@ -36,10 +36,15 @@ export function EditableCover({id,title,ar,children}:{id:string;title:string;ar:
  const edit=ar?'تعديل الغلاف':'Edit cover';
  useEffect(()=>{
   const controller=new AbortController();
-  void fetch(root+'state/'+key,{cache:'no-store',signal:controller.signal}).then(async response=>{
-   if(response.ok&&!controller.signal.aborted)setState((await response.json()).state as CoverState);
+  const refresh=()=>void fetch(root+'state/'+key,{cache:'no-store',signal:controller.signal}).then(async response=>{
+   if(response.ok){
+    const next=(await response.json()).state as CoverState;
+    if(!controller.signal.aborted){setState(next);setRevision(value=>value+1);}
+   }
   }).catch(()=>{});
-  return()=>controller.abort();
+  refresh();
+  window.addEventListener('barq:covers-synced',refresh);
+  return()=>{controller.abort();window.removeEventListener('barq:covers-synced',refresh);};
  },[key]);
 
  async function update(action:'upload'|'hide'|'restore',file?:File){
@@ -53,6 +58,7 @@ export function EditableCover({id,title,ar,children}:{id:string;title:string;ar:
    if(!response.ok)throw new Error('Could not change cover');
    setState((await response.json()).state as CoverState);
    setRevision(value=>value+1);
+   window.dispatchEvent(new Event('barq:drive-sync'));
    setOpen(false);
   }catch{
    setError(action==='upload'?(ar?'تعذّر حفظ الصورة. اختار JPG أو PNG أو WebP بحجم أقل من ١٢ ميجابايت.':

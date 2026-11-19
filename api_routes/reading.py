@@ -1,7 +1,12 @@
 """Serve publisher-provided reading editions by catalogue ID."""
 from __future__ import annotations
 
+import base64
+import json
+import os
+import re
 from hashlib import sha256
+from threading import RLock
 from pathlib import Path
 from tempfile import NamedTemporaryFile
 
@@ -117,6 +122,8 @@ router.include_router(drive_router)
 
 
 MAX_COVER = 2 * 1024 * 1024
+COVER_ORIGINAL = b'\x00'
+COVER_LOCK = RLock()
 COVER_HEADERS = {'Cache-Control': 'no-store', 'X-Content-Type-Options': 'nosniff'}
 
 
@@ -130,10 +137,11 @@ def cover_path(book_id: str) -> Path:
 def cover_state(book_id: str):
     path = cover_path(book_id)
     try:
-        size = path.stat().st_size
+        with path.open('rb') as source:
+            first = source.read(1)
     except FileNotFoundError:
         return {'state': 'original'}
-    return {'state': 'custom' if size else 'hidden'}
+    return {'state': 'original' if first == COVER_ORIGINAL else 'custom' if first else 'hidden'}
 
 
 @router.get('/covers/image/{book_id:path}')
@@ -144,7 +152,7 @@ def cover_image(book_id: str):
             data = source.read(MAX_COVER + 1)
     except FileNotFoundError:
         raise HTTPException(404, 'No custom cover')
-    if not data or len(data) > MAX_COVER:
+    if not data or data == COVER_ORIGINAL or len(data) > MAX_COVER:
         raise HTTPException(404, 'No custom cover')
     return Response(data, media_type='image/jpeg', headers=COVER_HEADERS)
 
@@ -165,13 +173,20 @@ async def set_cover(book_id: str, request: Request):
     return {'state': 'custom'}
 
 
-def write_cover(path: Path, data: bytes | bytearray):
+def write_cover(path: Path, data: bytes | bytearray, *, modified_ms: int | None = None):
+    with COVER_LOCK:
+        _write_cover(path, data, modified_ms)
+
+
+def _write_cover(path: Path, data: bytes | bytearray, modified_ms: int | None):
     path.parent.mkdir(parents=True, exist_ok=True)
     temporary = None
     try:
         with NamedTemporaryFile(dir=path.parent, delete=False) as output:
             temporary = Path(output.name)
             output.write(data)
+        if modified_ms is not None:
+            os.utime(temporary, ns=(modified_ms * 1_000_000,) * 2)
         temporary.replace(path)
     finally:
         if temporary is not None:
@@ -186,5 +201,55 @@ def hide_cover(book_id: str):
 
 @router.delete('/covers/image/{book_id:path}')
 def restore_cover(book_id: str):
-    cover_path(book_id).unlink(missing_ok=True)
+    write_cover(cover_path(book_id), COVER_ORIGINAL)
     return {'state': 'original'}
+
+
+
+def read_cover_sync(path: Path):
+    try:
+        with path.open('rb') as source:
+            data = source.read(MAX_COVER + 1)
+            at = os.fstat(source.fileno()).st_mtime_ns // 1_000_000
+    except FileNotFoundError:
+        return None
+    if len(data) > MAX_COVER:
+        return None
+    return {'at': at, 'value': None if data == COVER_ORIGINAL else base64.b64encode(data).decode('ascii')}
+
+
+def cover_sync_snapshot():
+    directory = data_dir() / 'reading' / 'covers'
+    with COVER_LOCK:
+        return {
+            'cover:' + path.name: entry
+            for path in directory.glob('*')
+            if re.fullmatch(r'[a-f0-9]{64}', path.name) and (entry := read_cover_sync(path)) is not None
+        }
+
+
+def apply_cover_sync(records):
+    directory = data_dir() / 'reading' / 'covers'
+    changed = False
+    with COVER_LOCK:
+        for key, entry in records.items():
+            if not re.fullmatch(r'cover:[a-f0-9]{64}', key):
+                continue
+            value = entry['value']
+            try:
+                if value is not None and (not isinstance(value, str) or len(value) > (MAX_COVER + 2) // 3 * 4):
+                    continue
+                data = COVER_ORIGINAL if value is None else base64.b64decode(value, validate=True)
+                if value is not None and data and not (data.startswith(b'\xff\xd8\xff') and data.endswith(b'\xff\xd9')):
+                    continue
+            except ValueError:
+                continue
+            if not 0 <= entry['at'] <= 4_102_444_800_000:
+                continue
+            path = directory / key[6:]
+            local = read_cover_sync(path)
+            if local and (local['at'], json.dumps(local['value'])) >= (entry['at'], json.dumps(value)):
+                continue
+            write_cover(path, data, modified_ms=entry['at'])
+            changed = True
+    return changed

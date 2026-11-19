@@ -88,8 +88,9 @@ export function startDriveSync(){
     if(!(key in before)&&entry.value!==null&&isReadingKey(key))outgoing[key]={at:Math.max(Date.now(),entry.at+1),value:null};
    }
    for(const [key,at] of deleted)outgoing[key]={at,value:null};
-   const result=await requestJSON<{records:Records}>(root+'/sync',{method:'POST',body:JSON.stringify({device,records:outgoing})});
+   const result=await requestJSON<{records:Records;covers_changed?:boolean}>(root+'/sync',{method:'POST',body:JSON.stringify({device,records:outgoing})});
    if(!alive)return;
+   if(result.covers_changed)window.dispatchEvent(new Event('barq:covers-synced'));
    const after=snapshot();
    for(const [key,entry] of Object.entries(result.records)){
     if(!isPortableKey(key)||after[key]!==before[key]||!(entry.value===null||typeof entry.value==='string'))continue;
