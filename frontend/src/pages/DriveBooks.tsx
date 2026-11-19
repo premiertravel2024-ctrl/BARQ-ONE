@@ -44,9 +44,8 @@ function DriveCover({book}:{book:DriveBook}){
   }
   setSrc('');
   const element=frame.current;
-  if(!element||(!edition.file&&!edition.driveId))return;
+  if(!element||!edition.file)return;
   const file=edition.file;
-  const abort=new AbortController();
   let cancelled=false;
   let destroy:(()=>Promise<void>)|undefined;
   const observer=new IntersectionObserver(entries=>{
@@ -54,8 +53,7 @@ function DriveCover({book}:{book:DriveBook}){
    observer.disconnect();
    void (async()=>{
     const [{GlobalWorkerOptions,getDocument},{default:workerUrl},data]=await Promise.all([
-     import('pdfjs-dist/legacy/build/pdf.mjs'),import('pdfjs-dist/legacy/build/pdf.worker.min.mjs?url'),file?file.arrayBuffer():fetch('/v1/reading/drive/media/'+encodeURIComponent(edition.driveId||''),{signal:abort.signal})
-      .then(response=>{if(!response.ok)throw new Error('Book unavailable');return response.arrayBuffer();}),
+     import('pdfjs-dist/legacy/build/pdf.mjs'),import('pdfjs-dist/legacy/build/pdf.worker.min.mjs?url'),file.arrayBuffer(),
     ]);
     if(cancelled)return;
     GlobalWorkerOptions.workerSrc=workerUrl;
@@ -77,7 +75,6 @@ function DriveCover({book}:{book:DriveBook}){
   observer.observe(element);
   return ()=>{
    cancelled=true;
-   abort.abort();
    observer.disconnect();
    const cleanup=destroy;destroy=undefined;void cleanup?.().catch(()=>{});
   };

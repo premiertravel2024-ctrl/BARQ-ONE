@@ -56,28 +56,31 @@ export function BarqStories(){
  const localTarget=useRef<Pick<ReadingEdition,'id'|'title'>>();
  const label=(arabic:string,english:string)=>ar?arabic:english;
  const terms=searchKey(query.trim()).split(/\s+/);
- const availableDriveBooks=[...(cloudBooks||[]),...(driveBooks||[])].map(item=>{
-  const name=item.edition.title;
-  const folders=item.group.split(' / ').map(value=>searchKey(value).replace(/الفئرات/g,'الفئران'));
-  if(folders.includes('ما وراء الطبيعة')){
-   const issue=/^KAT(SP)?(\d{1,3})$/i.exec(name);
-   if(issue){
-    const number=Number(issue[2]);
-    const title=issue[1]?label('عدد خاص','Special issue')+' '+number:paranormalIssues[number-1]?.title;
-    if(title)return {...item,edition:{...item.edition,title:issue[1]?title:number+'. '+title}};
-   }
-  }
-  if(folders.includes('في ممر الفئران'))return {...item,edition:{...item.edition,title:'في ممر الفئران'}};
-  return item;
- }).sort((a,b)=>a.edition.title.localeCompare(b.edition.title,undefined,{numeric:true}));
+ const availableDriveBooks=[...(cloudBooks||[]),...(driveBooks||[])];
+ const normalize=(name:string)=>searchKey(name).replace(/الفئرات/g,'الفئران').trim();
+ const sourceName=(name:string)=>normalize(name).replace(/[٠-٩۰-۹]/g,digit=>String(digit.charCodeAt(0)-(digit<='٩'?0x660:0x6f0)));
+ const paranormalEntries=availableDriveBooks.flatMap(item=>{
+  const code=/^kat[ _-]*(sp[ _-]*)?0*(\d{1,3})(?=$|[ _.-])/i.exec(sourceName(item.edition.title));
+  const number=code?Number(code[2]):0;
+  const title=code?.[1]&&number>0?label('عدد خاص','Special issue'):paranormalIssues[number-1]?.title;
+  if(!title)return [];
+  return [{...item,number,special:!!code?.[1],edition:{...item.edition,title:code?.[1]?title+' '+number:title}}];
+ }).sort((a,b)=>Number(a.special)-Number(b.special)||a.number-b.number);
+ const paranormalByIssue=new Map(paranormalEntries.map(item=>[(item.special?'special-':'')+item.number,item]));
+ const paranormalIds=new Set(paranormalEntries.map(item=>item.edition.id));
  const matchesDrive=(book:PublishedBook)=>availableDriveBooks.filter(item=>{
+  if(paranormalIds.has(item.edition.id))return book.id==='paranormal';
   const names=[item.edition.title,...item.group.split(' / ')];
-  const titles=book.title.split(' / ').map(searchKey);
-  return names.some(name=>titles.includes(searchKey(name).replace(/الفئرات/g,'الفئران')));
+  const titles=book.title.split(' / ').map(normalize);
+  return names.some(name=>titles.includes(normalize(name)));
  });
  const driveSeries=series?matchesDrive(series):[];
  const visibleSeries=driveSeries.filter(item=>searchKey(item.edition.title).includes(searchKey(issueQuery.trim())));
- const visibleDrive=availableDriveBooks.filter(item=>terms.every(term=>searchKey(item.edition.title+' '+item.group).includes(term)));
+ const visibleParanormal=[...paranormalByIssue.values()].filter(item=>
+  /^\d+$/.test(issueTerm)?item.number===Number(issueTerm):searchKey(item.edition.title).includes(issueTerm));
+ const cataloguedIds=new Set(publishedBooks.flatMap(book=>matchesDrive(book).map(item=>item.edition.id)));
+ const visibleDrive=availableDriveBooks.filter(item=>!paranormalIds.has(item.edition.id)&&!cataloguedIds.has(item.edition.id)&&
+  terms.every(term=>searchKey(item.edition.title+' '+item.group).includes(term)));
 
  const results=publishedBooks.filter(book=>{
   const visible=genre==='الكل'||genre===book.category||genre===book.genre||
@@ -119,6 +122,7 @@ export function BarqStories(){
  return <div className="bs-hub" dir={ar?'rtl':'ltr'}>
   <input ref={upload} type="file" accept="application/pdf,.pdf" hidden onChange={openFile}/>
   {error&&<p className="bs-alert" role="alert">{error}</p>}
+  <div hidden={!!edition}><CloudReading ar={ar} onBooks={setCloudBooks}/></div>
   {edition?<Suspense fallback={<p role="status">{label('جاري فتح القارئ…','Opening reader…')}</p>}>
    <BookReader key={edition.id} book={edition} ar={ar} onClose={()=>setEdition(undefined)}/>
   </Suspense>:<>
@@ -127,8 +131,8 @@ export function BarqStories(){
     <div className="bs-drive-header"><DriveFolderButton ar={ar} onSelect={setDriveBooks}/>
     <button className="bs-muted-btn" type="button" onClick={()=>pickFile()}><Upload size={16}/>{label('افتح PDF من جهازك','Open local PDF')}</button></div>
    </header>
-   <CloudReading ar={ar} onBooks={setCloudBooks}/>
-   {(cloudBooks||driveBooks)&&<DriveBooks books={visibleDrive} ar={ar} onOpen={setEdition}/>}
+
+   {visibleDrive.length>0&&<DriveBooks books={visibleDrive} ar={ar} onOpen={setEdition}/>}
    <section className="bs-collection">
     <div className="bs-title-row"><h2>{label('الكتب والسلاسل','Books and series')}</h2>
      <div className="bs-search"><Search size={18} aria-hidden="true"/><input type="search" dir="auto" aria-label={label('ابحث في الكتب','Search books')}
@@ -157,7 +161,7 @@ export function BarqStories(){
     </article>)}</div>:<p className="bs-empty">{label('مفيش كتب مطابقة للبحث.','No matching books.')}</p>}
    </section>
   </>}
-  <Modal open={!!series} onClose={closeSeries} title={series?.title||''} wide bodyClassName="bs-series-scroll"
+  <Modal open={!!series&&!edition} onClose={closeSeries} title={series?.title||''} wide bodyClassName="bs-series-scroll"
    footer={series&&!driveSeries.length&&<div className="bs-reading-options">
     {series.id==='paranormal'&&<a className="bs-primary" href={paranormalEbooks} target="_blank" rel="noopener noreferrer">
      {label('النسخ الإلكترونية على Google Play','Ebooks on Google Play')}
@@ -166,7 +170,16 @@ export function BarqStories(){
     {series.id==='paranormal'?label('المجموعة الكاملة عند الناشر','Complete set from the publisher'):label('كل الأعداد عند الناشر','All issues at the publisher')}
     </a>
    </div>}>
-   {series&&driveSeries.length>0&&<section className="bs-series-detail" dir={ar?'rtl':'ltr'}>
+   {series?.id==='paranormal'&&paranormalEntries.length>0&&<section className="bs-series-detail" dir={ar?'rtl':'ltr'}>
+    <label className="bs-search"><Search size={17}/><input type="search" value={issueQuery} onChange={event=>setIssueQuery(event.target.value)}
+     aria-label={label('ابحث عن عدد','Find an issue')} placeholder={label('اسم العدد أو رقمه…','Issue title or number…')}/></label>
+    <p role="status">{visibleParanormal.length} {label('عدد متاح للقراءة','readable issues')}</p>
+    <ol>{visibleParanormal.map(item=><li key={item.edition.id}>
+     <span><bdi>{item.special?label('خاص','Special')+' ':''}{item.number}</bdi> · {item.edition.title}</span>
+     <button className="bs-series-open" type="button" onClick={()=>setEdition(item.edition)}>{label('اقرأ في برق','Read in BARQ')}</button>
+    </li>)}</ol>
+   </section>}
+   {series&&series.id!=='paranormal'&&driveSeries.length>0&&<section className="bs-series-detail" dir={ar?'rtl':'ltr'}>
     <input className="bs-search" type="search" value={issueQuery} onChange={event=>setIssueQuery(event.target.value)}
      placeholder={label('ابحث في روايات السلسلة…','Search series books…')}/>
     <DriveBooks ar={ar} heading={false} books={visibleSeries.slice(0,seriesLimit)}

@@ -1,4 +1,5 @@
 """Private Drive library, using the installed-app OAuth flow on loopback."""
+from contextlib import ExitStack
 import base64
 import hashlib
 import json
@@ -11,7 +12,7 @@ from urllib.parse import urlencode
 
 import httpx
 from fastapi import APIRouter, HTTPException, Request
-from fastapi.responses import HTMLResponse, Response
+from fastapi.responses import HTMLResponse, StreamingResponse
 from pydantic import BaseModel
 
 router = APIRouter(prefix='/drive')
@@ -214,7 +215,7 @@ def catalogue():
 
 
 @router.get('/media/{file_id}')
-def media(file_id: str):
+def media(file_id: str, request: Request):
     with LOCK:
         mime = items.get(file_id)
         if not mime:
@@ -223,18 +224,68 @@ def media(file_id: str):
             headers = auth()
         except httpx.HTTPError:
             raise HTTPException(502, 'Could not refresh Google Drive access')
-    limit = (64 if mime == 'application/pdf' else 8) * 1024 * 1024
-    data = bytearray()
+    pdf = mime == 'application/pdf'
+    limit = (64 if pdf else 8) * 1024 * 1024
+    requested = request.headers.get('range') if pdf else None
+    if requested:
+        if not re.fullmatch(r'bytes=\d{1,8}-\d{0,8}', requested):
+            raise HTTPException(416, 'Invalid PDF byte range')
+        headers['Range'] = requested
+    headers['Accept-Encoding'] = 'identity'
+    upstream = ExitStack()
     try:
-        with httpx.stream('GET', f'{API}/{file_id}', params={'alt': 'media', 'supportsAllDrives': 'true'},
-                          headers=headers, timeout=30) as response:
-            response.raise_for_status()
-            for chunk in response.iter_bytes(chunk_size=65536):
-                data.extend(chunk)
-                if len(data) > limit:
+        response = upstream.enter_context(httpx.stream(
+            'GET', f'{API}/{file_id}', params={'alt': 'media', 'supportsAllDrives': 'true'},
+            headers=headers, timeout=30))
+        if response.status_code == 416:
+            raise HTTPException(416, 'PDF byte range is unavailable')
+        response.raise_for_status()
+        outgoing = dict(PRIVATE)
+        partial = response.status_code == 206
+        if partial:
+            value = response.headers.get('content-range', '')
+            match = re.fullmatch(r'bytes (\d+)-(\d+)/(\d+)', value)
+            if not match or not requested:
+                raise HTTPException(502, 'Invalid PDF range from Drive')
+            start, end, total = map(int, match.groups())
+            requested_start, requested_end = requested.removeprefix('bytes=').split('-')
+            if not 0 <= start <= end < total <= limit or start != int(requested_start) or (
+                    requested_end and end > int(requested_end)):
+                raise HTTPException(502, 'Invalid PDF range from Drive')
+            outgoing['Content-Range'] = value
+            outgoing['Content-Length'] = str(end - start + 1)
+        else:
+            start = 0
+            length = response.headers.get('content-length')
+            if length and length.isdecimal():
+                if int(length) > limit:
                     raise HTTPException(413, 'Drive file is too large')
-    except httpx.HTTPError:
-        raise HTTPException(502, 'Could not open this file from Google Drive')
-    if mime == 'application/pdf' and not data.startswith(b'%PDF-'):
-        raise HTTPException(422, 'Invalid PDF')
-    return Response(bytes(data), media_type=mime, headers=PRIVATE)
+                outgoing['Content-Length'] = length
+        if pdf and (partial or 'Content-Length' in outgoing):
+            outgoing['Accept-Ranges'] = 'bytes'
+        chunks = response.iter_bytes(chunk_size=65536)
+        first = next(chunks, b'')
+        if pdf and start == 0 and not (first.startswith(b'%PDF-') or
+                                      (partial and len(first) < 5 and b'%PDF-'.startswith(first))):
+            raise HTTPException(422, 'Invalid PDF')
+    except httpx.HTTPError as exc:
+        upstream.close()
+        raise HTTPException(502, 'Could not open this file from Google Drive') from exc
+    except Exception:
+        upstream.close()
+        raise
+
+    def body():
+        try:
+            count = len(first)
+            yield first
+            for chunk in chunks:
+                count += len(chunk)
+                if count > limit:
+                    raise RuntimeError('Drive media exceeded its size limit')
+                yield chunk
+        finally:
+            upstream.close()
+
+    return StreamingResponse(body(), status_code=206 if partial else 200,
+                             media_type=mime, headers=outgoing)
