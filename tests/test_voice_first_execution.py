@@ -111,6 +111,7 @@ async def test_consent_off_and_stale_speech_do_not_execute():
 def test_live_transcript_to_private_ui_event(monkeypatch,speech,expected_event):
  import sys
  import types
+ from threading import Event
  from types import SimpleNamespace as NS
  import google
  from fastapi import FastAPI
@@ -119,12 +120,15 @@ def test_live_transcript_to_private_ui_event(monkeypatch,speech,expected_event):
  from computer_control import api as control_api
  from computer_control.safety.policy import Policy
  replies=[];dispatched=[]
+ tool_response_sent=Event()
  class Session:
   async def __aenter__(self):self.wait=asyncio.Event();return self
   async def __aexit__(self,*args):pass
   async def send_client_content(self,**kwargs):pass
   async def send_realtime_input(self,**kwargs):pass
-  async def send_tool_response(self,**kwargs):replies.extend(kwargs['function_responses'])
+  async def send_tool_response(self,**kwargs):
+   replies.extend(kwargs['function_responses'])
+   tool_response_sent.set()
   async def receive(self):
    yield NS(tool_call=None,server_content=NS(input_transcription=NS(text=speech,finished=True),output_transcription=None,model_turn=None,interrupted=False,turn_complete=False))
    yield NS(tool_call=NS(function_calls=[NS(id='call-1',name='ask_barq',args={'request':'untrusted different goal'})]),server_content=None)
@@ -151,7 +155,9 @@ def test_live_transcript_to_private_ui_event(monkeypatch,speech,expected_event):
   while True:
    event=ws.receive_json();events.append(event)
    if event['type']=='barq_task':break
+  assert tool_response_sent.wait(timeout=5), 'Live session did not return the tool response'
   ws.send_json({'type':'end'})
+  assert ws.receive()['type']=='websocket.close'
  match=next(event for event in events if event['type']==expected_event)
  if expected_event=='chat_task_requested':
   assert match['text']==speech and match['conversation_id']=='chat_1'
