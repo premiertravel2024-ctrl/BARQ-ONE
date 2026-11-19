@@ -1,7 +1,7 @@
 {
   "name": "ai-router-agent-ui",
   "private": true,
-  "version": "2.41.12",
+  "version": "2.41.13",
   "type": "module",
   "scripts": {
     "dev": "vite --host 127.0.0.1",
