@@ -1,9 +1,11 @@
 import {useCallback, useEffect, useRef, useState} from 'react';
-import {Copy, ExternalLink, Headphones, Link2, Radio, Video, XCircle} from 'lucide-react';
+import {Copy, ExternalLink, Headphones, Link2, Radio, Video, Search, LogOut, Globe2} from 'lucide-react';
 import {requestJSON} from '../lib/backend';
 import {useApp} from '../store';
 import {ButtonGroup, ButtonGroupItem} from '../components/ui/ButtonGroup';
 import {Modal} from '../components/ui/Modal';
+import {IconButton} from '../components/ui/IconButton';
+import './roomExperience.css';
 import {useAppView} from '../lib/appContext';
 import {MusicServices,type RoomTrack} from './MusicServices';
 import {CinemaDiscovery} from './CinemaDiscovery';
@@ -44,17 +46,31 @@ export function WatchTogether({mode = 'video',track,onTrack,requestedProvider,on
   const [invite, setInvite] = useState('');
   const [joinOpen, setJoinOpen] = useState(false);
   const [hostOpen, setHostOpen] = useState(false);
-  const [connection, setConnection] = useState<'internet'|'local'>('internet');
+  const [providerOpen,setProviderOpen]=useState(false);
   const [shareOpen, setShareOpen] = useState(false);
-  const [provider,setProvider]=useState<RoomTrack['provider']>();
+  const [provider,setProvider]=useState<RoomTrack['provider']>('spotify');
   const current = room?.mode === mode ? room : null;
-  const providerPicker = useRef<HTMLDetailsElement>(null);
   useEffect(() => {
     if (!requestedProvider) return;
     setProvider(requestedProvider);
-    if (providerPicker.current) providerPicker.current.open = true;
+    setProviderOpen(true);
   }, [requestedProvider, current?.room_id]);
   const frame=useRef<HTMLIFrameElement>(null);
+  const [frameHeight,setFrameHeight]=useState<number>();
+  useEffect(()=>{
+    setFrameHeight(undefined);
+    const url=guest||current?.host_url;
+    if(!url)return;
+    const origin=new URL(url,window.location.href).origin;
+    const resize=(event:MessageEvent)=>{
+      if(event.source!==frame.current?.contentWindow||event.origin!==origin||event.data?.type!=='barq-room-size')return;
+      const height=event.data.height;
+      if(typeof height==='number'&&Number.isFinite(height)&&height>=250&&height<=3000)setFrameHeight(Math.ceil(height));
+    };
+    window.addEventListener('message',resize);
+    return()=>window.removeEventListener('message',resize);
+  },[guest,current?.host_url]);
+
   const pendingShare=useRef('');
   const sharedSelection=useRef(false);
   const [trackStatus,setTrackStatus]=useState('');
@@ -181,29 +197,27 @@ export function WatchTogether({mode = 'video',track,onTrack,requestedProvider,on
 
   const picker=music&&!guest&&onTrack&&<section className="barq-music-providers">
       <ButtonGroup size="sm" aria-label={ar?'مصدر الموسيقى':'Music source'}>
-        <ButtonGroupItem aria-pressed={provider==='anghami'} onClick={()=>setProvider(provider==='anghami'?undefined:'anghami')}>{ar?'أنغامي':'Anghami'}</ButtonGroupItem>
-        <ButtonGroupItem aria-pressed={provider==='spotify'} onClick={()=>setProvider(provider==='spotify'?undefined:'spotify')}>Spotify</ButtonGroupItem>
+        <ButtonGroupItem aria-pressed={provider==='anghami'} onClick={()=>setProvider('anghami')}>{ar?'أنغامي':'Anghami'}</ButtonGroupItem>
+        <ButtonGroupItem aria-pressed={provider==='spotify'} onClick={()=>setProvider('spotify')}>Spotify</ButtonGroupItem>
       </ButtonGroup>
-      {provider&&<MusicServices key={provider} provider={provider} ar={ar} roomOnly onShare={selection=>{onTrack(selection);if(providerPicker.current)providerPicker.current.open=false}}/>}
+      {provider&&<MusicServices key={provider} provider={provider} ar={ar} roomOnly onShare={selection=>{onTrack(selection);setProviderOpen(false)}}/>}
     </section>;
   return <div className={'barq-media barq-watch-room'+(music?' barq-music-app':'')} dir={ar ? 'rtl' : 'ltr'}>
-    {!current&&!guest&&<ButtonGroup className="barq-room-connections" aria-label={ar?'نوع الغرفة':'Room connection'}>
-      <ButtonGroupItem aria-pressed={connection==='internet'} onClick={()=>setConnection('internet')}><ExternalLink size={16}/>{ar?'عبر الإنترنت':'Online'}</ButtonGroupItem>
-      <ButtonGroupItem aria-pressed={connection==='local'} onClick={()=>setConnection('local')}><Radio size={16}/>{ar?'الشبكة المحلية':'Local network'}</ButtonGroupItem>
-    </ButtonGroup>}
-    {music && !current && !guest && <header className="barq-watch-hero">
-      <div className="barq-watch-hero-mark"><Headphones size={20} aria-hidden="true"/></div>
-      <div className="barq-watch-hero-copy"><h2>{ar?'غرفة الموسيقى':'Music room'}</h2></div>
-    </header>}
-    {!current&&picker}
-    {music&&track&&!current&&<span className="barq-room-track-status" role="status">{ar?'افتح غرفة علشان تشارك الاختيار.':'Host a room to share this selection.'}</span>}
+    {music&&!current&&!guest&&<section className="barq-music-lobby">
+      <div className="barq-lobby-top">
+        <div className="barq-lobby-mark"><Headphones size={19}/><span>{ar?'استماع سوا':'Listen together'}</span></div>
+        <div className="barq-lobby-actions">
+          <button type="button" className="bc-primary" disabled={busy} onClick={()=>setHostOpen(true)}><Headphones size={17}/>{ar?'افتح غرفة':'Host a room'}</button>
+          <IconButton label={ar?'ادخل غرفة صاحبك':'Join a friend'} icon={<Link2 size={17}/>} onClick={()=>{setError('');setJoinOpen(true)}}/>
+        </div>
+      </div>
+      {picker}
+    </section>}
     {!music && !current && !guest && <CinemaDiscovery ar={ar} roomActive={false} onRoom={() => { setError(''); setHostOpen(true); }} onJoin={() => {setError('');setJoinOpen(true);}}/>}
-    <Modal open={hostOpen} onClose={()=>setHostOpen(false)} title={ar?'افتح غرفة على برق':'Host a BARQ room'}>
-      <div className="barq-cinema-join-form">
-        <button className="bc-primary barq-online-room" type="button" disabled={busy} onClick={()=>{setHostOpen(false);start(connection==='local')}}>
-          {connection==='internet'?<ExternalLink size={18}/>:<Radio size={18}/>}
-          {ar?(connection==='internet'?'إنشاء غرفة عبر الإنترنت':'إنشاء غرفة على الشبكة المحلية'):(connection==='internet'?'Create an online room':'Create a local room')}
-        </button>
+    <Modal open={hostOpen} onClose={()=>setHostOpen(false)} title={ar?'غرفة جديدة':'New room'} dialogClassName="barq-room-dialog">
+      <div className="barq-room-choices">
+        <button type="button" disabled={busy} onClick={()=>{setHostOpen(false);start(false)}}><Globe2 size={21}/><span>{ar?'عبر الإنترنت':'Online'}</span></button>
+        <button type="button" disabled={busy} onClick={()=>{setHostOpen(false);start(true)}}><Radio size={21}/><span>{ar?'الشبكة المحلية':'Local network'}</span></button>
       </div>
     </Modal>
     <Modal open={joinOpen} onClose={()=>{if(!busy)setJoinOpen(false)}} title={ar?'ادخل غرفة صاحبك':'Join a friend'}>
@@ -216,17 +230,12 @@ export function WatchTogether({mode = 'video',track,onTrack,requestedProvider,on
     </Modal>
     <Modal open={shareOpen&&!!inviteCode} onClose={()=>{setShareOpen(false);setCopied(false)}} title={ar?'ادعُ صاحبك':'Invite a friend'}>
       {current&&<div className="barq-cinema-join-form">
-        <p>{ar?'ابعت الكود لصاحبك في أي بلد. في برق عنده، يفتح نفس القسم ويختار «ادخل غرفة صاحبك».':'Send your friend the code. In BARQ, they can open the same section and choose Join a friend.'}</p>
         <input aria-label={ar?'كود دعوة برق':'BARQ invitation code'} dir="ltr" value={inviteCode} readOnly onFocus={e=>e.currentTarget.select()}/>
         <button type="button" className="bc-primary" onClick={()=>void copy(inviteCode)}><Copy size={16}/>{copied?(ar?'اتنسخ':'Copied'):(ar?'نسخ كود برق':'Copy BARQ code')}</button>
         <a className="barq-browser-invite" href={current.guest_url+'#'+current.room_code} target="_blank" rel="noreferrer"><ExternalLink size={15}/>{ar?'فتح للضيف في المتصفح':'Open guest view in browser'}</a>
       </div>}
     </Modal>
     {error && <p className="barq-media-error" role="alert">{error}</p>}
-    {!room&&!guest&&music&&<ButtonGroup className="barq-room-launch" aria-label={ar?'غرفة الموسيقى':'Music room'}>
-      <ButtonGroupItem className="barq-media-primary" disabled={busy} onClick={()=>setHostOpen(true)}><Headphones size={17}/>{ar?'افتح غرفة':'Host a room'}</ButtonGroupItem>
-      <ButtonGroupItem onClick={()=>{setError('');setJoinOpen(true)}}><Link2 size={17}/>{ar?'ادخل غرفة صاحبك':'Join a friend'}</ButtonGroupItem>
-    </ButtonGroup>}
     {room && !current && !guest && <section className="barq-media-panel">
       <p>{ar ? 'فيه غرفة تانية مفتوحة. اقفلها أو افتحها من تبويبها.' : 'Another room is active. Open its tab or end it here.'}</p>
       <button disabled={busy} onClick={() => void operate(async () => {
@@ -239,27 +248,24 @@ export function WatchTogether({mode = 'video',track,onTrack,requestedProvider,on
       <div className="barq-watch-player-top">
         <div><Icon size={17}/><strong>{music ? (ar ? 'غرفة الموسيقى' : 'Music room') : (ar ? 'سينما برق' : 'BARQ Cinema')}</strong></div>
         {current && !guest && <div className="barq-room-actions">
-          <span className="barq-room-connection-kind">{current.lan?(ar?'شبكة محلية':'Local network'):(ar?'عبر الإنترنت':'Online')}</span>
-          <span className="barq-chip">{current.guest_connected ? (ar ? 'صاحبك متصل' : 'Guest connected') : (ar ? 'مستني صاحبك' : 'Waiting for a guest')}</span>
-          {!current.public && <button disabled={busy} onClick={publish}><Radio size={16}/>{ar ? 'دعوة عبر الإنترنت' : 'Internet invite'}</button>}
-          {inviteCode && <ButtonGroupItem className="barq-invite-primary" onClick={()=>{setCopied(false);setShareOpen(true)}}><Link2 size={16}/>{ar?'ادعُ صاحبك':'Invite a friend'}</ButtonGroupItem>}
-          <button disabled={busy} onClick={() => void operate(async () => {
-            await requestJSON('/v1/watchrooms/close', post({room_id: current.room_id}));
-            setRoom(null); setCopied(false);
-          })}><XCircle size={16}/>{ar ? 'إنهاء الغرفة' : 'End room'}</button>
+          <span className={'barq-room-presence'+(current.guest_connected?' is-online':'')} role="status" title={current.guest_connected?(ar?'صاحبك متصل':'Guest connected'):(ar?'في انتظار صاحبك':'Waiting for a guest')} aria-label={current.guest_connected?(ar?'صاحبك متصل':'Guest connected'):(ar?'في انتظار صاحبك':'Waiting for a guest')}/>
+          <span className="barq-room-connection-kind" title={current.lan?(ar?'شبكة محلية':'Local network'):(ar?'عبر الإنترنت':'Online')}>{current.lan?<Radio size={15}/>:<Globe2 size={15}/>}</span>
+          {music&&<IconButton label={ar?'اختار أغنية':'Choose music'} icon={<Search size={17}/>} onClick={()=>setProviderOpen(true)}/>}
+          {!current.public&&!current.lan&&<IconButton label={ar?'دعوة عبر الإنترنت':'Internet invite'} icon={<Globe2 size={17}/>} disabled={busy} onClick={publish}/>}
+          {inviteCode&&<IconButton label={ar?'ادعُ صاحبك':'Invite a friend'} icon={<Link2 size={17}/>} onClick={()=>{setCopied(false);setShareOpen(true)}}/>}
+          <IconButton label={ar?'إنهاء الغرفة':'End room'} icon={<LogOut size={17}/>} disabled={busy} onClick={()=>void operate(async()=>{
+            await requestJSON('/v1/watchrooms/close',post({room_id:current.room_id}));setRoom(null);setCopied(false);
+          })}/>
         </div>}
-        {guest && <button onClick={() => setGuest('')}><XCircle size={16}/>{ar ? 'مغادرة الغرفة' : 'Leave room'}</button>}
+        {guest&&<IconButton label={ar?'مغادرة الغرفة':'Leave room'} icon={<LogOut size={17}/>} onClick={()=>setGuest('')}/>}
       </div>
-    {current&&picker&&<details ref={providerPicker} className="barq-room-provider-picker">
-      <summary><Headphones size={17} aria-hidden="true"/>{ar?'اختار أغنية من Spotify أو أنغامي':'Choose music from Spotify or Anghami'}</summary>
-      {picker}
-    </details>}
-      {music&&track&&current&&!guest&&<div className="barq-room-track-status">
-        <strong dir="auto">{track.title}</strong>
+      {current&&picker&&<Modal open={providerOpen} onClose={()=>setProviderOpen(false)} title={ar?'اختار أغنية':'Choose music'} wide dialogClassName="barq-room-dialog">{picker}</Modal>}
+      {music&&track&&current&&!guest&&<div className={sharedSelection.current?'barq-sr-only':'barq-room-track-status'}>
+        {!sharedSelection.current&&<strong dir="auto">{track.title}</strong>}
         {!sharedSelection.current&&<button type="button" onClick={sendTrack}>{ar?'شارك الاختيار':'Share selection'}</button>}
         <span role="status">{trackStatus}</span>
       </div>}
-      <iframe ref={frame} title={ar ? 'مشغّل الغرفة' : 'Room player'} src={guest || current?.host_url} allow="autoplay; encrypted-media; fullscreen; picture-in-picture" allowFullScreen referrerPolicy="no-referrer"/>
+      <iframe ref={frame} style={frameHeight?{height:frameHeight}:undefined} title={ar ? 'مشغّل الغرفة' : 'Room player'} src={guest || current?.host_url} allow="autoplay; encrypted-media; fullscreen; picture-in-picture" allowFullScreen referrerPolicy="no-referrer"/>
     </section>}
   </div>;
 }

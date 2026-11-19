@@ -1,7 +1,7 @@
 {
   "name": "ai-router-agent-ui",
   "private": true,
-  "version": "2.41.5",
+  "version": "2.41.6",
   "type": "module",
   "scripts": {
     "dev": "vite --host 127.0.0.1",
@@ -20,7 +20,7 @@
     "test:screen": "node ../scripts/chat_coordination_smoke.mjs tests/screen-read.ts",
     "test:companion": "node ../scripts/chat_coordination_smoke.mjs tests/companion.ts",
     "test:personal": "node ../scripts/chat_coordination_smoke.mjs tests/personal.ts",
-    "test:media-ui": "node scripts/media-browser.cjs && node scripts/room-viewer-browser.cjs"
+    "test:media-ui": "node scripts/room-experience.cjs && node scripts/media-browser.cjs && node scripts/room-viewer-browser.cjs"
   },
   "dependencies": {
     "framer-motion": "^11.18.2",
