@@ -26,7 +26,7 @@ button.barq-toggle[role="switch"] {
   position: absolute;
   inset: 0;
   border-radius: inherit;
-  background: linear-gradient(120deg, #78f2b1, #5786db);
+  background: linear-gradient(120deg, var(--accent-1), var(--accent-2));
   opacity: 0;
   transition: opacity 180ms ease;
 }
@@ -43,7 +43,7 @@ button.barq-toggle[role="switch"] {
   transition: inset-inline-start 230ms cubic-bezier(.2,.8,.25,1);
 }
 .barq-toggle[aria-checked="true"] .barq-toggle-thumb { inset-inline-start: 23px; }
-button.barq-toggle[role="switch"]:focus-visible { outline: 2px solid #79bcfa; outline-offset: 3px; }
+button.barq-toggle[role="switch"]:focus-visible { outline: 2px solid var(--accent-2); outline-offset: 3px; }
 button.barq-toggle[role="switch"]:disabled { cursor: default; opacity: .64; }
 @media (prefers-reduced-motion: reduce) {
   .barq-toggle::before, .barq-toggle-thumb { transition: none; }
