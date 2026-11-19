@@ -53,6 +53,12 @@ const fs=require('node:fs'),path=require('node:path'),assert=require('node:asser
     const art=await frame.locator('.music-now-art').boundingBox(),title=await frame.locator('#musicNowTitle').boundingBox();
     assert.ok(art.y+art.height<=title.y,'music artwork and title overlap');
     assert.equal(await frame.locator('#musicTransport').isVisible(),true);
+    const controls=await frame.locator('.music-transport-buttons').evaluate(el=>({display:getComputedStyle(el).display,direction:getComputedStyle(el).flexDirection,width:el.getBoundingClientRect().width,children:[...el.children].map(child=>({id:child.id,x:child.getBoundingClientRect().x,y:child.getBoundingClientRect().y}))}));
+    console.log('Music transport geometry',JSON.stringify(controls));
+    assert.equal(controls.direction,'row');
+    const seek=await frame.locator('#musicSeek').boundingBox();
+    assert.ok(seek.width>150,'music seek bar should use the available width');
+
    }
    await page.screenshot({path:path.join(pictures,'focused-'+mode+'-desktop.png'),fullPage:true});
    await page.setViewportSize({width:390,height:844});
