@@ -31,7 +31,7 @@ export const sections=[
  ['watch','سينما برق','BARQ Cinema',Radio],
  ['music','الموسيقى','Music',Headphones],
  ['stories','مكتبة القراءة','Reading Library',LibraryBig],
- ['automation','الأتمتة','Automation',Timer],
+ ['automation','مهامي','My tasks',Timer],
  ['settings','الإعدادات','Settings',Settings2],
 ] as const satisfies ReadonlyArray<readonly [OnePage, string, string, typeof Cpu]>;
 type Item={id:string;name:string;category:string;url:string;package:string|null;setup?:boolean;description_ar?:string;description_en?:string};

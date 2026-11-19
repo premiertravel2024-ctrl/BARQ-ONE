@@ -5,7 +5,7 @@ No system-wide tasks, arbitrary commands, or remote notifications are created.
 """
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import datetime, timedelta
 import json
 import os
 from pathlib import Path
@@ -55,7 +55,7 @@ def alarms() -> list[dict]:
         return _read()
 
 
-def create_alarm(when: str, label: str, repeat: bool) -> dict:
+def create_alarm(when: str, label: str, repeat: bool, weekdays=None, sound="classic") -> dict:
     if not _TIME_RE.fullmatch(when):
         raise ValueError("وقت المنبّه لازم يكون بالشكل HH:MM.")
     label = label.strip()
@@ -66,21 +66,39 @@ def create_alarm(when: str, label: str, repeat: bool) -> dict:
         if len(entries) >= 30:
             raise ValueError("الحد الأقصى 30 منبّه.")
         alarm = {"id": uuid.uuid4().hex, "time": when, "label": label,
-                 "repeat": bool(repeat), "enabled": True, "last_fired": ""}
+                 "repeat": bool(repeat), "enabled": True, "last_fired": "",
+                 "weekdays": weekdays if repeat and weekdays else [], "sound": sound}
         entries.append(alarm)
         _write(entries)
         return alarm
 
 
 def toggle_alarm(identifier: str, enabled: bool) -> dict:
+    return update_alarm(identifier, enabled=enabled)
+
+
+def update_alarm(identifier: str, **changes) -> dict:
+    if "label" in changes:
+        changes["label"] = changes["label"].strip()
+        if not 1 <= len(changes["label"]) <= 70:
+            raise ValueError("عنوان المنبّه لازم يكون بين حرف و70 حرف.")
+    if "time" in changes and not _TIME_RE.fullmatch(changes["time"]):
+        raise ValueError("وقت المنبّه لازم يكون بالشكل HH:MM.")
     with _LOCK:
         entries = _read()
         for item in entries:
             if item.get("id") == identifier:
-                item["enabled"] = bool(enabled)
+                item.update(changes)
+                if "time" in changes or changes.get("enabled") is False:
+                    item.pop("snoozed_until", None)
                 _write(entries)
                 return item
         raise KeyError("المنبّه مش موجود.")
+
+
+def snooze_alarm(identifier: str, now: datetime | None = None) -> dict:
+    now = now or datetime.now().astimezone()
+    return update_alarm(identifier, snoozed_until=(now + timedelta(minutes=5)).isoformat())
 
 
 def delete_alarm(identifier: str) -> bool:
@@ -93,11 +111,15 @@ def delete_alarm(identifier: str) -> bool:
         return True
 
 
-def _notify(label: str) -> None:
+def _notify(label: str, sound: str = "classic") -> None:
     """Only a user-created scheduled alarm can call this. No shell used."""
     try:
         import winsound
-        winsound.MessageBeep(winsound.MB_ICONEXCLAMATION)
+        winsound.MessageBeep({
+            "classic": winsound.MB_ICONEXCLAMATION,
+            "soft": winsound.MB_OK,
+            "alert": winsound.MB_ICONHAND,
+        }.get(sound, winsound.MB_ICONEXCLAMATION))
     except (ImportError, OSError):
         pass
     if os.name == "nt":
@@ -117,17 +139,25 @@ def tick(now: datetime | None = None, notify=_notify) -> int:
         entries = _read()
         dirty = False
         for alarm in entries:
-            if not alarm.get("enabled") or alarm.get("time") != marker[-5:] or alarm.get("last_fired") == marker:
+            scheduled = alarm.get("enabled") and alarm.get("time") == marker[-5:] and alarm.get("last_fired") != marker
+            weekdays = alarm.get("weekdays") if alarm.get("repeat") else []
+            scheduled = scheduled and (not weekdays or now.weekday() in weekdays)
+            snoozed = alarm.get("snoozed_until")
+            snooze_due = bool(snoozed and now >= datetime.fromisoformat(snoozed))
+            if not scheduled and not snooze_due:
                 continue
             alarm["last_fired"] = marker
-            if not alarm.get("repeat"):
+            if snooze_due:
+                alarm.pop("snoozed_until", None)
+            if scheduled and not alarm.get("repeat"):
                 alarm["enabled"] = False
-            due.append(str(alarm.get("label") or "منبّه"))
+            due.append((str(alarm.get("label") or "منبّه"), alarm.get("sound", "classic")))
             dirty = True
         if dirty:
             _write(entries)
-    for label in due:
-        threading.Thread(target=notify, args=(label,), daemon=True).start()
+    for label, sound in due:
+        args = (label, sound) if notify is _notify else (label,)
+        threading.Thread(target=notify, args=args, daemon=True).start()
     return len(due)
 
 

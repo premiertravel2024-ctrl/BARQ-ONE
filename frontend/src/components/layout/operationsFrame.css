@@ -87,3 +87,10 @@
 .ops-update-actions .ops-update-install{background:#a53155;color:#fff}
 .ops-update-actions button:disabled{opacity:.55}
 @media(max-width:700px){.ops-update-button span{display:none}}
+
+.ops-header-actions .ops-day-status{display:inline-flex;align-items:center;gap:6px;white-space:nowrap;font-size:.76rem;font-variant-numeric:tabular-nums}
+.ops-day-status span{display:inline-flex;align-items:center;gap:4px}
+.ops-day-status .ops-day-alarm{color:#f2a0b7}
+@media(max-width:1000px){.ops-day-status .ops-day-alarm bdi{display:none}}
+@media(max-width:760px){.ops-day-status .ops-day-weather{display:none}}
+@media(max-width:480px){.ops-header-actions .ops-day-status>svg,.ops-day-status .ops-day-alarm{display:none}}
