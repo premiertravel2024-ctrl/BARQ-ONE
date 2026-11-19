@@ -386,12 +386,12 @@ body:not(.room-music) #videoStage:is(:fullscreen, :-webkit-full-screen){height:1
 @media(max-width:700px){.room-embedded main{padding:8px}.room-music #musicNow{padding:14px}}
 
 /* Toolbar above the player, with compact source settings and a quiet writing field. */
-body .room-media-panel{display:flex;flex-direction:column;gap:10px}
-body .room-media-panel>.room-viewer-actions{order:-3;margin:0;justify-content:flex-end}
-body .room-media-panel>#localWrap{order:-2}
-body .room-media-panel>#videoStage{order:0}
-body .room-media-panel>#officialMusic{order:1}
-body .room-media-panel>#mediaNote{order:2;font-size:.75rem;line-height:1.5}
+body .grid>.room-media-panel{display:flex;flex-direction:column;gap:10px}
+body .grid>.room-media-panel>.room-viewer-actions{order:-3;margin:0;justify-content:flex-end}
+body .grid>.room-media-panel>#localWrap{order:-2}
+body .grid>.room-media-panel>#videoStage{order:0}
+body .grid>.room-media-panel>#officialMusic{order:1}
+body .grid>.room-media-panel>#mediaNote{order:2;font-size:.75rem;line-height:1.5}
 .room-viewer-actions .guest-tools-label{display:none}
 body .room-viewer-actions .row{margin:0;gap:6px}
 body .room-viewer-actions button{
