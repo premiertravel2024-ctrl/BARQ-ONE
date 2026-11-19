@@ -1,11 +1,13 @@
 """Serve publisher-provided reading editions by catalogue ID."""
 from __future__ import annotations
 
+from hashlib import sha256
 from pathlib import Path
 from tempfile import NamedTemporaryFile
 
 import httpx
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Request
+from starlette.concurrency import run_in_threadpool
 from fastapi.responses import Response
 from core.paths import data_dir, resource
 
@@ -112,3 +114,77 @@ def edition(book_id: str):
 from api_routes.reading_drive import router as drive_router
 
 router.include_router(drive_router)
+
+
+MAX_COVER = 2 * 1024 * 1024
+COVER_HEADERS = {'Cache-Control': 'no-store', 'X-Content-Type-Options': 'nosniff'}
+
+
+def cover_path(book_id: str) -> Path:
+    if not 1 <= len(book_id) <= 2048:
+        raise HTTPException(400, 'Invalid book identifier')
+    return data_dir() / 'reading' / 'covers' / sha256(book_id.encode()).hexdigest()
+
+
+@router.get('/covers/state/{book_id:path}')
+def cover_state(book_id: str):
+    path = cover_path(book_id)
+    try:
+        size = path.stat().st_size
+    except FileNotFoundError:
+        return {'state': 'original'}
+    return {'state': 'custom' if size else 'hidden'}
+
+
+@router.get('/covers/image/{book_id:path}')
+def cover_image(book_id: str):
+    path = cover_path(book_id)
+    try:
+        with path.open('rb') as source:
+            data = source.read(MAX_COVER + 1)
+    except FileNotFoundError:
+        raise HTTPException(404, 'No custom cover')
+    if not data or len(data) > MAX_COVER:
+        raise HTTPException(404, 'No custom cover')
+    return Response(data, media_type='image/jpeg', headers=COVER_HEADERS)
+
+
+@router.put('/covers/image/{book_id:path}')
+async def set_cover(book_id: str, request: Request):
+    path = cover_path(book_id)
+    if request.headers.get('content-type') != 'image/jpeg':
+        raise HTTPException(415, 'Expected a JPEG cover')
+    data = bytearray()
+    async for chunk in request.stream():
+        data.extend(chunk)
+        if len(data) > MAX_COVER:
+            raise HTTPException(413, 'Cover is too large')
+    if not data.startswith(b'\xff\xd8\xff') or not data.endswith(b'\xff\xd9'):
+        raise HTTPException(422, 'Invalid JPEG cover')
+    await run_in_threadpool(write_cover, path, data)
+    return {'state': 'custom'}
+
+
+def write_cover(path: Path, data: bytes | bytearray):
+    path.parent.mkdir(parents=True, exist_ok=True)
+    temporary = None
+    try:
+        with NamedTemporaryFile(dir=path.parent, delete=False) as output:
+            temporary = Path(output.name)
+            output.write(data)
+        temporary.replace(path)
+    finally:
+        if temporary is not None:
+            temporary.unlink(missing_ok=True)
+
+
+@router.post('/covers/hide/{book_id:path}')
+def hide_cover(book_id: str):
+    write_cover(cover_path(book_id), b'')
+    return {'state': 'hidden'}
+
+
+@router.delete('/covers/image/{book_id:path}')
+def restore_cover(book_id: str):
+    cover_path(book_id).unlink(missing_ok=True)
+    return {'state': 'original'}

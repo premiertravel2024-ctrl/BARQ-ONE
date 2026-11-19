@@ -180,3 +180,10 @@
 .bs-series-detail .bs-issue-list li{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px;align-items:center}
 .bs-issue-list li>span{overflow-wrap:anywhere;line-height:1.55;text-align:match-parent}
 .bs-issue-list li>.bs-series-open{white-space:nowrap;justify-content:center}
+
+.bs-editable-cover{position:relative;min-width:0;align-self:start;justify-self:start}
+.bs-cover-edit{position:absolute;inset-block-start:5px;inset-inline-end:5px;display:grid;place-items:center;width:28px;height:28px;padding:0;border:1px solid #ffffff43;border-radius:7px;color:#f9edf3;background:#19151eea}
+.bs-cover-edit:hover,.bs-cover-edit:focus-visible{background:#793a58}
+.bs-cover-options{display:grid;gap:9px}
+.bs-cover-options .bs-muted-btn{display:inline-flex;align-items:center;gap:8px;justify-self:start;padding:8px 10px;border:1px solid var(--border-color);border-radius:8px}
+.bs-cover-options>strong{overflow-wrap:anywhere}
