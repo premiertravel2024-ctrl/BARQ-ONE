@@ -44,7 +44,7 @@ jobs:
         run: |
           test -s web/react/index.html
           test -s web/react/audio/live-capture.js
-          grep -l 'v2.41.12-build-gated-ui' web/react/assets/*.js
+          grep -l 'v2.41.13-build-gated-ui' web/react/assets/*.js
           test "$(find web/react/assets -name '*.js' -type f | wc -l)" -ge 1
       - name: Publish compiled UI for patch packaging
         uses: actions/upload-artifact@v4
@@ -82,19 +82,19 @@ jobs:
           Write-Host "Using Inno compiler at $compiler"
           & $compiler ./scripts/installer_ui_update.iss
           if ($LASTEXITCODE -ne 0) { throw 'UI-only compilation failed' }
-          $result = 'release/BARQ_UI_Update_2.41.12.exe'
+          $result = 'release/BARQ_UI_Update_2.41.13.exe'
           if (!(Test-Path $result)) { throw 'Missing compact UI update installer' }
           $size = (Get-Item $result).Length
           if ($size -gt 75MB) { throw "The UI update is too large: $size bytes" }
           $sum = (Get-FileHash $result -Algorithm SHA256).Hash.ToLowerInvariant()
-          "$sum  BARQ_UI_Update_2.41.12.exe" | Set-Content release/BARQ_UI_Update_2.41.12.sha256 -Encoding ascii
+          "$sum  BARQ_UI_Update_2.41.13.exe" | Set-Content release/BARQ_UI_Update_2.41.13.sha256 -Encoding ascii
           Write-Host "BARQ UI patch built; $size bytes; SHA256 $sum"
       - name: Upload verified compact update
         uses: actions/upload-artifact@v4
         with:
-          name: BARQ-v2.41.12-UI-only-update
+          name: BARQ-v2.41.13-UI-only-update
           path: |
-            release/BARQ_UI_Update_2.41.12.exe
-            release/BARQ_UI_Update_2.41.12.sha256
+            release/BARQ_UI_Update_2.41.13.exe
+            release/BARQ_UI_Update_2.41.13.sha256
           if-no-files-found: error
           retention-days: 30

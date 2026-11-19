@@ -9,6 +9,7 @@ import re
 import subprocess
 import sys
 import threading
+import time
 from contextlib import contextmanager
 from dataclasses import dataclass
 from pathlib import Path
@@ -138,31 +139,50 @@ def check_release(channel: Channel) -> Release:
     return Release.verify(bytes(chunks), channel.public_key)
 
 
-def download_release(channel: Channel, release: Release, directory: Path) -> Path:
+def download_release(channel: Channel, release: Release, directory: Path, progress=None) -> Path:
     directory.mkdir(parents=True, exist_ok=True)
-    temporary = None
-    try:
-        with NamedTemporaryFile(dir=directory, prefix='barq-', suffix='.part', delete=False) as output:
-            temporary = Path(output.name)
-            count = 0
-            digest = hashlib.sha256()
-            with httpx.Client(timeout=httpx.Timeout(30, connect=12), follow_redirects=False) as client:
-                with update_response(client, channel, release.path) as response:
-                    response.raise_for_status()
-                    for chunk in response.iter_bytes(chunk_size=1024 * 1024):
-                        count += len(chunk)
-                        if count > release.size:
-                            raise ValueError('Unexpected installer size')
-                        digest.update(chunk)
-                        output.write(chunk)
-            if count != release.size or digest.hexdigest() != release.digest:
-                raise ValueError('Installer failed verification')
-        target = directory / installer_name(release.version)
-        temporary.replace(target)
-        return target
-    finally:
-        if temporary is not None:
-            temporary.unlink(missing_ok=True)
+    target = directory / installer_name(release.version)
+    if target.is_file() and target.stat().st_size == release.size:
+        with target.open('rb') as cached:
+            if hashlib.file_digest(cached, 'sha256').hexdigest() == release.digest:
+                return target
+
+    for attempt in range(1, 4):
+        temporary = None
+        try:
+            with NamedTemporaryFile(dir=directory, prefix='barq-', suffix='.part', delete=False) as output:
+                temporary = Path(output.name)
+                count = 0
+                digest = hashlib.sha256()
+                if progress:
+                    progress(count, release.size, attempt)
+                with httpx.Client(timeout=httpx.Timeout(45, connect=12), follow_redirects=False) as client:
+                    with update_response(client, channel, release.path) as response:
+                        response.raise_for_status()
+                        for chunk in response.iter_bytes(chunk_size=256 * 1024):
+                            count += len(chunk)
+                            if count > release.size:
+                                raise ValueError('Unexpected installer size')
+                            digest.update(chunk)
+                            output.write(chunk)
+                            if progress:
+                                progress(count, release.size, attempt)
+                if count != release.size:
+                    raise httpx.ReadError('Installer download ended before the expected size')
+                if digest.hexdigest() != release.digest:
+                    raise ValueError('Installer failed verification')
+            temporary.replace(target)
+            return target
+        except (httpx.TransportError, httpx.HTTPStatusError) as error:
+            retryable = not isinstance(error, httpx.HTTPStatusError) or error.response.status_code in (
+                404, 408, 429, 500, 502, 503, 504)
+            if attempt == 3 or not retryable:
+                raise
+        finally:
+            if temporary is not None:
+                temporary.unlink(missing_ok=True)
+        time.sleep(attempt)
+    raise RuntimeError('Update retries exhausted')
 
 
 @dataclass(frozen=True)
@@ -193,6 +213,7 @@ class UpdateBridge:
         self._supported = (sys.platform == 'win32' and getattr(sys, 'frozen', False)
                            and (self._directory / 'unins000.exe').is_file())
         self._pending: PendingInstall | None = None
+        self._download_progress = None
 
     def _trusted(self) -> bool:
         if self._window is None:
@@ -215,6 +236,14 @@ class UpdateBridge:
                 return dict(result, status='error')
         return result
 
+    def update_progress(self) -> dict:
+        if not self._trusted():
+            return {}
+        return self._download_progress or {}
+
+    def _report_progress(self, count: int, total: int, attempt: int) -> None:
+        self._download_progress = {'received': count, 'total': total, 'attempt': attempt}
+
     def cancel_staged_update(self) -> dict:
         if not self._trusted() or not self._supported:
             return {'status': 'unavailable'}
@@ -232,7 +261,7 @@ class UpdateBridge:
                 release = check_release(self._channel)
                 if release.version != version or version_key(release.version) <= version_key(VERSION):
                     return {'status': 'changed'}
-                path = download_release(self._channel, release, data_dir() / 'updates')
+                path = download_release(self._channel, release, data_dir() / 'updates', self._report_progress)
                 self._pending = PendingInstall(path, release, self._directory)
             if stage_only:
                 return {'status': 'staged'}
@@ -244,8 +273,15 @@ class UpdateBridge:
             timer.daemon = True
             timer.start()
             return {'status': 'installing'}
+        except httpx.HTTPError:
+            logging.getLogger(__name__).exception('BARQ update transfer failed')
+            return {'status': 'network-error'}
+        except ValueError:
+            logging.getLogger(__name__).exception('BARQ update integrity check failed')
+            return {'status': 'verification-error'}
         except Exception:
             logging.getLogger(__name__).exception('BARQ could not download the update')
             return {'status': 'error'}
         finally:
+            self._download_progress = None
             self._lock.release()

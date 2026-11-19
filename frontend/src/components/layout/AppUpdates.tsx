@@ -3,7 +3,8 @@ import {Download,RefreshCw} from 'lucide-react';
 import {Modal} from '../ui/Modal';
 
 type Check = {status:string;current:string;version?:string;notes?:string;size?:number};
-type UpdateApi = {check_update:()=>Promise<Check>;download_update:(version:string,stageOnly?:boolean)=>Promise<{status:string}>;cancel_staged_update?:()=>Promise<{status:string}>};
+type Progress={received?:number;total?:number;attempt?:number};
+type UpdateApi = {check_update:()=>Promise<Check>;download_update:(version:string,stageOnly?:boolean)=>Promise<{status:string}>;cancel_staged_update?:()=>Promise<{status:string}>;update_progress?:()=>Promise<Progress>};
 
 function desktopUpdater():UpdateApi|undefined{
  return (window as Window&{pywebview?:{api?:UpdateApi}}).pywebview?.api;
@@ -13,6 +14,9 @@ export function AppUpdates({ar}:{ar:boolean}){
  const [auto,setAuto]=useState(()=>localStorage.getItem('barq-auto-download-updates')!=='off');
  const [staged,setStaged]=useState<string>();
  const staging=useRef(false);
+ const [background,setBackground]=useState(false);
+ const [progress,setProgress]=useState<Progress>();
+ const [failure,setFailure]=useState<string>();
  const [native,setNative]=useState(false);
  const [open,setOpen]=useState(false);
  const [checking,setChecking]=useState(false);
@@ -40,29 +44,44 @@ export function AppUpdates({ar}:{ar:boolean}){
   const api=desktopUpdater();
   if(!api)return;
   const version=check.version;
-  staging.current=true;
+  staging.current=true;setBackground(true);setFailure(undefined);
   void api.download_update(version,true).then(result=>{
    if(result.status==='staged')setStaged(version);
-  }).catch(()=>{}).finally(()=>{staging.current=false;});
+   else if(result.status.endsWith('error'))setFailure(result.status);
+  }).catch(()=>setFailure('error')).finally(()=>{staging.current=false;setBackground(false);});
  },[auto,check,install,staged]);
+ useEffect(()=>{
+  if(!background&&install!=='working'){setProgress(undefined);return;}
+  const api=desktopUpdater();
+  if(!api?.update_progress)return;
+  let live=true;
+  const poll=()=>void api.update_progress?.().then(value=>{if(live)setProgress(value);}).catch(()=>{});
+  poll();
+  const timer=window.setInterval(poll,700);
+  return()=>{live=false;window.clearInterval(timer);};
+ },[background,install]);
  if(!native)return null;
  const available=check?.status==='available';
  const label=ar?(available?'تحديث متاح':'تحديثات التطبيق'):(available?'Update available':'App updates');
- const blocked=install==='working'||install==='installing';
+ const blocked=background||install==='working'||install==='installing';
+ const percent=progress?.total?Math.floor(100*(progress.received??0)/progress.total):undefined;
  async function download(){
   const api=desktopUpdater();
-  if(!api||!check?.version||blocked)return;
-  setInstall('working');
+  if(!api||!check?.version||blocked||staging.current)return;
+  setFailure(undefined);setInstall('working');
   try{
    const result=await api.download_update(check.version);
    if(result.status==='installing'){setInstall('installing');return;}
    if(result.status==='changed'){await refresh();setInstall(undefined);return;}
-   setInstall('error');
-  }catch{setInstall('error');}
+   if(result.status==='busy'){setInstall(undefined);return;}
+   setFailure(result.status);setInstall('error');
+  }catch{setFailure('error');setInstall('error');}
  }
  const summary=install==='installing'?(ar?'جاري إغلاق برق لتثبيت التحديث…':'Closing BARQ to install the update…'):
-  install==='working'?(ar?'جاري تنزيل التحديث والتحقق منه…':'Downloading and verifying the update…'):
-  install==='error'?(ar?'تعذّر تنزيل التحديث أو التحقق منه. جرّب تاني.':'Unable to download or verify the update. Try again.'):
+  (background||install==='working')?(ar?'جاري تنزيل التحديث والتحقق منه…':'Downloading and verifying the update…'):
+  failure==='network-error'?(ar?'الاتصال اتقطع أثناء تنزيل التحديث. تقدر تعيد المحاولة.':'The connection dropped while downloading. You can retry.'):
+  failure==='verification-error'?(ar?'ملف التحديث ما طابقش التوقيع أو البصمة المتوقعة.':'The update signature or checksum could not be verified.'):
+  (failure||install==='error')?(ar?'تعذّر تنزيل التحديث أو التحقق منه. جرّب تاني.':'Unable to download or verify the update. Try again.'):
   checking?(ar?'جاري التحقق من التحديثات…':'Checking for updates…'):
   staged&&staged===check?.version?(ar?'التحديث اتحمّل وهيتثبّت عند الخروج من برق.':'Downloaded. The update will install when you exit BARQ.'):
   available?(ar?'الإصدار الجديد جاهز للتنزيل.':'The new version is ready to download.'):
@@ -90,9 +109,14 @@ export function AppUpdates({ar}:{ar:boolean}){
       }
     }}/>{ar?'نزّل التحديثات تلقائيًا وثبّتها عند الخروج':'Download updates automatically and install on exit'}</label>
     <p role="status">{summary}</p>
+    {(background||install==='working')&&percent!==undefined&&<div>
+     <progress max={100} value={percent} aria-label={ar?'نسبة تنزيل التحديث':'Update download progress'}/>
+     <bdi> {percent}%</bdi>
+     {(progress?.attempt??1)>1&&<small> · {ar?'محاولة':'Attempt'} {progress?.attempt}/3</small>}
+    </div>}
     <div className="ops-update-actions">
      {available&&<button type="button" className="ops-update-install" disabled={blocked||checking} onClick={()=>void download()}><Download size={16}/>{ar?'حدّث الآن':'Update now'}</button>}
-     <button type="button" disabled={blocked||checking} onClick={()=>{setInstall(undefined);void refresh();}}><RefreshCw size={15}/>{ar?'التحقق من التحديث':'Check for updates'}</button>
+     <button type="button" disabled={blocked||checking} onClick={()=>{setInstall(undefined);setFailure(undefined);void refresh();}}><RefreshCw size={15}/>{ar?'التحقق من التحديث':'Check for updates'}</button>
     </div>
    </div>
   </Modal>
