@@ -49,6 +49,7 @@ async function verifyPlayback(browser,mode){
    };
   });
   await host.goto('http://localhost:44331/r/test?role=host&paired=1&mode='+mode);
+  await host.locator('#sources summary').click();
   await host.locator('#linkMedia').click();
   const field=await host.locator('#linkMedia').evaluate(input=>({
    height:input.getBoundingClientRect().height,
@@ -88,7 +89,7 @@ async function verifyPlayback(browser,mode){
   await host.locator('#video').evaluate(media=>{media.loop=true;});
   await host.locator('#file').setInputFiles({name:'sample.webm',mimeType:mode==='music'?'audio/webm':'video/webm',buffer:Buffer.from(fixture)});
   try{
-   await host.waitForFunction(()=>document.querySelector('#mediaNote').textContent.includes('بيتشارك'),null,{timeout:10000});
+   await host.waitForFunction(()=>{const media=document.querySelector('#video');return media.readyState>=2&&!media.paused&&!document.querySelector('#sources').open;},null,{timeout:10000});
   }catch(error){
    const state=await host.locator('#video').evaluate(media=>({error:media.error?.message,time:media.currentTime,paused:media.paused,ready:media.readyState,secure:isSecureContext,status:document.querySelector('#status').textContent}));
    throw new Error(mode+' host did not share media: '+JSON.stringify(state),{cause:error});
@@ -135,6 +136,10 @@ async function verifyPlayback(browser,mode){
   await guestComposer.press('Enter');
   await host.waitForFunction(()=>document.querySelector('#messages .msg span')?.textContent==='أهلاً  برق\nسطر تاني');
   await host.locator('#chatText').fill('رد المضيف');
+  assert.equal(await host.locator('#chatText').evaluate(field=>getComputedStyle(field).outlineStyle),'none');
+  const toolbar=await host.locator('.room-viewer-actions').boundingBox();
+  const player=await host.locator('#videoStage').boundingBox();
+  assert.ok(toolbar.y+toolbar.height<=player.y+1,'room controls must stay above the media');
   await host.locator('#send').click();
   await guest.locator('#messages .msg[data-mine="false"]').getByText('رد المضيف').waitFor();
   if(mode==='music'){

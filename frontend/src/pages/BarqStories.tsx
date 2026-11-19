@@ -111,8 +111,9 @@ export function BarqStories(){
      <Cover book={book}/>
      <div className="bs-real-copy"><span>{book.genre}</span><h3 dir="auto">{book.title}</h3><strong dir="auto">{book.author}</strong><p>{book.description}</p>
       <div className="bs-published-actions">
-       <button className="bs-series-open" type="button" onClick={()=>openBook(book)}>
-        {book.series?label('أعداد السلسلة','Browse issues'):book.format?label('اقرأ في برق','Read in BARQ'):label('افتح نسختك PDF','Open your PDF')}<ArrowLeft size={15}/>
+       <button className="bs-series-open" type="button" onClick={()=>openBook(book)}
+        aria-label={book.series?label('أعداد السلسلة','Browse issues'):book.format?label('اقرأ في برق','Read in BARQ'):label('افتح نسختك PDF','Open your PDF')}>
+        {book.series?label('الأعداد','Issues'):book.format?label('اقرأ','Read'):label('افتح PDF','Open PDF')}<ArrowLeft size={15}/>
        </button>
        <button className="bs-favorite" type="button" aria-label={label('احفظ ','Save ')+book.title} aria-pressed={favorites.includes(book.id)} onClick={()=>favorite(book.id)}>
         <Heart size={17} fill={favorites.includes(book.id)?'currentColor':'none'}/>

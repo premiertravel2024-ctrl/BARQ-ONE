@@ -138,7 +138,7 @@ export function MusicServices({provider,ar,onSelected,onShare,roomOnly=false}:{p
  return <section className={roomOnly?"bm-service bm-service-compact":"bm-service"} data-provider={provider} aria-label={brand}>
   {!roomOnly&&<header className="bm-service-intro">
    <div className="bm-service-icon" aria-hidden="true"><Headphones size={28}/></div>
-   <div><h2>{brand}</h2><p>{ar?'ابحث باسم أغنية أو فنان أو ألبوم.':'Find a song, artist, or album by name.'}</p></div>
+   <div><h2>{brand}</h2></div>
   </header>}
   <form className="bm-service-form" onSubmit={e=>void search(e)}>
    <label htmlFor={'barq-'+provider+'-search'}>{ar?'البحث في ':'Search '}{brand}</label>

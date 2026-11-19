@@ -18,7 +18,6 @@ export function EmptyState({onSuggestion,onHologram}:{onSuggestion:(text:string)
    <section className="barq-welcome-hero">
     <div className="barq-welcome-copy">
      <h1>{ar?'عايز برق يعمل إيه؟':'What can BARQ do for you?'}</h1>
-     <p>{ar?'اكتب طلبك هنا أو افتح الهولوجرام واتكلم مع برق.':'Type your request or open the hologram to talk to BARQ.'}</p>
      <button className="barq-hero-action focus-ring" type="button" onClick={onHologram}>
       <Orbit size={19}/>{ar?'افتح الهولوجرام':'Open hologram'}<ArrowUpRight size={16} className="barq-direction-icon"/>
      </button>

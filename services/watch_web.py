@@ -389,6 +389,46 @@ body:not(.room-music) #videoStage:is(:fullscreen, :-webkit-full-screen){height:1
 .room-music #videoStage{padding:0}
 .room-music #videoStage:before{display:none}
 @media(max-width:700px){.room-embedded main{padding:8px}.room-music #musicNow{padding:14px}}
+
+/* Toolbar above the player, with compact source settings and a quiet writing field. */
+body .grid>.room-media-panel{display:flex;flex-direction:column;gap:10px}
+body .grid>.room-media-panel>.room-viewer-actions{order:-3;margin:0;justify-content:flex-end}
+body .grid>.room-media-panel>#localWrap{order:-2}
+body .grid>.room-media-panel>#videoStage{order:0}
+body .grid>.room-media-panel>#officialMusic{order:1}
+body .grid>.room-media-panel>#mediaNote{order:2;font-size:.75rem;line-height:1.5}
+.room-viewer-actions .guest-tools-label{display:none}
+body .room-viewer-actions .row{margin:0;gap:6px}
+body .room-viewer-actions button{
+ display:inline-flex;align-items:center;justify-content:center;gap:7px;
+ height:36px;min-height:36px;min-width:36px;padding:7px;border-radius:8px;
+ background:#20242d;border:1px solid #ffffff20;color:#dce0e9;flex:none
+}
+.room-viewer-actions button svg{width:18px;height:18px;pointer-events:none}
+.room-tool-label{font-size:.76rem}
+#sources{background:#191d24;border-color:#ffffff1c;padding:0 10px}
+#sources>summary{display:flex;align-items:center;gap:8px;min-height:36px;list-style:none}
+#sources>summary::-webkit-details-marker{display:none}
+#sources>summary>span:first-child{font-size:20px;line-height:1;color:#eea5bd}
+#sources[open]>summary>span:first-child{transform:rotate(45deg)}
+#sources .source-options{padding-top:6px}
+#sources .source-hint{font-size:.76rem;line-height:1.6}
+#sources #linkMedia{min-width:0;flex:1}
+#sources .file-name{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#roomChat{padding:12px}
+#roomChat #messages{height:clamp(220px,42dvh,440px);padding:10px}
+#roomChat .msg{max-width:94%;padding:9px 11px;line-height:1.65;font-size:.9rem}
+#roomChat #chatText{padding:10px 11px;min-height:42px;line-height:1.55;border-color:#ffffff26}
+#roomChat #chatText:focus,#roomChat #chatText:focus-visible{
+ outline:none;box-shadow:none;border-color:#79818f
+}
+#roomChat #send{height:42px;width:42px;min-height:42px;border-radius:8px}
+@media(max-width:700px){
+ body .room-viewer-actions button{height:42px;min-width:42px}
+ .room-viewer-actions{flex-wrap:wrap}
+ #sources .source-options{grid-template-columns:1fr}
+}
+#mediaNote:empty{display:none}
 </style></head>
 <body><main><header class="room-head">
  <div><h1 id="roomTitle">غرفة المشاهدة</h1><p class="room-head-note">BARQ ONE</p></div>
@@ -397,10 +437,10 @@ body:not(.room-music) #videoStage:is(:fullscreen, :-webkit-full-screen){height:1
 <div id="joinPanel" class="panel" hidden><p>ادخل كود الغرفة اللي بعتهولك صاحبها</p><div class="row"><input id="code" maxlength="6" inputmode="numeric" placeholder="كود الغرفة" aria-label="كود الغرفة" autocomplete="one-time-code"><button id="join">دخول</button></div></div>
 <div class="grid">
 <section class="panel room-media-panel">
+ <div class="room-viewer-actions"><div class="row room-guest-controls" id="guestWrap" hidden aria-label="أدوات المشاهدة"><span class="guest-tools-label">التحكم في المشاهدة</span><button id="resumePlayback" title="تشغيل الصوت والفيديو" aria-label="تشغيل الصوت والفيديو"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 5v14l11-7-11-7Z"/></svg></button><button id="pauseRequest" title="طلب تشغيل أو إيقاف مؤقت" aria-label="طلب تشغيل أو إيقاف مؤقت"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 5v14M15 5v14"/></svg></button><button id="seekRequest" title="طلب تقديم 30 ثانية" aria-label="طلب تقديم 30 ثانية"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 4 8 8-8 8M19 4v16"/></svg></button><button type="button" id="retryMedia" hidden aria-label="إعادة توصيل البث" title="إعادة توصيل البث"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 7v5h-5M4 17v-5h5M6 7a7 7 0 0 1 12-1l2 3M4 15l2 3a7 7 0 0 0 12-1"/></svg></button></div><button type="button" id="chatToggle" aria-expanded="true" aria-controls="roomChat" aria-label="إخفاء الدردشة" title="إخفاء الدردشة"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 11a8 8 0 0 1-8 8H5l-3 3V11a9 9 0 0 1 19 0Z"/></svg><span class="room-tool-label">الدردشة</span></button></div>
  <div id="localWrap" hidden>
-  <details id="sources" open><summary id="sourceTitle">اختيار الفيلم وإعداداته</summary>
+  <details id="sources"><summary title="اختيار الفيلم وإعداداته"><span aria-hidden="true">＋</span><span id="sourceTitle">اختيار الفيلم وإعداداته</span></summary>
 
-  <p class="source-hint" id="sourceHint">فيديو من جهازك أو رابط مباشر للملف.</p>
   <div class="source-options">
    <label class="file-picker"><span id="fileLabel">فيديو من جهازك</span><span class="file-cta">اختيار ملف</span><span class="file-name" id="fileName">لم يتم اختيار ملف</span><input id="file" type="file" accept="video/*,.mp4,.webm,.mov" aria-label="اختيار ملف للغرفة"></label>
    <form class="row" id="linkForm"><input id="linkMedia" type="url" placeholder="https://…" aria-label="رابط ملف الوسائط" required><button>تشغيل من رابط</button></form>
@@ -414,7 +454,7 @@ body:not(.room-music) #videoStage:is(:fullscreen, :-webkit-full-screen){height:1
   <strong id="musicNowTitle">اختار أغنية نسمعها سوا</strong><small id="musicNowSource">ملف صوتي من جهازك أو رابط رسمي</small>
   <div class="music-equalizer" aria-hidden="true"><i/><i/><i/><i/><i/><i/><i/><i/><i/></div>
  </div><video id="video" controls controlslist="nofullscreen" playsinline></video><div id="waitingOverlay" class="room-waiting" role="status" aria-live="polite"><span class="room-waiting-icon" aria-hidden="true">BARQ</span><strong id="waitingTitle">في انتظار الفيديو</strong><small id="waitingDescription">الفيديو هيظهر أول ما المضيف يشغّله</small></div><div id="captions" class="captions" dir="auto" aria-live="off"></div><div class="player-screen-actions" id="screenActions"><button type="button" id="enterFullscreen" title="تكبير الفيديو" aria-label="تكبير الفيديو" aria-pressed="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path class="expand-icon" d="M9 4H4v5m11-5h5v5M4 15v5h5m11-5v5h-5"/><path class="collapse-icon" d="M4 9h5V4m11 5h-5V4M9 20v-5H4m11 5v-5h5"/></svg></button></div></div>
- <div class="room-viewer-actions"><div class="row room-guest-controls" id="guestWrap" hidden aria-label="أدوات المشاهدة"><span class="guest-tools-label">التحكم في المشاهدة</span><button id="resumePlayback" title="تشغيل الصوت والفيديو">تشغيل بالصوت</button><button id="pauseRequest" title="طلب تشغيل أو إيقاف مؤقت">اطلب تشغيل / إيقاف</button><button id="seekRequest" title="طلب تقديم 30 ثانية">اطلب تقديم ٣٠ ثانية</button><button type="button" id="retryMedia" hidden>إعادة توصيل البث</button></div><button type="button" id="chatToggle" aria-expanded="true" aria-controls="roomChat">إخفاء الدردشة</button></div>
+
  <section id="officialMusic" hidden class="row"></section>
  <p class="sub" id="mediaNote" role="status"></p>
 </section>
@@ -448,7 +488,6 @@ if(music){
  document.getElementById('waitingOverlay').hidden=true;
  document.getElementById('musicNow').hidden=false;
  document.getElementById('sourceTitle').textContent='اختار الأغنية';
- document.getElementById('sourceHint').textContent='شغّل من جهازك أو استخدم رابط صوت مباشر أو Spotify وأنغامي.';
  document.getElementById('screenActions').hidden=true;
  var audio=document.createElement('audio');audio.id='video';audio.controls=true;video.replaceWith(audio);video=audio;
  document.getElementById('roomTitle').textContent='غرفة الموسيقى';
@@ -491,7 +530,8 @@ chatToggle.onclick=function(){
  roomChat.hidden=!roomChat.hidden;
  document.body.classList.toggle('room-focus',roomChat.hidden);
  chatToggle.setAttribute('aria-expanded',String(!roomChat.hidden));
- chatToggle.textContent=roomChat.hidden?'إظهار الدردشة':'إخفاء الدردشة';
+ var chatLabel=roomChat.hidden?'إظهار الدردشة':'إخفاء الدردشة';
+ chatToggle.setAttribute('aria-label',chatLabel);chatToggle.title=chatLabel;
 };
 var waitingOverlay=document.getElementById('waitingOverlay');
 function showWaiting(waiting,title,description){
@@ -889,7 +929,7 @@ if(host){
     clearTimeout(trackTimer);
     showWaiting(false);
     document.getElementById('sources').open=false;
-    document.getElementById('mediaNote').textContent=external?'المشاركة شغالة من الرابط المباشر.':'الملف بيتشارك مباشرة من جهازك.';
+    document.getElementById('mediaNote').textContent='';
     queueRTC(makeOffer);
    }
    var trackTimer=setTimeout(function(){
@@ -924,7 +964,8 @@ if(host){
  resumeButton.onclick=function(){
   guestSoundEnabled=!guestSoundEnabled;
   video.muted=!guestSoundEnabled;
-  resumeButton.textContent=guestSoundEnabled?'كتم الصوت':'تشغيل بالصوت';
+  var soundLabel=guestSoundEnabled?'كتم الصوت':'تشغيل بالصوت';
+  resumeButton.setAttribute('aria-label',soundLabel);resumeButton.title=soundLabel;
   if(video.srcObject||video.src)playGuest();
  };
  retryButton.onclick=function(){

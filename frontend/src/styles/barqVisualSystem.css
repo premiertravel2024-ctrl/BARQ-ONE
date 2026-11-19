@@ -143,3 +143,39 @@
 [data-theme="light"] .ops-chat-stage .barq-suggestion-card:hover { background: var(--bg-elevated); }
 [data-theme="light"] .ops-chat-stage .barq-composer-surface { border-color: var(--border-strong); }
 [data-theme="light"] .ops-shell .ops-rail { background: var(--bg-surface); }
+
+/* Consistent field, button and content sizing across BARQ sections. */
+.ops-shell :is(input,textarea,select):focus,
+.ops-shell :is(input,textarea,select):focus-visible {
+  outline: none;
+  box-shadow: none;
+  border-color: #79818f;
+}
+.ops-shell .barq-composer-surface:focus-within {
+  box-shadow: none;
+  border-color: #79818f;
+}
+.ops-shell :is(button,input,textarea,select) { font-style: normal; }
+.ops-shell .one-page button { line-height: 1.45; }
+.ops-shell .barq-online-room { width: 100%; min-height: 42px; justify-content: center; }
+.ops-shell .barq-local-room { margin-top: 4px; }
+.ops-shell .barq-local-room summary { padding: 9px 0; cursor: pointer; font-size: .78rem; color: #bcb5bd; }
+.ops-shell .barq-local-room button { margin-top: 6px; width: 100%; min-height: 40px; }
+.ops-shell .barq-cinema-join-form p { font-weight: 400; font-size: .88rem; line-height: 1.8; }
+.ops-shell .barq-watch-player .barq-room-actions > button { height: 36px; min-height: 36px; border-radius: 8px; }
+.ops-shell .bs-hub .bs-real-grid { grid-template-columns: repeat(auto-fill,minmax(min(100%,300px),1fr)); gap: 14px; }
+.ops-shell .bs-hub .bs-published-card { padding: 14px; gap: 14px; background: var(--barq-panel); align-content: start; }
+.ops-shell .bs-published-card .bs-real-copy { display: flex; flex-direction: column; gap: 5px; min-width: 0; }
+.ops-shell .bs-published-card .bs-real-copy > p { margin: 4px 0 8px; font-size: .8rem; line-height: 1.7; }
+.ops-shell .bs-published-card .bs-real-copy > strong { font-weight: 500; font-size: .8rem; color: var(--text-secondary); }
+.ops-shell .bs-published-card .bs-published-actions { display: flex; gap: 7px; margin-top: auto; }
+.ops-shell .bs-published-actions .bs-series-open { flex: 1; min-width: 0; min-height: 38px; padding: 7px 10px; white-space: nowrap; font-size: .8rem; }
+.ops-shell .bs-published-actions .bs-favorite { flex: 0 0 38px; width: 38px; height: 38px; padding: 8px; }
+.ops-shell .bs-hub .bs-published-card .bs-real-cover { width: 86px; height: 129px; }
+.ops-shell .bs-publisher-link { margin-top: 4px; align-self: flex-start; min-height: 30px; font-size: .72rem; }
+.ops-shell .bs-hub .bs-title-row .bs-search { padding: 6px 10px; min-height: 40px; }
+.ops-shell .bs-filters button { min-height: 36px; padding: 7px 12px; font-weight: 500; }
+@media(max-width:650px) {
+ .ops-shell .bs-hub .bs-real-grid { grid-template-columns: 1fr; }
+ .ops-shell .barq-watch-player .barq-room-actions > button { min-height: 42px; height: 42px; }
+}
