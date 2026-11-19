@@ -49,11 +49,20 @@ def _weather(city: dict) -> dict:
         "current":"temperature_2m,relative_humidity_2m,apparent_temperature,weather_code,wind_speed_10m",
         "daily":"temperature_2m_max,temperature_2m_min,weather_code",
         "forecast_days":7,
+        "hourly":"temperature_2m,precipitation_probability,weather_code",
         "timezone":city["timezone"],
     })
     data = _get_json("https://api.open-meteo.com/v1/forecast?" + query)
     current = data["current"]
     daily = data["daily"]
+    hourly = data.get("hourly") or {}
+    current_hour = str(current.get("time", ""))[:13]
+    upcoming = [
+        {"time": when, "temperature": round(temp), "rain": int(rain), "code": int(code)}
+        for when, temp, rain, code in zip(hourly.get("time", []), hourly.get("temperature_2m", []),
+                                         hourly.get("precipitation_probability", []), hourly.get("weather_code", []))
+        if when[:13] >= current_hour and temp is not None and rain is not None and code is not None
+    ][:8]
     return {
         "temperature": round(float(current["temperature_2m"])),
         "feels_like": round(float(current["apparent_temperature"])),
@@ -69,6 +78,7 @@ def _weather(city: dict) -> dict:
                 daily["temperature_2m_max"],daily["temperature_2m_min"]))
         ],
         "source":"Open-Meteo",
+        "hourly":upcoming,
     }
 
 
@@ -150,7 +160,10 @@ def create_alarm(payload: AlarmRequest):
 
 
 class AlarmToggle(BaseModel):
-    enabled: bool
+    enabled: bool | None = None
+    time: str | None = Field(default=None, pattern=r"^(?:[01]\d|2[0-3]):[0-5]\d$")
+    label: str | None = Field(default=None, min_length=1, max_length=70)
+    repeat: bool | None = None
 
 
 @router.patch("/alarms/{alarm_id}")
@@ -158,9 +171,19 @@ def toggle_alarm(alarm_id: str, request: AlarmToggle):
     if not re.fullmatch(r"[0-9a-f]{32}", alarm_id):
         raise HTTPException(404,"المنبّه مش موجود.")
     try:
-        return automation_alarms.toggle_alarm(alarm_id,request.enabled)
+        return automation_alarms.update_alarm(alarm_id, **request.model_dump(exclude_none=True))
     except KeyError as exc:
         raise HTTPException(404,str(exc)) from exc
+    except ValueError as exc:
+        raise HTTPException(400,str(exc)) from exc
+
+
+@router.post("/alarms/{alarm_id}/snooze")
+def snooze_alarm(alarm_id: str):
+    try:
+        return automation_alarms.snooze_alarm(alarm_id)
+    except KeyError as exc:
+        raise HTTPException(404, "المنبّه مش موجود.") from exc
 
 
 @router.delete("/alarms/{alarm_id}")

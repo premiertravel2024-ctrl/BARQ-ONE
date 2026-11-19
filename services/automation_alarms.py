@@ -5,7 +5,7 @@ No system-wide tasks, arbitrary commands, or remote notifications are created.
 """
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import datetime, timedelta
 import json
 import os
 from pathlib import Path
@@ -73,14 +73,31 @@ def create_alarm(when: str, label: str, repeat: bool) -> dict:
 
 
 def toggle_alarm(identifier: str, enabled: bool) -> dict:
+    return update_alarm(identifier, enabled=enabled)
+
+
+def update_alarm(identifier: str, **changes) -> dict:
+    if "label" in changes:
+        changes["label"] = changes["label"].strip()
+        if not 1 <= len(changes["label"]) <= 70:
+            raise ValueError("عنوان المنبّه لازم يكون بين حرف و70 حرف.")
+    if "time" in changes and not _TIME_RE.fullmatch(changes["time"]):
+        raise ValueError("وقت المنبّه لازم يكون بالشكل HH:MM.")
     with _LOCK:
         entries = _read()
         for item in entries:
             if item.get("id") == identifier:
-                item["enabled"] = bool(enabled)
+                item.update(changes)
+                if "time" in changes or changes.get("enabled") is False:
+                    item.pop("snoozed_until", None)
                 _write(entries)
                 return item
         raise KeyError("المنبّه مش موجود.")
+
+
+def snooze_alarm(identifier: str, now: datetime | None = None) -> dict:
+    now = now or datetime.now().astimezone()
+    return update_alarm(identifier, snoozed_until=(now + timedelta(minutes=5)).isoformat())
 
 
 def delete_alarm(identifier: str) -> bool:
@@ -117,10 +134,15 @@ def tick(now: datetime | None = None, notify=_notify) -> int:
         entries = _read()
         dirty = False
         for alarm in entries:
-            if not alarm.get("enabled") or alarm.get("time") != marker[-5:] or alarm.get("last_fired") == marker:
+            scheduled = alarm.get("enabled") and alarm.get("time") == marker[-5:] and alarm.get("last_fired") != marker
+            snoozed = alarm.get("snoozed_until")
+            snooze_due = bool(snoozed and now >= datetime.fromisoformat(snoozed))
+            if not scheduled and not snooze_due:
                 continue
             alarm["last_fired"] = marker
-            if not alarm.get("repeat"):
+            if snooze_due:
+                alarm.pop("snoozed_until", None)
+            if scheduled and not alarm.get("repeat"):
                 alarm["enabled"] = False
             due.append(str(alarm.get("label") or "منبّه"))
             dirty = True
