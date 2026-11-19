@@ -176,3 +176,7 @@
 .bs-sound-panel select{width:100%;min-width:0}
 .bs-sound-meta{line-height:1.5;overflow-wrap:anywhere;font-size:.76rem;color:#d5c3d0}
 .bs-sound-controls{display:flex;justify-content:center;gap:7px}
+
+.bs-series-detail .bs-issue-list li{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px;align-items:center}
+.bs-issue-list li>span{overflow-wrap:anywhere;line-height:1.55;text-align:match-parent}
+.bs-issue-list li>.bs-series-open{white-space:nowrap;justify-content:center}
