@@ -23,7 +23,7 @@ export function CloudReading({ar,onBooks}:{ar:boolean;onBooks:(books:DriveBook[]
   setError('');
   try{
    const result=await requestJSON<{books:Item[]}>(root+'/catalogue');
-   onBooks(result.books.map(item=>({
+   onBooks(result.books.map<DriveBook>(item=>({
     edition:{id:'google:'+item.id,title:item.title,format:'pdf',driveId:item.id},
     group:item.group,coverId:item.cover||undefined,
    })).sort((a,b)=>a.edition.title.localeCompare(b.edition.title,undefined,{numeric:true})));
