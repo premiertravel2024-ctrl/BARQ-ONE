@@ -29,6 +29,7 @@ await page.route('**/v1/**',route=>{if(route.request().url().includes('/v1/music
  }
  return route.fulfill({status:200,headers:{...headers,'Content-Length':String(pcm.length)},body:pcm});
 }const u=new URL(route.request().url());
+if(u.pathname==='/v1/reading/drive/status')return route.fulfill({json:{connected:false}});
 if(u.pathname==='/v1/reading/books/egy-zenab')return route.fulfill({contentType:'application/pdf',body:smallPdf()});
 let data;if(u.pathname==='/v1/cinema/status')data={configured:true};if(u.pathname==='/v1/cinema/genres')data={genres:[{id:18,name:'Drama'}]};if(u.pathname==='/v1/cinema/browse')data={results:[title],page:Number(u.searchParams.get('page')||1),total_pages:2,total_results:40};if(u.pathname.startsWith('/v1/cinema/details/'))data={...title,genre_names:['Drama'],cast:[],related:[],runtime:120};if(u.pathname==='/v1/music/discover')data={source:'index',items:[{kind:'song',id:'102704',title:'تملى معاك'}]};if(u.pathname==='/v1/music/library')data={tracks:[{id:'a'.repeat(24),title:'QA local track',artist:'Tagged artist',album:'Tagged album',duration:20,artwork:false}]};if(u.pathname==='/v1/watchrooms/active')data={room:musicRoom};
 if(u.pathname==='/v1/app-context/state'&&route.request().method()==='PUT')appContextState=route.request().postDataJSON();
