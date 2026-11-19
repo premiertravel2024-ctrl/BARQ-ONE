@@ -181,7 +181,7 @@ export default function BookReader({book,ar,onClose}:{book:ReadingEdition;ar:boo
      error==='pdf'?(ar?'تعذّر قراءة ملف الـPDF. افتح نسخة سليمة أو جرّب تاني.':'Could not read the PDF. Open another copy or retry.'):
       (ar?'تعذّر تحميل الكتاب من المصدر. جرّب تاني بعد رجوع الاتصال.':'The book source is unavailable. Retry when connected.')}</p>
     <button type="button" onClick={()=>setRetry(x=>x+1)}>{ar?'إعادة المحاولة':'Retry'}</button></div>:
-    pdf?<Virtuoso className="bs-pdf-scroll" ref={viewport} dir="ltr" tabIndex={0}
+    pdf?<Virtuoso className="bs-pdf-scroll" ref={viewport} dir="ltr" tabIndex={0} style={{height:'var(--pdf-viewport)'}}
      aria-label={ar?'صفحات الكتاب':'Book pages'} totalCount={pdf.numPages}
      initialTopMostItemIndex={Math.min(initialPage.current,pdf.numPages)-1}
      defaultItemHeight={Math.ceil(pdfWidth*ratio)+12}
