@@ -23,7 +23,7 @@
 .ba-prayer-item{display:flex;justify-content:space-between;gap:9px;padding:11px 14px;border:1px solid #392f3c;border-radius:11px;background:#221d26;font-size:.84rem}.ba-prayer-item strong{white-space:nowrap}.ba-prayer-item.ba-current{border-color:#9c4664;background:#432735}
 .ba-alarm-form{display:grid;grid-template-columns:minmax(115px,.7fr) minmax(175px,1.3fr);gap:10px;align-items:end}.ba-alarm-form>label{display:grid;gap:6px;color:#d5bfd0;font-size:.74rem}
 .ba-alarm-form input:not([type=checkbox]){width:100%;min-height:40px;color:#fff;background:#14131b;border:1px solid #5b455a;border-radius:9px;padding:9px;font:inherit}
-.ba-alarm-form input[type=time]{direction:ltr;text-align:center}.ba-repeat{display:flex!important;align-items:center;gap:8px;font-size:.76rem!important}.ba-repeat input{accent-color:#ef557a}
+.ba-alarm-form input[type=time]{direction:ltr;text-align:center}
 .ba-automation button,.barq-automation button{display:inline-flex;align-items:center;justify-content:center;gap:6px;background:#312331;border:1px solid #684257;border-radius:9px;color:#fff;min-height:38px;padding:7px 13px;cursor:pointer;font:inherit;font-size:.79rem}
 .barq-automation button:hover{border-color:#eb658a}.barq-automation button.ba-primary{background:linear-gradient(110deg,#b53961,#8d2c52);border-color:#c96585}.barq-automation button:disabled{opacity:.5;cursor:not-allowed}
 .ba-alarm-list{display:grid;gap:8px;max-height:300px;overflow:auto;margin-top:14px}
