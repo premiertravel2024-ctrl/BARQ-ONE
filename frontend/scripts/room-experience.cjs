@@ -55,9 +55,10 @@ const fs=require('node:fs'),path=require('node:path'),assert=require('node:asser
     assert.equal(await frame.locator('#musicTransport').isVisible(),true);
     const controls=await frame.locator('.music-transport-buttons').evaluate(el=>({display:getComputedStyle(el).display,direction:getComputedStyle(el).flexDirection,width:el.getBoundingClientRect().width,children:[...el.children].map(child=>({id:child.id,x:child.getBoundingClientRect().x,y:child.getBoundingClientRect().y}))}));
     console.log('Music transport geometry',JSON.stringify(controls));
-    console.log('Music transport DOM',await frame.locator('#musicTransport').evaluate(el=>el.outerHTML));
     await page.screenshot({path:path.join(pictures,'music-geometry-check.png'),fullPage:true});
     assert.equal(controls.direction,'row');
+    const back=await frame.locator('#musicBack').boundingBox(),forward=await frame.locator('#musicForward').boundingBox();
+    assert.ok(Math.abs(back.y-forward.y)<1,'audio transport controls must share one row');
     const seek=await frame.locator('#musicSeek').boundingBox();
     assert.ok(seek.width>150,'music seek bar should use the available width');
 
