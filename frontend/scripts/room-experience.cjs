@@ -45,7 +45,8 @@ const fs=require('node:fs'),path=require('node:path'),assert=require('node:asser
    await frame.locator('#openMediaLink').click();
    await frame.locator('#linkMedia').fill('https://example.com/sample.mp4');
    const after=await frame.locator('#videoStage').boundingBox();
-   assert.ok(Math.abs(after.y-before.y)<1,'source controls must not push the player down');
+   await page.screenshot({path:path.join(pictures,'focused-'+mode+'-sources.png'),fullPage:true});
+   assert.ok(Math.abs(after.y-before.y)<1,'source controls must not push the player down: '+JSON.stringify({before,after}));
    await frame.locator('#linkMedia').press('Escape');
    assert.equal(await frame.locator('#sources').getAttribute('open'),null);
    if(mode==='music'){
