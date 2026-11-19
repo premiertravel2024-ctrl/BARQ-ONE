@@ -215,19 +215,27 @@ class UpdateBridge:
                 return dict(result, status='error')
         return result
 
-    def download_update(self, version: str) -> dict:
+    def cancel_staged_update(self) -> dict:
+        if not self._trusted() or not self._supported:
+            return {'status': 'unavailable'}
+        with self._lock:
+            self._pending = None
+        return {'status': 'cancelled'}
+
+    def download_update(self, version: str, stage_only: bool = False) -> dict:
         if not self._trusted() or not self._supported or self._channel is None:
             return {'status': 'unavailable'}
         if not self._lock.acquire(blocking=False):
             return {'status': 'busy'}
         try:
-            if self._pending is not None:
-                return {'status': 'installing'}
-            release = check_release(self._channel)
-            if release.version != version or version_key(release.version) <= version_key(VERSION):
-                return {'status': 'changed'}
-            path = download_release(self._channel, release, data_dir() / 'updates')
-            self._pending = PendingInstall(path, release, self._directory)
+            if self._pending is None or self._pending.release.version != version:
+                release = check_release(self._channel)
+                if release.version != version or version_key(release.version) <= version_key(VERSION):
+                    return {'status': 'changed'}
+                path = download_release(self._channel, release, data_dir() / 'updates')
+                self._pending = PendingInstall(path, release, self._directory)
+            if stage_only:
+                return {'status': 'staged'}
             from voice.background_window import shutdown
             def close_for_install():
                 shutdown()

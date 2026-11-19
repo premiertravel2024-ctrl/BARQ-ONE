@@ -107,3 +107,8 @@ def edition(book_id: str):
         raise HTTPException(502, 'Reading edition could not be loaded from its source')
     return Response(payload, media_type='application/pdf' if pdf else 'text/plain',
                     headers={'Cache-Control': 'private, max-age=86400', 'X-Content-Type-Options': 'nosniff'})
+
+
+from api_routes.reading_drive import router as drive_router
+
+router.include_router(drive_router)
