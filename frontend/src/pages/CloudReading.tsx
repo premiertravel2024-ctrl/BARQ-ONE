@@ -7,7 +7,27 @@ type Connection={connected:boolean;pending:boolean;failed:boolean;folder:string}
 type Item={id:string;title:string;group:string;cover:string|null};
 const root='/v1/reading/drive';
 
-export function CloudReading({ar,onBooks}:{ar:boolean;onBooks:(books:DriveBook[]|undefined)=>void}){
+export async function loadCloudBooks(){
+ const result=await requestJSON<{books:Item[]}>(root+'/catalogue');
+ return result.books.map<DriveBook>(item=>({
+  edition:{id:'google:'+item.id,title:item.title,format:'pdf',driveId:item.id},
+  group:item.group,coverId:item.cover||undefined,
+ })).sort((a,b)=>a.edition.title.localeCompare(b.edition.title,undefined,{numeric:true}));
+}
+
+export function useCloudBooks(){
+ const [books,setBooks]=useState<DriveBook[]>();
+ useEffect(()=>{
+  let live=true;
+  void requestJSON<Connection>(root+'/status')
+   .then(status=>status.connected?loadCloudBooks():undefined)
+   .then(items=>{if(live)setBooks(items);}).catch(()=>{});
+  return()=>{live=false;};
+ },[]);
+ return books;
+}
+
+export function CloudReading({ar}:{ar:boolean}){
  const [connection,setConnection]=useState<Connection>();
  const [config,setConfig]=useState(false);
  const [folder,setFolder]=useState('');
@@ -22,15 +42,11 @@ export function CloudReading({ar,onBooks}:{ar:boolean;onBooks:(books:DriveBook[]
   setBusy(true);
   setError('');
   try{
-   const result=await requestJSON<{books:Item[]}>(root+'/catalogue');
-   onBooks(result.books.map<DriveBook>(item=>({
-    edition:{id:'google:'+item.id,title:item.title,format:'pdf',driveId:item.id},
-    group:item.group,coverId:item.cover||undefined,
-   })).sort((a,b)=>a.edition.title.localeCompare(b.edition.title,undefined,{numeric:true})));
+   await loadCloudBooks();
   }catch{
    setError(ar?'تعذّر تحميل مكتبة Drive. راجع صلاحية الفولدر أو أعد الربط.':'Could not load Drive books. Check folder access or reconnect.');
   }finally{setBusy(false);}
- },[ar,onBooks]);
+ },[ar]);
 
  useEffect(()=>{
   let stopped=false;
@@ -69,7 +85,7 @@ export function CloudReading({ar,onBooks}:{ar:boolean;onBooks:(books:DriveBook[]
  async function disconnect(){
   try{
    await requestJSON(root+'/connection',{method:'DELETE'});
-   setConnection(undefined);onBooks(undefined);setRevision(n=>n+1);
+   setConnection(undefined);setRevision(n=>n+1);
   }catch{setError(label('تعذّر فصل Google Drive.','Could not disconnect Google Drive.'));}
  }
 

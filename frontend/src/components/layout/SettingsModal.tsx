@@ -1,3 +1,6 @@
+import {CloudReading} from '../../pages/CloudReading';
+import {DriveFolderButton} from '../../pages/DriveBooks';
+import '../../pages/barqStories.css';
 import {useCallback,useEffect,useRef,useState,type ReactNode} from 'react';
 import {Settings2,Palette,BrainCircuit,Keyboard,Database,ShieldAlert,Download,Trash2,Check,X,Info,AudioLines,FolderCode,Activity,PlugZap,BookOpen} from 'lucide-react';
 import {useApp} from '../../store';import {useT} from '../../i18n';import {Modal} from '../ui/Modal';import {Button} from '../ui/Button';import {Switch} from '../ui/Switch';import {ModelControls} from '../workspace/ModelControls';
@@ -65,7 +68,12 @@ export function SettingsModal({open,onClose,initialTab='general',onWorkspace,emb
    {tab==='assistant'&&<VoiceSettings mode="assistant" onNavigate={setTab}/>}
    {tab==='workspace'&&<div className="barq-settings-card space-y-3"><h3 className="text-sm font-semibold">{language==='ar'?'بناء البرامج من المحادثة':'Build applications from chat'}</h3><p className="text-sm text-secondary">{language==='ar'?'قول لبرق ابنيلي برنامج وحدد المطلوب. الطلب والتقدم والموافقات وملفات التسليم بتظهر في المحادثة. بناء EXE يحتاج Windows وأدوات البناء.':'Ask BARQ to build an application. Progress, approvals and deliverables appear in chat. EXE builds require Windows and build tools.'}</p><Button onClick={onWorkspace} variant="secondary">{language==='ar'?'ارجع للمحادثة':'Return to chat'}</Button></div>}
    {tab==='computer'&&<ComputerControl settingsOnly/>}
-   {tab==='integrations'&&<IntegrationsSettings/>}
+   {tab==='integrations'&&<div className="space-y-5"><IntegrationsSettings/>
+    <section className="barq-settings-card bs-hub">
+     <h3 className="text-sm font-semibold">{language==='ar'?'ربط مكتبة الروايات':'Reading library connection'}</h3>
+     <CloudReading ar={language==='ar'}/>
+     <DriveFolderButton ar={language==='ar'}/>
+    </section></div>}
    {tab==='memory'&&<MemorySettings/>}
    {tab==='launcher'&&<LauncherSettings/>}
    {tab==='performance'&&<PerformanceSettings active={open&&tab==='performance'}/>}

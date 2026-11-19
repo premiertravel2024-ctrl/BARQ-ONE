@@ -6,8 +6,8 @@ import {useAppView} from '../lib/appContext';
 import {useApp} from '../store';
 import {publishedBooks,type PublishedBook} from './publishedBooks';
 import {paranormalCollection,paranormalEbooks,paranormalIssues} from './paranormalIssues';
-import {DriveBooks,DriveFolderButton,type DriveBook} from './DriveBooks';
-import {CloudReading} from './CloudReading';
+import {DriveBooks,pickedDriveBooks} from './DriveBooks';
+import {useCloudBooks} from './CloudReading';
 import './barqStories.css';
 
 const BookReader=lazy(()=>import('./BookReader'));
@@ -47,8 +47,8 @@ export function BarqStories(){
  const issues=series?.issues?.filter(issue=>/^\d+$/.test(issueTerm)
   ?issue.number===Number(issueTerm):searchKey(issue.title).includes(issueTerm))||[];
 
- const [driveBooks,setDriveBooks]=useState<DriveBook[]>();
- const [cloudBooks,setCloudBooks]=useState<DriveBook[]>();
+ const driveBooks=pickedDriveBooks();
+ const cloudBooks=useCloudBooks();
  const [edition,setEdition]=useState<ReadingEdition>();
  const [error,setError]=useState('');
  const upload=useRef<HTMLInputElement>(null);
@@ -122,17 +122,16 @@ export function BarqStories(){
  return <div className="bs-hub" dir={ar?'rtl':'ltr'}>
   <input ref={upload} type="file" accept="application/pdf,.pdf" hidden onChange={openFile}/>
   {error&&<p className="bs-alert" role="alert">{error}</p>}
-  <div hidden={!!edition}><CloudReading ar={ar} onBooks={setCloudBooks}/></div>
   {edition?<Suspense fallback={<p role="status">{label('جاري فتح القارئ…','Opening reader…')}</p>}>
    <BookReader key={edition.id} book={edition} ar={ar} onClose={()=>setEdition(undefined)}/>
   </Suspense>:<>
    <header className="bs-header">
     <div className="bs-brand"><span className="bs-brand-mark"><BookOpen size={22}/></span><h1>{label('مكتبة القراءة','Reading Library')}</h1></div>
-    <div className="bs-drive-header"><DriveFolderButton ar={ar} onSelect={setDriveBooks}/>
+    <div className="bs-drive-header">
     <button className="bs-muted-btn" type="button" onClick={()=>pickFile()}><Upload size={16}/>{label('افتح PDF من جهازك','Open local PDF')}</button></div>
    </header>
 
-   {visibleDrive.length>0&&<DriveBooks books={visibleDrive} ar={ar} onOpen={setEdition}/>}
+   {visibleDrive.length>0&&<DriveBooks books={visibleDrive} ar={ar} onOpen={setEdition} collectionLabel={label('رواياتي','My books')}/>}
    <section className="bs-collection">
     <div className="bs-title-row"><h2>{label('الكتب والسلاسل','Books and series')}</h2>
      <div className="bs-search"><Search size={18} aria-hidden="true"/><input type="search" dir="auto" aria-label={label('ابحث في الكتب','Search books')}
