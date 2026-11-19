@@ -31,7 +31,16 @@ try {
             Copy-Item -LiteralPath $OfflineZip -Destination $ZipPath -Force
         } else {
             [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
-            Invoke-WebRequest -Uri $ReleaseUrl -OutFile $ZipPath -UseBasicParsing -TimeoutSec 150
+            for ($Attempt = 1; $Attempt -le 3; $Attempt++) {
+                try {
+                    Invoke-WebRequest -Uri $ReleaseUrl -OutFile $ZipPath -UseBasicParsing -TimeoutSec 150 -ErrorAction Stop
+                    break
+                } catch {
+                    if ($Attempt -eq 3) { throw }
+                    Write-Warning "LibreHardwareMonitor download attempt $Attempt failed. Retrying."
+                    Start-Sleep -Seconds (5 * $Attempt)
+                }
+            }
         }
         $Hasher = [System.Security.Cryptography.SHA256]::Create()
         $ZipStream = [System.IO.File]::OpenRead($ZipPath)
