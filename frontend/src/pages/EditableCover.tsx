@@ -66,7 +66,7 @@ export function EditableCover({id,title,ar,children}:{id:string;title:string;ar:
     <><BookOpen size={24}/><strong>{title}</strong></>}
   </div>}
   <button className="bs-cover-edit" type="button" aria-label={edit+' · '+title} title={edit} onClick={()=>{setError('');setOpen(true);}}>
-   <Pencil size={14}/>
+   <Pencil size={12} strokeWidth={2.25}/>
   </button>
   {open&&<Modal open onClose={close} title={edit}>
    <div className="bs-cover-options" dir={ar?'rtl':'ltr'}>

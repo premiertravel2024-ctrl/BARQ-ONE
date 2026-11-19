@@ -1,4 +1,5 @@
-import {useEffect,useLayoutEffect,useRef,useState} from 'react';
+import {useEffect,useRef,useState} from 'react';
+import {Virtuoso,type VirtuosoHandle} from 'react-virtuoso';
 import {ReadingSound} from './ReadingSound';
 import type {PDFDocumentProxy} from 'pdfjs-dist';
 import {ArrowRight,Bookmark,ChevronLeft,ChevronRight,Minus,Plus} from 'lucide-react';
@@ -12,8 +13,10 @@ function saved(id:string):Progress{
  }catch{return {page:1,marks:[]};}
 }
 
-function PdfPage({pdf,page,width,height,ar}:{pdf:PDFDocumentProxy;page:number;width:number;height:number;ar:boolean}){
+function PdfPage({pdf,page,width,estimate,ar}:{pdf:PDFDocumentProxy;page:number;width:number;estimate:number;ar:boolean}){
  const canvas=useRef<HTMLCanvasElement>(null);
+ const [ratio,setRatio]=useState<number>();
+ const height=Math.max(1,Math.ceil(width*(ratio??estimate)));
  const [failed,setFailed]=useState(false);
  const [attempt,setAttempt]=useState(0);
  useEffect(()=>{
@@ -25,8 +28,12 @@ function PdfPage({pdf,page,width,height,ar}:{pdf:PDFDocumentProxy;page:number;wi
   void pdf.getPage(page).then(docPage=>{
    if(cancelled)return;
    const native=docPage.getViewport({scale:1});
-   const density=Math.min(window.devicePixelRatio||1,2);
-   const view=docPage.getViewport({scale:Math.min(width/native.width,height/native.height)*density});
+   const pageRatio=native.height/native.width;
+   setRatio(pageRatio);
+   const renderHeight=width*pageRatio;
+   const density=Math.min(window.devicePixelRatio||1,2,8192/Math.max(width,renderHeight),
+    Math.sqrt(12_000_000/(width*renderHeight)));
+   const view=docPage.getViewport({scale:width/native.width*density});
    surface.width=Math.ceil(view.width);
    surface.height=Math.ceil(view.height);
    const render=docPage.render({canvas:surface,canvasContext:context,viewport:view});
@@ -34,12 +41,12 @@ function PdfPage({pdf,page,width,height,ar}:{pdf:PDFDocumentProxy;page:number;wi
    return render.promise;
   }).catch(()=>{if(!cancelled)setFailed(true);});
   return()=>{cancelled=true;cancel?.();};
- },[pdf,page,width,height,attempt]);
+ },[pdf,page,width,attempt]);
 
- return <><canvas ref={canvas} hidden={failed} aria-label={'PDF '+page}/>{failed&&
+ return <div className="bs-pdf-page" style={{width,height}}><canvas ref={canvas} hidden={failed} aria-label={'PDF '+page}/>{failed&&
   <button type="button" onClick={()=>{setFailed(false);setAttempt(previous=>previous+1);}}>
    {ar?'إعادة تحميل الصفحة':'Reload page'} {page}
-  </button>}</>;
+  </button>}</div>;
 }
 export default function BookReader({book,ar,onClose}:{book:ReadingEdition;ar:boolean;onClose:()=>void}){
  const [progress,setProgress]=useState(()=>saved(book.id));
@@ -50,13 +57,12 @@ export default function BookReader({book,ar,onClose}:{book:ReadingEdition;ar:boo
  const [zoom,setZoom]=useState(100);
  const [paper,setPaper]=useState<'default'|'warm'|'night'>('default');
  const [pageInput,setPageInput]=useState<string|null>(null);
- const viewport=useRef<HTMLDivElement>(null);
+ const viewport=useRef<VirtuosoHandle>(null);
  const content=useRef<HTMLDivElement>(null);
  const [width,setWidth]=useState(640);
  const [ratio,setRatio]=useState(1.414);
- const pdfWidth=Math.floor(Math.min(width,900)*zoom/100);
- const pdfHeight=Math.ceil(pdfWidth*ratio);
- const pageStride=pdfHeight+12;
+ const pdfWidth=Math.max(1,Math.floor((width-18)*zoom/100));
+ const initialPage=useRef(progress.page);
  const savedPage=useRef(progress.page);
  const count=pdf?.numPages||text?.length||0;
  const page=Math.min(progress.page,count||1);
@@ -109,13 +115,8 @@ export default function BookReader({book,ar,onClose}:{book:ReadingEdition;ar:boo
  },[book,retry]);
 
 
- useLayoutEffect(()=>{
-  if(pdf&&viewport.current)viewport.current.scrollTop=(Math.min(savedPage.current,pdf.numPages)-1)*pageStride;
- },[pdf,pageStride]);
-
- function notePage(){
-  if(!viewport.current||!pdf)return;
-  const next=Math.min(pdf.numPages,Math.floor((viewport.current.scrollTop+Math.min(45,viewport.current.clientHeight/4))/pageStride)+1);
+ function notePage(index:number){
+  const next=index+1;
   if(next===savedPage.current)return;
   savedPage.current=next;
   setProgress(previous=>({...previous,page:next}));
@@ -129,7 +130,7 @@ export default function BookReader({book,ar,onClose}:{book:ReadingEdition;ar:boo
  }
  function go(next:number){
   save({...progress,page:next});
-  if(pdf&&viewport.current)viewport.current.scrollTop=(next-1)*pageStride;
+  if(pdf&&viewport.current)viewport.current.scrollToIndex({index:next-1,align:'start'});
   else content.current?.scrollIntoView({block:'start'});
  }
  return <section className="bs-document" data-paper={paper} aria-label={book.title}>
@@ -180,15 +181,14 @@ export default function BookReader({book,ar,onClose}:{book:ReadingEdition;ar:boo
      error==='pdf'?(ar?'تعذّر قراءة ملف الـPDF. افتح نسخة سليمة أو جرّب تاني.':'Could not read the PDF. Open another copy or retry.'):
       (ar?'تعذّر تحميل الكتاب من المصدر. جرّب تاني بعد رجوع الاتصال.':'The book source is unavailable. Retry when connected.')}</p>
     <button type="button" onClick={()=>setRetry(x=>x+1)}>{ar?'إعادة المحاولة':'Retry'}</button></div>:
-    pdf?<div className="bs-pdf-scroll" ref={viewport} dir="ltr" onScroll={notePage} tabIndex={0} aria-label={ar?'صفحات الكتاب':'Book pages'}>
-     {Array.from({length:pdf.numPages},(_,index)=>{
-      const number=index+1;
-      return <div className="bs-pdf-page" key={number} style={{width:pdfWidth,height:pdfHeight}}>
-       {Math.abs(number-page)<=2&&<PdfPage pdf={pdf} page={number} width={pdfWidth} height={pdfHeight} ar={ar}/>}
-      </div>;
-     })}
-     <div aria-hidden="true" style={{height:'max(0px, calc(var(--pdf-viewport) - '+pdfHeight+'px))'}}/>
-    </div>:text?<article dir="auto" style={{fontSize:`${1.05*zoom/100}rem`}}>{text[page-1]}</article>:
+    pdf?<Virtuoso className="bs-pdf-scroll" ref={viewport} dir="ltr" tabIndex={0} style={{height:'var(--pdf-viewport)'}}
+     aria-label={ar?'صفحات الكتاب':'Book pages'} totalCount={pdf.numPages}
+     initialTopMostItemIndex={Math.min(initialPage.current,pdf.numPages)-1}
+     defaultItemHeight={Math.ceil(pdfWidth*ratio)+12}
+     rangeChanged={({startIndex})=>notePage(startIndex)}
+     itemContent={index=><div className="bs-pdf-item" style={index===pdf.numPages-1?{minHeight:'var(--pdf-viewport)'}:undefined}>
+      <PdfPage pdf={pdf} page={index+1} width={pdfWidth} estimate={ratio} ar={ar}/>
+     </div>}/>:text?<article dir="auto" style={{fontSize:`${1.05*zoom/100}rem`}}>{text[page-1]}</article>:
      <p role="status">{ar?'جاري تحميل الكتاب…':'Loading book…'}</p>}
   </div>
  </section>;

@@ -182,8 +182,15 @@
 .bs-issue-list li>.bs-series-open{white-space:nowrap;justify-content:center}
 
 .bs-editable-cover{position:relative;min-width:0;align-self:start;justify-self:start}
-.bs-cover-edit{position:absolute;inset-block-start:5px;inset-inline-end:5px;display:grid;place-items:center;width:28px;height:28px;padding:0;border:1px solid #ffffff43;border-radius:7px;color:#f9edf3;background:#19151eea}
-.bs-cover-edit:hover,.bs-cover-edit:focus-visible{background:#793a58}
+.bs-cover-edit{position:absolute;display:grid;place-items:center;z-index:1}
+.bs-hub .bs-editable-cover .bs-cover-edit{inset-block-start:4px;inset-inline-end:4px;width:24px;height:24px;min-height:0;padding:0;border:0;border-radius:4px;background:transparent;box-shadow:none;color:#fff;opacity:.72}
+.bs-hub .bs-cover-edit svg{display:block;flex:none;filter:drop-shadow(0 0 1px #17131c) drop-shadow(0 1px 1px #17131c)}
+.bs-hub .bs-editable-cover .bs-cover-edit:is(:hover,:focus-visible){opacity:1;background:transparent;color:#ffd3e2}
 .bs-cover-options{display:grid;gap:9px}
 .bs-cover-options .bs-muted-btn{display:inline-flex;align-items:center;gap:8px;justify-self:start;padding:8px 10px;border:1px solid var(--border-color);border-radius:8px}
 .bs-cover-options>strong{overflow-wrap:anywhere}
+
+.bs-pdf-item{padding-block-end:12px;min-width:max-content}
+.bs-document-content .bs-pdf-page{margin-block:0;background:transparent}
+.bs-document-content .bs-pdf-page canvas{display:block;width:100%;height:100%;max-width:none;max-height:none}
+.bs-document-content .bs-pdf-page canvas[hidden]{display:none}
