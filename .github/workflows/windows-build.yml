@@ -418,7 +418,7 @@ jobs:
         with:
           persist-credentials: false
       - name: Build and publish the signed update
-        shell: powershell
+        shell: powershell.exe -NoProfile -NonInteractive -ExecutionPolicy Bypass -File "{0}"
         env:
           CONFIGURED_UPDATE_ORIGIN: ${{ vars.BARQ_UPDATE_ORIGIN }}
           BARQ_UPDATE_PUBLIC_KEY: ${{ vars.BARQ_UPDATE_PUBLIC_KEY }}
