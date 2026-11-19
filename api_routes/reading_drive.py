@@ -14,9 +14,11 @@ import httpx
 from fastapi import APIRouter, HTTPException, Request
 from fastapi.responses import HTMLResponse, StreamingResponse
 from pydantic import BaseModel
+from starlette.concurrency import run_in_threadpool
 
 router = APIRouter(prefix='/drive')
 SCOPE = 'https://www.googleapis.com/auth/drive.readonly'
+SYNC_SCOPE = 'https://www.googleapis.com/auth/drive.appdata'
 API = 'https://www.googleapis.com/drive/v3/files'
 TOKEN = 'https://oauth2.googleapis.com/token'
 SERVICE = 'BARQ ONE Reading Library'
@@ -34,6 +36,7 @@ class Connect(BaseModel):
     client_id: str
     client_secret: str
     folder: str
+    sync: bool = False
 
 
 def drive_id(value):
@@ -58,7 +61,7 @@ def status():
     with LOCK:
         current = remembered()
         return {'connected': bool(current), 'folder': current['folder'] if current else '',
-                'failed': failure, 'pending': bool(pending and pending['expires'] > time.monotonic())}
+                'sync': bool(current and current.get('sync')), 'failed': failure, 'pending': bool(pending and pending['expires'] > time.monotonic())}
 
 
 @router.post('/connect')
@@ -79,9 +82,9 @@ def connect(config: Connect, request: Request):
         failure = False
         pending = {'state': state, 'verifier': verifier, 'expires': time.monotonic() + 300,
                    'client_id': config.client_id, 'client_secret': config.client_secret,
-                   'folder': folder, 'redirect': redirect}
+                   'folder': folder, 'redirect': redirect, 'sync': config.sync}
     query = urlencode({'client_id': config.client_id, 'redirect_uri': redirect,
-                       'response_type': 'code', 'scope': SCOPE, 'access_type': 'offline',
+                       'response_type': 'code', 'scope': SCOPE + (' ' + SYNC_SCOPE if config.sync else ''), 'access_type': 'offline',
                        'prompt': 'consent', 'state': state, 'code_challenge_method': 'S256',
                        'code_challenge': base64.urlsafe_b64encode(hashlib.sha256(verifier.encode()).digest()).decode().rstrip('=')})
     url = 'https://accounts.google.com/o/oauth2/v2/auth?' + query
@@ -107,11 +110,12 @@ def callback(state: str = '', code: str = ''):
             connection = {key: attempt[key] for key in ('client_id', 'client_secret', 'folder')}
             connection.update(refresh_token=tokens['refresh_token'], access_token=tokens['access_token'],
                               expires=time.monotonic() + int(tokens.get('expires_in', 3600)))
+            connection['sync'] = bool(attempt['sync'] and SYNC_SCOPE in tokens.get('scope', '').split())
             items.clear()
             try:
                 import keyring
                 keyring.set_password(SERVICE, 'drive', json.dumps({key: connection[key] for key in
-                    ('client_id', 'client_secret', 'folder', 'refresh_token')}))
+                    ('client_id', 'client_secret', 'folder', 'refresh_token', 'sync')}))
             except Exception:
                 pass
         except (httpx.HTTPError, ValueError, KeyError):
@@ -289,3 +293,118 @@ def media(file_id: str, request: Request):
 
     return StreamingResponse(body(), status_code=206 if partial else 200,
                              media_type=mime, headers=outgoing)
+
+
+
+SYNC_NAME = 'barq-one-sync-v1-'
+SYNC_MAX = 8 * 1024 * 1024
+
+
+@router.post('/sync')
+async def sync_data(request: Request):
+    received = bytearray()
+    async for chunk in request.stream():
+        received.extend(chunk)
+        if len(received) > SYNC_MAX:
+            raise HTTPException(413, 'BARQ sync data is too large')
+    try:
+        data = json.loads(received)
+        device = data['device']
+        records = data['records']
+        if not isinstance(device, str) or not re.fullmatch(r'[a-f0-9]{32}', device):
+            raise ValueError
+        if not isinstance(records, dict) or len(records) > 3000:
+            raise ValueError
+        for key, entry in records.items():
+            if not isinstance(key, str) or len(key) > 600 or not isinstance(entry, dict):
+                raise ValueError
+            if type(entry.get('at')) is not int or not 0 <= entry['at'] <= int(time.time()*1000)+300000:
+                raise ValueError
+            if 'value' not in entry:
+                raise ValueError
+        return await run_in_threadpool(exchange_sync, device, records)
+    except (TypeError, KeyError, ValueError):
+        raise HTTPException(422, 'Invalid BARQ sync data') from None
+
+
+def exchange_sync(device, records):
+    with LOCK:
+        current = remembered()
+        if not current or not current.get('sync'):
+            raise HTTPException(403, 'Enable BARQ sync in settings first')
+        try:
+            headers = auth()
+        except httpx.HTTPError:
+            raise HTTPException(502, 'Google sync authentication failed') from None
+    name = SYNC_NAME + device + '.json'
+    newest = {}
+    own = {}
+    own_id = None
+    try:
+        with httpx.Client(headers=headers, timeout=20) as client:
+            page = None
+            while True:
+                params = {'spaces':'appDataFolder', 'q':f"name contains '{SYNC_NAME}' and trashed = false",
+                          'fields':'nextPageToken,files(id,name,size)','pageSize':100}
+                if page:
+                    params['pageToken'] = page
+                response = client.get(API, params=params)
+                response.raise_for_status()
+                listing = response.json()
+                for item in listing.get('files', []):
+                    if not re.fullmatch(SYNC_NAME + r'[a-f0-9]{32}\.json', item['name']) or not drive_id(item['id']):
+                        continue
+                    if int(item.get('size',0)) > SYNC_MAX:
+                        continue
+                    response = client.get(f"{API}/{item['id']}", params={'alt':'media'})
+                    response.raise_for_status()
+                    if len(response.content) > SYNC_MAX:
+                        continue
+                    snapshot = response.json()
+                    if not isinstance(snapshot, dict):
+                        continue
+                    for key, entry in snapshot.items():
+                        if not isinstance(entry, dict) or type(entry.get('at')) is not int or 'value' not in entry:
+                            continue
+                        if item['name'] == name:
+                            merge_sync(own, key, entry)
+                        merge_sync(newest, key, entry)
+                    if item['name'] == name:
+                        own_id = item['id']
+                page = listing.get('nextPageToken')
+                if not page:
+                    break
+            changed = False
+            for key, entry in records.items():
+                if key not in newest or entry['at'] >= newest[key]['at']:
+                    changed |= merge_sync(own, key, entry)
+                    merge_sync(newest, key, entry)
+            if changed:
+                raw = json.dumps(own, ensure_ascii=False, separators=(',',':')).encode()
+                if len(raw) > SYNC_MAX:
+                    raise HTTPException(413, 'BARQ sync data is too large')
+                upload = 'https://www.googleapis.com/upload/drive/v3/files'
+                if own_id:
+                    response = client.patch(f'{upload}/{own_id}', params={'uploadType':'media'},
+                         content=raw, headers={'Content-Type':'application/json'})
+                else:
+                    boundary = 'barq_'+secrets.token_hex(16)
+                    meta = json.dumps({'name':name,'parents':['appDataFolder'],'mimeType':'application/json'}).encode()
+                    separator = ('--'+boundary+'\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n').encode()
+                    body = separator+meta+b'\r\n'+separator+raw+('\r\n--'+boundary+'--\r\n').encode()
+                    response = client.post(upload,params={'uploadType':'multipart'},content=body,
+                        headers={'Content-Type':f'multipart/related; boundary={boundary}'})
+                response.raise_for_status()
+        return {'records':newest}
+    except (httpx.HTTPError, ValueError, KeyError):
+        raise HTTPException(502, 'Could not synchronize BARQ with Google Drive') from None
+
+
+def merge_sync(target, key, entry):
+    prior = target.get(key)
+    # Lexical tie-breaking makes simultaneous offline edits converge.
+    if prior is None or (entry['at'], json.dumps(entry['value'], sort_keys=True)) > (
+            prior['at'], json.dumps(prior['value'], sort_keys=True)):
+        target[key] = entry
+        return True
+    return False

@@ -141,7 +141,7 @@ export default function App(){
  const renderSection=(page:Exclude<OnePage,'chat'|'settings'>)=><BarqOne page={page} providers={providers} onVoice={openConsentedVoiceSession} onNavigate={navigateOne}
    onModels={()=>{setSettingsTab('models');setSettings(true)}} onAssistantSettings={()=>{setSettingsTab('assistant');setSettings(true)}}
    onQuick={command=>{navigateOne('chat');setPrefill(command)}}/>;
- return <div data-release-marker="v2.41.15-build-gated-ui" className="ops-shell" dir={language==='ar'?'rtl':'ltr'}>
+ return <div data-release-marker="v2.41.16-build-gated-ui" className="ops-shell" dir={language==='ar'?'rtl':'ltr'}>
   <OperationsHeader page={onePage} navigate={navigateOne} search={()=>setPalette(true)} settings={()=>navigateOne('settings')}/>
   <div className={playground?'hidden':'ops-body'} dir="ltr">
    <OperationsRail page={onePage} navigate={navigateOne} newChat={()=>{newChat();navigateOne('chat')}} onDelete={setDeleteId} onPlayground={openPlayground}/>

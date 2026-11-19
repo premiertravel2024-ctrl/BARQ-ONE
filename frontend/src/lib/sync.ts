@@ -1,8 +1,10 @@
+import {startDriveSync} from './driveSync';
 import {useApp,type Conversation} from '../store';
 import {loadConversation,loadConversations,loadModels,loadProviders,saveConversation,type RouterProvider} from './backend';
 
 /** Sync from the local Python SQLite store without overwriting newer browser drafts. */
 export function startDataSync(onProviders:(items:RouterProvider[])=>void){
+ const stopDriveSync=startDriveSync();
  let alive=true;
  const saves=new Map<string,ReturnType<typeof setTimeout>>();
  const revision=new Map<string,number>();
@@ -32,5 +34,5 @@ export function startDataSync(onProviders:(items:RouterProvider[])=>void){
    }
  });
  void hydration;void refresh();window.addEventListener('barq:providers-updated',refresh);const polling=setInterval(()=>{if(document.visibilityState==='visible')void refresh()},30000);
- return ()=>{alive=false;window.removeEventListener('barq:providers-updated',refresh);clearInterval(polling);unsubscribe();saves.forEach(timer=>clearTimeout(timer))};
+ return ()=>{stopDriveSync();alive=false;window.removeEventListener('barq:providers-updated',refresh);clearInterval(polling);unsubscribe();saves.forEach(timer=>clearTimeout(timer))};
 }

@@ -3,7 +3,7 @@ import {Cloud,RefreshCw} from 'lucide-react';
 import {APIError,requestJSON} from '../lib/backend';
 import type {DriveBook} from './DriveBooks';
 
-type Connection={connected:boolean;pending:boolean;failed:boolean;folder:string};
+type Connection={connected:boolean;pending:boolean;failed:boolean;folder:string;sync?:boolean};
 type Item={id:string;title:string;group:string;cover:string|null};
 const root='/v1/reading/drive';
 
@@ -35,6 +35,7 @@ export function useCloudBooks(){
 
 export function CloudReading({ar}:{ar:boolean}){
  const [connection,setConnection]=useState<Connection>();
+ const [sync,setSync]=useState(false);
  const [config,setConfig]=useState(false);
  const [folder,setFolder]=useState('');
  const [client,setClient]=useState('');
@@ -63,6 +64,7 @@ export function CloudReading({ar}:{ar:boolean}){
     const current=await requestJSON<Connection>(root+'/status');
     if(stopped)return;
     setConnection(current);
+    if(current.sync){setSync(true);window.dispatchEvent(new Event('barq:drive-sync'));}
     if(current.pending&&checks++<150){timer=window.setTimeout(()=>void check(),2000);return;}
     if(current.failed){
      setError(ar?'ربط Google ما اكتملش. راجع إعدادات OAuth وحاول تاني.':'Google connection failed. Check your OAuth setup and retry.');
@@ -80,7 +82,7 @@ export function CloudReading({ar}:{ar:boolean}){
   event.preventDefault();setBusy(true);setError('');
   try{
    const result=await requestJSON<{opened:boolean;url:string}>(root+'/connect',{
-    method:'POST',body:JSON.stringify({folder,client_id:client.trim(),client_secret:secret.trim()}),
+    method:'POST',body:JSON.stringify({folder,client_id:client.trim(),client_secret:secret.trim(),sync}),
    });
    setSecret('');
    setUrl(result.opened?'':result.url);
@@ -109,6 +111,8 @@ export function CloudReading({ar}:{ar:boolean}){
    <label>{label('رابط فولدر الروايات','Drive library folder URL')}<input required value={folder} dir="ltr" onChange={event=>setFolder(event.target.value)}/></label>
    <label>OAuth Client ID<input required value={client} dir="ltr" autoComplete="off" onChange={event=>setClient(event.target.value)}/></label>
    <label>OAuth Client Secret<input required type="password" value={secret} dir="ltr" autoComplete="off" onChange={event=>setSecret(event.target.value)}/></label>
+   <label><input type="checkbox" checked={sync} onChange={event=>setSync(event.target.checked)}/>
+    {label('زامن إعدادات برق والمحادثات وبيانات القراءة على حساب Google ده','Sync BARQ preferences, conversations and reading data with this Google account')}</label>
    <div className="bs-drive-header">
     <button className="bs-muted-btn" disabled={busy||connection?.pending} type="submit">{label('سجّل دخول بـ Google','Sign in with Google')}</button>
     {connection?.connected&&<button className="bs-muted-btn" type="button" onClick={()=>void disconnect()}>{label('افصل الحساب','Disconnect')}</button>}

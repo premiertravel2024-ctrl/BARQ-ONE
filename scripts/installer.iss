@@ -1,5 +1,5 @@
 #define AppName "BARQ ONE"
-#define AppVersion "2.41.15"
+#define AppVersion "2.41.16"
 #define AppPublisher "BARQ ONE"
 ; The source directory is the scripts/ folder. Verify the executable BEFORE
 ; attempting to compile an installer: double-clicking installer.iss does NOT

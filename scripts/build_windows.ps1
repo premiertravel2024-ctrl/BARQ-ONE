@@ -10,7 +10,7 @@ $root = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path
 Set-Location $root
 # A previous installer never counts as evidence of a new successful build.
 # Clear old output for the SAME version before building, even on a failed rebuild.
-$version = '2.41.15'
+$version = '2.41.16'
 $oldSetup = Join-Path $root "release\BARQ_Setup_$version.exe"
 if (Test-Path -LiteralPath $oldSetup) { Remove-Item -LiteralPath $oldSetup -Force }
 $buildMarker = Join-Path $root "release\build-ok-v$version.marker"
@@ -220,13 +220,13 @@ if (-not (Test-Path 'web/react/index.html')) { throw 'React dist/index.html is m
 $assets = @(Get-ChildItem 'web/react/assets' -File -ErrorAction SilentlyContinue)
 if ($assets.Count -eq 0) { throw 'React assets are missing.' }
 # The last BARQ releases sometimes installed a stale pre-built UI. Fail closed:
-# a genuine v2.41.15 workspace requires its own freshly compiled React marker.
+# a genuine v2.41.16 workspace requires its own freshly compiled React marker.
 if (-not $UseBundledUI) {
-  $studioMarker = 'v2.41.15-build-gated-ui'
+  $studioMarker = 'v2.41.16-build-gated-ui'
   $fresh = @(Get-ChildItem 'web/react/assets' -Filter '*.js' -File | Where-Object {
       Select-String -LiteralPath $_.FullName -SimpleMatch -Pattern $studioMarker -Quiet
   })
-  if ($fresh.Count -eq 0) { throw 'Fresh React build did not contain the v2.41.15 workspace marker. Installer blocked to prevent installing outdated UI.' }
+  if ($fresh.Count -eq 0) { throw 'Fresh React build did not contain the v2.41.16 workspace marker. Installer blocked to prevent installing outdated UI.' }
   $wakeUi = @(Get-ChildItem 'web/react/assets' -Filter '*.js' -File | Where-Object {
       Select-String -LiteralPath $_.FullName -SimpleMatch -Pattern '/v1/voice/wake/pending' -Quiet
   })
