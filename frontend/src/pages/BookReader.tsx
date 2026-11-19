@@ -74,16 +74,17 @@ export default function BookReader({book,ar,onClose}:{book:ReadingEdition;ar:boo
   let stage:'source'|'pdf'='source';
   setPdf(undefined);setText(undefined);setError(undefined);
   void (async()=>{
-   const response=book.file||await fetch(book.driveId?'/v1/reading/drive/media/'+encodeURIComponent(book.driveId):'/v1/reading/books/'+encodeURIComponent(book.id),{signal:controller.signal});
+   const driveUrl=book.driveId?'/v1/reading/drive/media/'+encodeURIComponent(book.driveId):undefined;
+   const response=driveUrl?undefined:book.file||await fetch('/v1/reading/books/'+encodeURIComponent(book.id),{signal:controller.signal});
    if(response instanceof Response&&!response.ok)throw new Error('Edition unavailable');
    if(book.format==='text'){
+    if(!response)throw new Error('Edition unavailable');
     const edition=(await response.text()).replace(/\r\n/g,'\n');
     if(!edition.trim()||edition.trimStart().startsWith('<'))throw new Error('Expected text edition');
     const parts=edition.match(/[\s\S]{1,6000}(?:\n|$)|[\s\S]{1,6000}/g)||[];
     if(!controller.signal.aborted)setText(parts);
     return;
    }
-   const data=new Uint8Array(await response.arrayBuffer());
    stage='pdf';
    const [{GlobalWorkerOptions,getDocument},{default:workerUrl}]=await Promise.all([
     import('pdfjs-dist/legacy/build/pdf.mjs'),import('pdfjs-dist/legacy/build/pdf.worker.min.mjs?url'),
@@ -92,7 +93,9 @@ export default function BookReader({book,ar,onClose}:{book:ReadingEdition;ar:boo
    GlobalWorkerOptions.workerSrc=workerUrl;
    const assets='/assets/pdfjs/';
    // Use PDF glyph outlines so the browser cannot reshape joined Arabic glyphs.
-   const loading=getDocument({data,isEvalSupported:false,disableFontFace:true,useSystemFonts:true,
+   const input=driveUrl?{url:driveUrl,rangeChunkSize:256*1024}:{data:new Uint8Array(await response!.arrayBuffer())};
+   if(controller.signal.aborted)return;
+   const loading=getDocument({...input,isEvalSupported:false,disableFontFace:true,useSystemFonts:true,
     cMapUrl:assets+'cmaps/',cMapPacked:true,standardFontDataUrl:assets+'standard_fonts/',
     wasmUrl:assets+'wasm/',iccUrl:assets+'iccs/'});
    destroy=()=>loading.destroy();
