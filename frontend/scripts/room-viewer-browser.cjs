@@ -49,7 +49,7 @@ async function verifyPlayback(browser,mode){
    };
   });
   await host.goto('http://localhost:44331/r/test?role=host&paired=1&mode='+mode);
-  await host.locator('#sources summary').click();
+  await host.locator('#openMediaLink').click();
   await host.locator('#linkMedia').click();
   const field=await host.locator('#linkMedia').evaluate(input=>({
    height:input.getBoundingClientRect().height,
@@ -59,8 +59,8 @@ async function verifyPlayback(browser,mode){
   assert.ok(field.height<=40,'source input should be compact');
   assert.equal(field.outline,'none');
   assert.equal(field.style,'normal');
-  await host.locator('#sources summary').click();
-  await host.locator('#sources summary').click();
+  await host.locator('#openMediaLink').click();
+  await host.locator('#openMediaLink').click();
   const fixture=await host.evaluate(async audioOnly=>{
    const audio=new AudioContext();
    const destination=audio.createMediaStreamDestination();
@@ -111,6 +111,14 @@ async function verifyPlayback(browser,mode){
    throw new Error(mode+' guest did not receive media: '+JSON.stringify({history,host:await inspect(host),guest:await inspect(guest)}),{cause:error});
   }
   assert.ok(history.some(packet=>packet.type==='answer'&&packet.role==='guest'));
+  if(mode==='music'){
+   const art=await host.locator('.music-now-art').boundingBox();
+   const title=await host.locator('#musicNowTitle').boundingBox();
+   assert.ok(art.y+art.height<=title.y,'music title must clear the artwork');
+   assert.equal(await host.locator('#musicTransport').isVisible(),true);
+  }
+  await host.screenshot({path:path.join(pictures,'room-host-'+mode+'.png'),fullPage:true});
+  await guest.screenshot({path:path.join(pictures,'room-live-guest-'+mode+'.png'),fullPage:true});
   await guest.evaluate(()=>{
    const peer=window.__peers.at(-1);
    Object.defineProperty(peer,'connectionState',{value:'failed'});
@@ -147,20 +155,20 @@ async function verifyPlayback(browser,mode){
     ['Anghami','https://play.anghami.com/song/102704','iframe[title="أنغامي"]'],
     ['Spotify','https://open.spotify.com/track/4ZXnE6NdKAQMaMzsDuFurd','iframe[title="Spotify"]'],
    ]){
-    await host.locator('#sources summary').click();
+    await host.locator('#openMediaLink').click();
     await host.locator('#musicServiceUrl').fill(link);
     await host.locator('#musicService button').click();
     await guest.frameLocator(selector).getByRole('button',{name:'Play '+name}).waitFor();
     assert.equal(await guest.locator(selector).count(),1);
     assert.equal(await guest.locator('#videoStage').isVisible(),false);
-    await host.locator('#sources summary').click();
+    await host.locator('#openMediaLink').click();
    }
   }
  }finally{await context.close();}
 }
 
 (async()=>{
- const browser=await chromium.launch({headless:true,args:['--no-sandbox','--disable-features=WebRtcHideLocalIpsWithMdns','--allow-loopback-in-peer-connection']});
+ const browser=await chromium.launch({...(process.env.BARQ_TEST_CHROMIUM?{executablePath:process.env.BARQ_TEST_CHROMIUM}:{}),headless:true,args:['--no-sandbox','--disable-features=WebRtcHideLocalIpsWithMdns','--allow-loopback-in-peer-connection']});
  try{
   for(const [label,width,height] of [['desktop',1440,900],['mobile',390,844],['small-phone',360,800]]){
    const page=await browser.newPage({viewport:{width,height}});

@@ -1,5 +1,5 @@
 const {chromium}=require('playwright');require('fs').mkdirSync('test-results',{recursive:true});const assert=require('assert/strict');
-(async()=>{const browser=await chromium.launch({headless:true,args:['--no-sandbox']});const page=await browser.newPage({viewport:{width:1440,height:1000}});const errors=[];page.on('pageerror',e=>{errors.push(e.message);console.error(e.message)});
+(async()=>{const browser=await chromium.launch({...(process.env.BARQ_TEST_CHROMIUM?{executablePath:process.env.BARQ_TEST_CHROMIUM}:{}),headless:true,args:['--no-sandbox']});const page=await browser.newPage({viewport:{width:1440,height:1000}});const errors=[];page.on('pageerror',e=>{errors.push(e.message);console.error(e.message)});
 const fs=require('node:fs');
 const roomHtml=fs.readFileSync(require('node:path').resolve(__dirname,'../../cloudflare/room.html'),'utf8');
 let musicRoom=null;
@@ -61,7 +61,7 @@ await page.route('**/room-test/**',route=>route.fulfill({contentType:'text/html'
 musicRoom={room_id:'qa-share',mode:'music',host_url:'http://127.0.0.1:5173/room-test/qa?role=host&mode=music',guest_url:'',room_code:'123456',public:false,lan:false,guest_connected:false};
 await page.reload();
 await page.getByRole('button',{name:'غرفة الموسيقى',exact:true}).click();
-await page.getByText('اختار أغنية من Spotify أو أنغامي',{exact:true}).click();
+await page.getByRole('button',{name:'اختار أغنية',exact:true}).click();
 await page.getByRole('button',{name:'أنغامي',exact:true}).click();
 await page.getByRole('searchbox',{name:'البحث في أنغامي'}).fill('تملي معاك');
 await page.getByRole('button',{name:'ابحث',exact:true}).click();
@@ -138,7 +138,7 @@ const composer=page.locator('#chatComposer');
 await composer.fill('افتح أنغامي');
 await composer.press('Enter');
 await page.getByRole('searchbox',{name:'البحث في أنغامي'}).waitFor();
-const requestedPicker=page.locator('.barq-room-provider-picker[open]');
+const requestedPicker=page.getByRole('dialog',{name:'اختار أغنية',exact:true});
 await requestedPicker.getByRole('button',{name:/تملى معاك عمرو دياب.*أغنية/}).click();
 
 const preservedView=page.locator('.ops-media-page iframe[title="مشغّل الغرفة"]');

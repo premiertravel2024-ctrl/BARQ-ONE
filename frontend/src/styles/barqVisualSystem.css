@@ -179,3 +179,23 @@
  .ops-shell .bs-hub .bs-real-grid { grid-template-columns: 1fr; }
  .ops-shell .barq-watch-player .barq-room-actions > button { min-height: 42px; height: 42px; }
 }
+
+/* Motion stays small and predictable; scrolling has no native arrow buttons. */
+:root { --barq-ease:cubic-bezier(.22,.68,0,1.05); }
+:is(.ops-shell,.one-page) * { scrollbar-width:thin; scrollbar-color:#62687580 transparent; }
+:is(.ops-shell,.one-page) *::-webkit-scrollbar { width:6px;height:6px; }
+:is(.ops-shell,.one-page) *::-webkit-scrollbar-track { background:transparent; }
+:is(.ops-shell,.one-page) *::-webkit-scrollbar-thumb { background:#62687580;border-radius:99px;border:1px solid transparent;background-clip:padding-box; }
+:is(.ops-shell,.one-page) *::-webkit-scrollbar-button { display:none;width:0;height:0; }
+.ops-shell :is(button,summary),.one-page :is(button,summary) { transition:background-color .18s ease,border-color .18s ease,color .18s ease,box-shadow .18s ease; }
+.ops-shell button>svg,.one-page button>svg { transition:transform .18s var(--barq-ease); }
+@media(hover:hover) {
+ .ops-shell button:enabled:hover>svg,.one-page button:enabled:hover>svg { transform:translateY(-1px); }
+ .ops-shell button:not([data-barq-button]):enabled:active,.one-page button:not([data-barq-button]):enabled:active { transform:scale(.97); }
+}
+.ops-shell details[open]>:not(summary),.one-page details[open]>:not(summary) { animation:barq-panel-appear .18s ease-out; }
+@keyframes barq-panel-appear { from { opacity:0;transform:translateY(-4px); } to { opacity:1;transform:none; } }
+@media(prefers-reduced-motion:reduce) {
+ .ops-shell *, .one-page * { animation:none!important;transition:none!important;scroll-behavior:auto!important; }
+ .ops-shell button:hover>svg,.one-page button:hover>svg { transform:none; }
+}
