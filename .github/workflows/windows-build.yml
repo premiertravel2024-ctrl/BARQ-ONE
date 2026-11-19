@@ -418,18 +418,15 @@ jobs:
         with:
           persist-credentials: false
       - name: Build and publish the signed update
-        shell: powershell.exe -NoProfile -NonInteractive -ExecutionPolicy Bypass -File "{0}"
+        shell: cmd
         env:
           CONFIGURED_UPDATE_ORIGIN: ${{ vars.BARQ_UPDATE_ORIGIN }}
           BARQ_UPDATE_PUBLIC_KEY: ${{ vars.BARQ_UPDATE_PUBLIC_KEY }}
           BARQ_UPDATE_PRIVATE_KEY: ${{ secrets.BARQ_UPDATE_PRIVATE_KEY }}
           GH_TOKEN: ${{ secrets.BARQ_UPDATE_GITHUB_TOKEN }}
-        run: |
-          if ($env:CONFIGURED_UPDATE_ORIGIN.TrimEnd('/') -ne 'https://github.com/premiertravel2024-ctrl/BARQ-ONE-Updates') {
-            throw 'The configured update origin does not match the local release channel.'
-          }
-          if (!(Get-Command gh -ErrorAction SilentlyContinue)) {
-            throw 'Install GitHub CLI on the Windows PC, then restart the runner.'
-          }
-          powershell.exe -NoProfile -NonInteractive -ExecutionPolicy Bypass -File .\scripts\release_local.ps1 -Publish
-          exit $LASTEXITCODE
+        run: >
+          powershell.exe -NoProfile -NonInteractive -ExecutionPolicy Bypass -Command
+          "$ErrorActionPreference = 'Stop';
+          if ($env:CONFIGURED_UPDATE_ORIGIN.TrimEnd('/') -ne 'https://github.com/premiertravel2024-ctrl/BARQ-ONE-Updates') { throw 'The configured update origin does not match the local release channel.' };
+          if (!(Get-Command gh -ErrorAction SilentlyContinue)) { throw 'Install GitHub CLI on the Windows PC, then restart the runner.' };
+          & '.\scripts\release_local.ps1' -Publish"
