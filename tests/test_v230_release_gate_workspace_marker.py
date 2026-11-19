@@ -11,7 +11,10 @@ WORK_CENTER = f'v{VERSION}-work-center-ui-audit'
 def test_workspace_keeps_immutable_release_marker_and_independent_ui_marker():
     source = (ROOT / 'frontend/src/components/workspace/WorkspaceStudio.tsx').read_text(encoding='utf-8')
     app=(ROOT/'frontend/src/App.tsx').read_text(encoding='utf-8')
-    assert f'data-release-marker="{MARKER}"' in app
+    vite = (ROOT / 'frontend/vite.config.ts').read_text(encoding='utf-8')
+    assert 'data-release-marker={import.meta.env.VITE_BARQ_RELEASE_MARKER}' in app
+    assert "new URL('./package.json', import.meta.url)" in vite
+    assert "'import.meta.env.VITE_BARQ_RELEASE_MARKER': JSON.stringify(`v${version}-build-gated-ui`)" in vite
     assert '<WorkspaceStudio' not in app
     assert f'data-studio-version="{WORK_CENTER}"' in source
 
