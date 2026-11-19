@@ -157,7 +157,15 @@ def test_live_transcript_to_private_ui_event(monkeypatch,speech,expected_event):
    if event['type']=='barq_task':break
   assert tool_response_sent.wait(timeout=5), 'Live session did not return the tool response'
   ws.send_json({'type':'end'})
-  assert ws.receive()['type']=='websocket.close'
+  # Verified output can already be queued when the client asks to end.
+  for _ in range(32):
+   message=ws.receive()
+   if message['type']=='websocket.close':
+    assert message['code']==1000
+    break
+   assert message['type']=='websocket.send'
+  else:
+   pytest.fail('Live session did not close after the remaining output frames')
  match=next(event for event in events if event['type']==expected_event)
  if expected_event=='chat_task_requested':
   assert match['text']==speech and match['conversation_id']=='chat_1'
