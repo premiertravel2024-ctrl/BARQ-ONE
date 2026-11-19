@@ -52,7 +52,6 @@ export function BarqStories(){
  const [edition,setEdition]=useState<ReadingEdition>();
  const [error,setError]=useState('');
  const upload=useRef<HTMLInputElement>(null);
- const [seriesLimit,setSeriesLimit]=useState(12);
  const localTarget=useRef<Pick<ReadingEdition,'id'|'title'>>();
  const label=(arabic:string,english:string)=>ar?arabic:english;
  const terms=searchKey(query.trim()).split(/\s+/);
@@ -75,8 +74,14 @@ export function BarqStories(){
   return names.some(name=>titles.includes(normalize(name)));
  });
  const driveSeries=series?matchesDrive(series):[];
- const visibleSeries=driveSeries.filter(item=>searchKey(item.edition.title).includes(searchKey(issueQuery.trim())));
- const visibleParanormal=[...paranormalByIssue.values()].filter(item=>
+ const readableIssues=series?.id==='paranormal'&&paranormalByIssue.size
+  ?[...paranormalByIssue.values()].map(item=>({...item,numberLabel:item.special?label('خاص','Special')+' '+item.number:String(item.number)}))
+  :driveSeries.map(item=>{
+   const prefix=/^(\d{1,4})\s*[.·–—_-]\s*/.exec(sourceName(item.edition.title));
+   return {...item,number:prefix?Number(prefix[1]):undefined,numberLabel:prefix?String(Number(prefix[1])):'',
+    edition:prefix?{...item.edition,title:item.edition.title.slice(prefix[0].length)}:item.edition};
+  }).sort((a,b)=>(a.number??Infinity)-(b.number??Infinity)||a.edition.title.localeCompare(b.edition.title,undefined,{numeric:true}));
+ const visibleIssues=readableIssues.filter(item=>
   /^\d+$/.test(issueTerm)?item.number===Number(issueTerm):searchKey(item.edition.title).includes(issueTerm));
  const cataloguedIds=new Set(publishedBooks.flatMap(book=>matchesDrive(book).map(item=>item.edition.id)));
  const visibleDrive=availableDriveBooks.filter(item=>!paranormalIds.has(item.edition.id)&&!cataloguedIds.has(item.edition.id)&&
@@ -113,7 +118,7 @@ export function BarqStories(){
    title:target?.title||file.name.replace(/\.pdf$/i,''),format:'pdf',file});
  }
  function openBook(book:PublishedBook){
-  if(book.series){setIssueQuery('');setSeriesLimit(12);setSeries(book);return;}
+  if(book.series){setIssueQuery('');setSeries(book);return;}
   const cloudEdition=matchesDrive(book)[0]?.edition;
   if(cloudEdition){setEdition(cloudEdition);return;}
   if(book.format){setEdition({id:book.id,title:book.title,format:book.format});return;}
@@ -169,21 +174,14 @@ export function BarqStories(){
     {series.id==='paranormal'?label('المجموعة الكاملة عند الناشر','Complete set from the publisher'):label('كل الأعداد عند الناشر','All issues at the publisher')}
     </a>
    </div>}>
-   {series?.id==='paranormal'&&paranormalEntries.length>0&&<section className="bs-series-detail" dir={ar?'rtl':'ltr'}>
+   {series&&readableIssues.length>0&&<section className="bs-series-detail" dir={ar?'rtl':'ltr'}>
     <label className="bs-search"><Search size={17}/><input type="search" value={issueQuery} onChange={event=>setIssueQuery(event.target.value)}
      aria-label={label('ابحث عن عدد','Find an issue')} placeholder={label('اسم العدد أو رقمه…','Issue title or number…')}/></label>
-    <p role="status">{visibleParanormal.length} {label('عدد متاح للقراءة','readable issues')}</p>
-    <ol>{visibleParanormal.map(item=><li key={item.edition.id}>
-     <span><bdi>{item.special?label('خاص','Special')+' ':''}{item.number}</bdi> · {item.edition.title}</span>
+    <p role="status">{visibleIssues.length} {label('عدد متاح للقراءة','readable issues')}</p>
+    {visibleIssues.length>0?<ol className="bs-issue-list">{visibleIssues.map(item=><li key={item.edition.id}>
+     <span dir="auto">{item.numberLabel&&<><bdi>{item.numberLabel}</bdi> · </>}{item.edition.title}</span>
      <button className="bs-series-open" type="button" onClick={()=>setEdition(item.edition)}>{label('اقرأ في برق','Read in BARQ')}</button>
-    </li>)}</ol>
-   </section>}
-   {series&&series.id!=='paranormal'&&driveSeries.length>0&&<section className="bs-series-detail" dir={ar?'rtl':'ltr'}>
-    <input className="bs-search" type="search" value={issueQuery} onChange={event=>setIssueQuery(event.target.value)}
-     placeholder={label('ابحث في روايات السلسلة…','Search series books…')}/>
-    <DriveBooks ar={ar} heading={false} books={visibleSeries.slice(0,seriesLimit)}
-     onOpen={item=>{closeSeries();setEdition(item);}}/>
-    {visibleSeries.length>seriesLimit&&<button className="bs-muted-btn" type="button" onClick={()=>setSeriesLimit(n=>n+12)}>{label('اعرض أعداد أكتر','Show more issues')}</button>}
+    </li>)}</ol>:<p>{label('مفيش أعداد مطابقة للبحث.','No matching issues.')}</p>}
    </section>}
    {series&&!driveSeries.length&&<section className="bs-series-detail"  dir={ar?'rtl':'ltr'}>
     <strong>{series.author}</strong><p>{series.description}</p>
