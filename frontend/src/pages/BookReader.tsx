@@ -57,6 +57,7 @@ export default function BookReader({book,ar,onClose}:{book:ReadingEdition;ar:boo
  const [zoom,setZoom]=useState(100);
  const [paper,setPaper]=useState<'default'|'warm'|'night'>('default');
  const viewport=useRef<VirtuosoHandle>(null);
+ const atBottom=useRef(false);
  const content=useRef<HTMLDivElement>(null);
  const [width,setWidth]=useState(640);
  const [ratio,setRatio]=useState(1.414);
@@ -172,7 +173,8 @@ export default function BookReader({book,ar,onClose}:{book:ReadingEdition;ar:boo
      aria-label={ar?'صفحات الكتاب':'Book pages'} totalCount={count}
      initialTopMostItemIndex={Math.min(initialPage.current,count)-1}
      defaultItemHeight={pdf?Math.ceil(pdfWidth*ratio)+12:undefined}
-     rangeChanged={({startIndex})=>notePage(startIndex)}
+     atBottomStateChange={bottom=>{atBottom.current=bottom;if(bottom&&count>1)notePage(count-1);}}
+     rangeChanged={({startIndex})=>notePage(atBottom.current&&count>1?count-1:startIndex)}
      itemContent={index=>pdf?<div className="bs-pdf-item" style={index===count-1?{minHeight:'var(--pdf-viewport)'}:undefined}>
       <PdfPage pdf={pdf} page={index+1} width={pdfWidth} estimate={ratio} ar={ar}/>
      </div>:<article className="bs-text-chunk" dir="auto" style={{fontSize:`${1.05*zoom/100}rem`}}>{text?.[index]}</article>}/>:
