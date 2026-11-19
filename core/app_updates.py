@@ -215,6 +215,13 @@ class UpdateBridge:
                 return dict(result, status='error')
         return result
 
+    def cancel_staged_update(self) -> dict:
+        if not self._trusted() or not self._supported:
+            return {'status': 'unavailable'}
+        with self._lock:
+            self._pending = None
+        return {'status': 'cancelled'}
+
     def download_update(self, version: str, stage_only: bool = False) -> dict:
         if not self._trusted() or not self._supported or self._channel is None:
             return {'status': 'unavailable'}
