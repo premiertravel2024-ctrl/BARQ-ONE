@@ -1,4 +1,5 @@
 import {useEffect,useLayoutEffect,useRef,useState} from 'react';
+import {ReadingSound} from './ReadingSound';
 import type {PDFDocumentProxy} from 'pdfjs-dist';
 import {ArrowRight,Bookmark,ChevronLeft,ChevronRight,Minus,Plus} from 'lucide-react';
 
@@ -130,8 +131,12 @@ export default function BookReader({book,ar,onClose}:{book:ReadingEdition;ar:boo
  }
  return <section className="bs-document" data-paper={paper} aria-label={book.title}>
   <header className="bs-document-toolbar">
-   <button type="button" onClick={onClose}><ArrowRight size={16}/>{ar?'رجوع للمكتبة':'Back to library'}</button>
-   <h2 dir="auto">{book.title}</h2>
+   <div className="bs-document-heading">
+    <button type="button" aria-label={ar?'رجوع للمكتبة':'Back to library'} title={ar?'رجوع للمكتبة':'Back to library'} onClick={onClose}><ArrowRight size={18}/></button>
+    <h2 dir="auto" title={book.title}>{book.title}</h2>
+    <ReadingSound ar={ar}/>
+   </div>
+   <div className="bs-document-actions">
    {count>0&&<div className="bs-document-controls">
     <button type="button" disabled={page<=1} aria-label={ar?'الصفحة السابقة':'Previous page'} onClick={()=>go(page-1)}><ChevronRight size={18}/></button>
     <form className="bs-page-jump" onSubmit={event=>{
@@ -163,6 +168,7 @@ export default function BookReader({book,ar,onClose}:{book:ReadingEdition;ar:boo
      <option value="night">{ar?'ليلي':'Night'}</option>
     </select>
    </div>}
+   </div>
    {count>0&&<progress className="bs-reader-progress" value={page} max={count} aria-label={ar?'تقدّم القراءة':'Reading progress'}/>}
   </header>
   <div className="bs-document-content" ref={content}>

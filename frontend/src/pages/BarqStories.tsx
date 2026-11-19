@@ -6,6 +6,7 @@ import {useAppView} from '../lib/appContext';
 import {useApp} from '../store';
 import {publishedBooks,type PublishedBook} from './publishedBooks';
 import {paranormalCollection,paranormalEbooks} from './paranormalIssues';
+import {DriveBooks,DriveFolderButton,type DriveBook} from './DriveBooks';
 import './barqStories.css';
 
 const BookReader=lazy(()=>import('./BookReader'));
@@ -45,6 +46,7 @@ export function BarqStories(){
  const issues=series?.issues?.filter(issue=>/^\d+$/.test(issueTerm)
   ?issue.number===Number(issueTerm):searchKey(issue.title).includes(issueTerm))||[];
 
+ const [driveBooks,setDriveBooks]=useState<DriveBook[]>();
  const [edition,setEdition]=useState<ReadingEdition>();
  const [error,setError]=useState('');
  const upload=useRef<HTMLInputElement>(null);
@@ -94,8 +96,10 @@ export function BarqStories(){
   </Suspense>:<>
    <header className="bs-header">
     <div className="bs-brand"><span className="bs-brand-mark"><BookOpen size={22}/></span><h1>{label('مكتبة القراءة','Reading Library')}</h1></div>
-    <button className="bs-muted-btn" type="button" onClick={()=>pickFile()}><Upload size={16}/>{label('افتح PDF من جهازك','Open local PDF')}</button>
+    <div className="bs-drive-header"><DriveFolderButton ar={ar} onSelect={setDriveBooks}/>
+    <button className="bs-muted-btn" type="button" onClick={()=>pickFile()}><Upload size={16}/>{label('افتح PDF من جهازك','Open local PDF')}</button></div>
    </header>
+   {driveBooks&&<DriveBooks books={driveBooks} ar={ar} onOpen={setEdition}/>}
    <section className="bs-collection">
     <div className="bs-title-row"><h2>{label('الكتب والسلاسل','Books and series')}</h2>
      <div className="bs-search"><Search size={18} aria-hidden="true"/><input type="search" dir="auto" aria-label={label('ابحث في الكتب','Search books')}

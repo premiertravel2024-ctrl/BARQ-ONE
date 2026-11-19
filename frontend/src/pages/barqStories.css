@@ -140,3 +140,29 @@
  .bs-hub .bs-filters button { flex: none; }
  .bs-hub .bs-document-toolbar { gap: 6px; }
 }
+
+.bs-hub .bs-document-toolbar{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px 14px;padding:8px 10px}
+.bs-document-heading,.bs-document-actions{display:flex;align-items:center;min-width:0;gap:8px}
+.bs-document-heading h2{flex:1;margin:0;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:1rem;line-height:1.5}
+.bs-document-heading button,.bs-document-controls button{flex:none;display:inline-flex;align-items:center;justify-content:center;min-width:36px;min-height:36px}
+.bs-document:dir(ltr) :is(.bs-document-heading,.bs-document-controls) button svg.lucide-arrow-right,
+.bs-document:dir(ltr) .bs-document-controls button :is(.lucide-chevron-right,.lucide-chevron-left){transform:scaleX(-1)}
+.bs-document-actions,.bs-document-actions .bs-document-controls,.bs-document-actions .bs-reader-display{flex-wrap:wrap}
+.bs-document-actions{justify-content:flex-end}
+.bs-reader-progress{grid-column:1/-1;margin:0}
+.bs-reading-sound{position:relative;flex:none}
+.bs-reading-sound [data-playing="true"]{color:#ff95b3;border-color:#ad5476}
+.bs-sound-panel{position:absolute;z-index:4;inset-inline-end:0;top:calc(100% + 8px);width:min(250px,75vw);padding:12px;display:grid;gap:9px;background:#211b26;border:1px solid #644659;border-radius:10px;box-shadow:0 8px 22px #0008}
+.bs-sound-panel label{display:grid;gap:4px;font-size:.85rem}
+.bs-sound-panel button{display:flex;gap:7px}
+.bs-sound-panel a{font-size:.75rem;color:#ffb1c9}
+.bs-drive-header{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.bs-drive-section{margin-block:16px}
+.bs-drive-group>summary{cursor:pointer;padding:8px;overflow-wrap:anywhere}
+.bs-drive-group .bs-real-grid{margin-block:6px 16px}
+.bs-drive-section .bs-real-copy h3{overflow-wrap:anywhere;line-height:1.55}
+.bs-document{container-type:inline-size}
+@container (max-width: 760px){
+ .bs-hub .bs-document-toolbar{grid-template-columns:minmax(0,1fr)}
+ .bs-document-actions{justify-content:flex-start}
+}
