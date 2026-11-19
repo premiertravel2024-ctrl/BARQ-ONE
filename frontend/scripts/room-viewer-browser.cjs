@@ -89,7 +89,7 @@ async function verifyPlayback(browser,mode){
   await host.locator('#video').evaluate(media=>{media.loop=true;});
   await host.locator('#file').setInputFiles({name:'sample.webm',mimeType:mode==='music'?'audio/webm':'video/webm',buffer:Buffer.from(fixture)});
   try{
-   await host.waitForFunction(()=>document.querySelector('#mediaNote').textContent.includes('بيتشارك'),null,{timeout:10000});
+   await host.waitForFunction(()=>{const media=document.querySelector('#video');return media.readyState>=2&&!media.paused&&!document.querySelector('#sources').open;},null,{timeout:10000});
   }catch(error){
    const state=await host.locator('#video').evaluate(media=>({error:media.error?.message,time:media.currentTime,paused:media.paused,ready:media.readyState,secure:isSecureContext,status:document.querySelector('#status').textContent}));
    throw new Error(mode+' host did not share media: '+JSON.stringify(state),{cause:error});
