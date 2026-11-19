@@ -1,6 +1,7 @@
 import {useCallback,useEffect,useState,type FormEvent} from 'react';
 import {Cloud,RefreshCw} from 'lucide-react';
 import {APIError,requestJSON} from '../lib/backend';
+import {driveSyncDevice} from '../lib/driveSync';
 import type {DriveBook} from './DriveBooks';
 
 type Connection={connected:boolean;pending:boolean;failed:boolean;folder:string;sync?:boolean};
@@ -43,6 +44,7 @@ export function CloudReading({ar}:{ar:boolean}){
  const [url,setUrl]=useState('');
  const [busy,setBusy]=useState(false);
  const [error,setError]=useState('');
+ const [primary,setPrimary]=useState(false);
  const [revision,setRevision]=useState(0);
  const label=(a:string,e:string)=>ar?a:e;
  const refresh=useCallback(async()=>{
@@ -90,10 +92,21 @@ export function CloudReading({ar}:{ar:boolean}){
   }catch{setError(label('راجع بيانات عميل OAuth ورابط فولدر Drive.','Check the desktop OAuth credentials and Drive folder link.'));}
   finally{setBusy(false);}
  }
+ async function makePrimary(){
+  setBusy(true);setError('');
+  try{
+   const result=await requestJSON<{covers_primary:boolean}>(root+'/sync',{
+    method:'POST',body:JSON.stringify({device:driveSyncDevice(),records:{},claim_primary:true}),
+   });
+   if(!result.covers_primary)throw new Error('Primary cover sync unavailable');
+   setPrimary(true);
+  }catch{setError(label('تعذّر تعيين الجهاز الأساسي للأغلفة.','Could not set the primary cover device.'));}
+  finally{setBusy(false);}
+ }
  async function disconnect(){
   try{
    await requestJSON(root+'/connection',{method:'DELETE'});
-   setConnection(undefined);setRevision(n=>n+1);
+   setConnection(undefined);setPrimary(false);setRevision(n=>n+1);
   }catch{setError(label('تعذّر فصل Google Drive.','Could not disconnect Google Drive.'));}
  }
 
@@ -104,6 +117,11 @@ export function CloudReading({ar}:{ar:boolean}){
    {connection?.connected&&<button className="bs-muted-btn" type="button" disabled={busy||connection.pending} onClick={()=>void refresh()}>
     <RefreshCw size={15}/>{label('حدّث الروايات','Refresh books')}</button>}
   </div>
+  {connection?.sync&&<div className="bs-drive-header">
+   <button className="bs-muted-btn" type="button" disabled={busy||connection.pending||primary} onClick={()=>void makePrimary()}>
+    {primary?label('الجهاز الأساسي للأغلفة','Primary cover device'):label('خلّي الجهاز ده هو الأساسي للأغلفة','Make this the primary cover device')}
+   </button>
+  </div>}
   {config&&<form className="bs-cloud-config" onSubmit={connect}>
    <p>{label('استخدم بيانات عميل OAuth من نوع Desktop app في مشروع Google Cloud مفعّل فيه Drive API.',
     'Use Desktop app OAuth credentials from a Google Cloud project with Drive API enabled.')}

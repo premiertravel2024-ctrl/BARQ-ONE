@@ -60,6 +60,15 @@ function apply(key:string,value:string|null){
  if(option==='sidebarCollapsed'&&typeof decoded==='boolean')useApp.setState({sidebarCollapsed:decoded});
 }
 
+export function driveSyncDevice(){
+ let device=localStorage.getItem('barq-drive-sync-device');
+ if(!device){
+  device=crypto.randomUUID().replaceAll('-','');
+  localStorage.setItem('barq-drive-sync-device',device);
+ }
+ return device;
+}
+
 export function startDriveSync(){
  let busy=false,alive=true,applying=false;
  const deleted=new Map<string,number>();
@@ -75,8 +84,7 @@ export function startDriveSync(){
   try{
    const status=await requestJSON<{sync?:boolean}>(root+'/status');
    if(!status.sync||!alive)return;
-   let device=localStorage.getItem('barq-drive-sync-device');
-   if(!device){device=crypto.randomUUID().replaceAll('-','');localStorage.setItem('barq-drive-sync-device',device);}
+   const device=driveSyncDevice();
    const history=JSON.parse(localStorage.getItem(journal)||'{}') as Records;
    const before=snapshot();
    const outgoing:Records={};

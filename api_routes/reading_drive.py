@@ -297,6 +297,8 @@ def media(file_id: str, request: Request):
 
 
 SYNC_NAME = 'barq-one-sync-v1-'
+PRIMARY_COVERS = 'primary-covers'
+SYNC_LOCK = RLock()
 SYNC_MAX = 8 * 1024 * 1024
 
 
@@ -322,23 +324,35 @@ async def sync_data(request: Request):
                 raise ValueError
             if 'value' not in entry:
                 raise ValueError
-        if any(key.startswith('cover:') for key in records):
+        if any(key.startswith('cover:') or key == PRIMARY_COVERS for key in records):
             raise ValueError
-        return await run_in_threadpool(sync_with_covers, device, records)
+        claim_primary = data.get('claim_primary', False)
+        if type(claim_primary) is not bool:
+            raise ValueError
+        return await run_in_threadpool(sync_with_covers, device, records, claim_primary)
     except (TypeError, KeyError, ValueError):
         raise HTTPException(422, 'Invalid BARQ sync data') from None
 
 
-def sync_with_covers(device, records):
+def sync_with_covers(device, records, claim_primary=False):
     from api_routes.reading import apply_cover_sync, cover_sync_snapshot
 
-    result = exchange_sync(device, {**records, **cover_sync_snapshot()})
-    covers = {key: entry for key, entry in result['records'].items() if key.startswith('cover:')}
-    return {'records': {key: entry for key, entry in result['records'].items() if not key.startswith('cover:')},
-            'covers_changed': apply_cover_sync(covers)}
+    with SYNC_LOCK:
+        result = exchange_sync(device, records, cover_sync_snapshot(), claim_primary)
+        merged = result['records']
+        primary = result.get('primary')
+        is_primary = bool(primary and primary['device'] == device)
+        covers = primary['covers'] if primary else {
+            key: entry for key, entry in merged.items() if key.startswith('cover:')
+        }
+        return {
+            'records': {key: entry for key, entry in merged.items() if not key.startswith('cover:')},
+            'covers_changed': not is_primary and apply_cover_sync(covers, authoritative=bool(primary)),
+            'covers_primary': is_primary,
+        }
 
 
-def exchange_sync(device, records):
+def exchange_sync(device, records, local_covers=None, claim_primary=False):
     with LOCK:
         current = remembered()
         if not current or not current.get('sync'):
@@ -351,6 +365,8 @@ def exchange_sync(device, records):
     newest = {}
     own = {}
     own_id = None
+    primary = None
+    primary_at = -1
     try:
         with httpx.Client(headers=headers, timeout=20) as client:
             page = None
@@ -377,6 +393,17 @@ def exchange_sync(device, records):
                     for key, entry in snapshot.items():
                         if not isinstance(entry, dict) or type(entry.get('at')) is not int or 'value' not in entry:
                             continue
+                        if key == PRIMARY_COVERS:
+                            value = entry['value']
+                            owner = item['name'][len(SYNC_NAME):-5]
+                            if (isinstance(value, dict) and value.get('device') == owner
+                                    and isinstance(value.get('covers'), dict)
+                                    and (entry['at'], owner) > (primary_at, primary['device'] if primary else '')):
+                                primary = value
+                                primary_at = entry['at']
+                            if item['name'] == name:
+                                own[key] = entry
+                            continue
                         if item['name'] == name:
                             merge_sync(own, key, entry)
                         merge_sync(newest, key, entry)
@@ -386,6 +413,17 @@ def exchange_sync(device, records):
                 if not page:
                     break
             changed = False
+            if local_covers is not None:
+                if claim_primary or (primary and primary['device'] == device):
+                    if claim_primary:
+                        primary_at = max(int(time.time() * 1000), primary_at + 1)
+                    primary = {'device': device, 'covers': local_covers}
+                    entry = {'at': primary_at, 'value': primary}
+                    if own.get(PRIMARY_COVERS) != entry:
+                        own[PRIMARY_COVERS] = entry
+                        changed = True
+                elif primary is None:
+                    records = {**records, **local_covers}
             for key, entry in records.items():
                 if key not in newest or entry['at'] >= newest[key]['at']:
                     changed |= merge_sync(own, key, entry)
@@ -406,7 +444,7 @@ def exchange_sync(device, records):
                     response = client.post(upload,params={'uploadType':'multipart'},content=body,
                         headers={'Content-Type':f'multipart/related; boundary={boundary}'})
                 response.raise_for_status()
-        return {'records':newest}
+        return {'records': newest, 'primary': primary}
     except (httpx.HTTPError, ValueError, KeyError):
         raise HTTPException(502, 'Could not synchronize BARQ with Google Drive') from None
 
