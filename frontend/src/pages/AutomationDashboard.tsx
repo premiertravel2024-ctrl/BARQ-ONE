@@ -16,7 +16,7 @@ type Weather = {
 type Prayer = {key:string;label:string;time:string;at:string};
 type Overview = {city:City;city_label:string;timezone:string;updated_at:string;
  weather:Weather|null;prayers:Prayer[];next_prayer:Prayer|null;errors:string[];prayer_source:string};
-type Alarm = {id:string;time:string;label:string;repeat:boolean;enabled:boolean;last_fired:string;snoozed_until?:string};
+type Alarm = {id:string;time:string;label:string;repeat:boolean;enabled:boolean;last_fired:string;snoozed_until?:string;weekdays?:number[];sound?:string};
 const CITY_NAMES:Record<City,string>={riyadh:'الرياض',jeddah:'جدة',makkah:'مكة المكرمة',madinah:'المدينة المنورة',dammam:'الدمام',cairo:'القاهرة'};
 const CITY_NAMES_EN:Record<City,string>={riyadh:'Riyadh',jeddah:'Jeddah',makkah:'Makkah',madinah:'Madinah',dammam:'Dammam',cairo:'Cairo'};
 const PRAYER_NAMES:Record<string,string>={Fajr:'Fajr',Dhuhr:'Dhuhr',Asr:'Asr',Maghrib:'Maghrib',Isha:'Isha'};
@@ -46,6 +46,8 @@ export function AutomationDashboard(){
  const [when,setWhen]=useState('07:00');
  const [label,setLabel]=useState('');
  const [repeat,setRepeat]=useState(true);
+ const [weekdays,setWeekdays]=useState<number[]>([]);
+ const [sound,setSound]=useState('classic');
  const [editing,setEditing]=useState<string>();
  const [zones,setZones]=useState(clockZones);
  const [focusUntil,setFocusUntil]=useState<number|null>(()=>focusDeadline()||null);
@@ -88,8 +90,8 @@ export function AutomationDashboard(){
   event.preventDefault();if(!when||!label.trim()||busy)return;
   setBusy(true);setError('');
   try{
-   await requestJSON('/v1/automation/alarms'+(editing?'/'+editing:''),{method:editing?'PATCH':'POST',body:JSON.stringify({time:when,label:label.trim(),repeat})});
-   setEditing(undefined);window.dispatchEvent(new Event(DAY_CHANGED));
+   await requestJSON('/v1/automation/alarms'+(editing?'/'+editing:''),{method:editing?'PATCH':'POST',body:JSON.stringify({time:when,label:label.trim(),repeat,weekdays,sound})});
+   setEditing(undefined);setWeekdays([]);setSound('classic');window.dispatchEvent(new Event(DAY_CHANGED));
    await fetchAlarms();setLabel('');setNotice(ar?'المنبّه اتحفظ على الجهاز.':'Alarm saved locally.');
   }catch(e){setError(e instanceof Error?e.message:String(e))}finally{setBusy(false)}
  }
@@ -203,15 +205,22 @@ export function AutomationDashboard(){
     <form onSubmit={e=>void addAlarm(e)} className="ba-alarm-form">
       <label>{ar?'الوقت':'Time'}<input type="time" value={when} onChange={e=>setWhen(e.target.value)} required/></label>
       <label>{ar?'عنوان التنبيه':'Alarm label'}<input value={label} maxLength={70} onChange={e=>setLabel(e.target.value)} placeholder={ar?'مثلاً: اجتماع أو استراحة':'e.g. meeting'} required/></label>
-      <label className="ba-repeat"><input type="checkbox" checked={repeat} onChange={e=>setRepeat(e.target.checked)}/>{ar?'كل يوم':'Daily'}</label>
+      <label className="ba-repeat"><input type="checkbox" checked={repeat} onChange={e=>setRepeat(e.target.checked)}/>{ar?'يتكرر':'Repeat'}</label>
+      {repeat&&<fieldset className="ba-alarm-days"><legend>{ar?'الأيام (الكل لو مفيش اختيار)':'Days (all if none selected)'}</legend>
+       {(ar?['إث','ثل','أر','خم','جم','سب','أح']:['M','Tu','W','Th','F','Sa','Su']).map((day,index)=>
+        <label key={day}><input type="checkbox" checked={weekdays.includes(index)} onChange={()=>setWeekdays(weekdays.includes(index)?weekdays.filter(item=>item!==index):[...weekdays,index])}/>{day}</label>)}
+      </fieldset>}
+      <label>{ar?'صوت المنبّه':'Alarm sound'}<select value={sound} onChange={event=>setSound(event.target.value)}>
+       <option value="classic">{ar?'كلاسيكي':'Classic'}</option><option value="soft">{ar?'هادي':'Soft'}</option><option value="alert">{ar?'تنبيه واضح':'Alert'}</option>
+      </select></label>
       <button type="submit" className="ba-primary" disabled={busy||!label.trim()}><Plus size={16}/>{editing?(ar?'احفظ التعديل':'Save edit'):(ar?'إضافة منبّه':'Add alarm')}</button>
      {editing&&<button type="button" onClick={()=>{setEditing(undefined);setLabel('');}}>{ar?'إلغاء':'Cancel'}</button>}
     </form>
     <div className="ba-alarm-list">
      {alarms.length===0?<p className="ba-muted">{ar?'مفيش منبّهات لسه.':'No alarms yet.'}</p>:alarms.map(alarm=><div key={alarm.id} className={'ba-alarm-item'+(!alarm.enabled?' ba-alarm-off':'')}>
-       <div><b dir="ltr">{alarm.time}</b><span>{alarm.label}</span><small>{alarm.repeat?(ar?'يومي':'Daily'):(ar?'مرة واحدة':'One time')}</small>{alarm.snoozed_until&&<small>{ar?'غفوة لحد':'Snoozed until'} {new Date(alarm.snoozed_until).toLocaleTimeString(ar?'ar-EG':'en-GB',{hour:'2-digit',minute:'2-digit'})}</small>}{alarm.last_fired&&<small>{ar?'آخر تشغيل':'Last rang'} <bdi>{alarm.last_fired}</bdi></small>}</div>
+       <div><b dir="ltr">{alarm.time}</b><span>{alarm.label}</span><small>{alarm.repeat?(alarm.weekdays?.length?(ar?'أيام مختارة':'Selected days'):(ar?'يومي':'Daily')):(ar?'مرة واحدة':'One time')}</small>{alarm.snoozed_until&&<small>{ar?'غفوة لحد':'Snoozed until'} {new Date(alarm.snoozed_until).toLocaleTimeString(ar?'ar-EG':'en-GB',{hour:'2-digit',minute:'2-digit'})}</small>}{alarm.last_fired&&<small>{ar?'آخر تشغيل':'Last rang'} <bdi>{alarm.last_fired}</bdi></small>}</div>
        <div className="ba-alarm-actions">
-        <button type="button" disabled={busy} onClick={()=>{setEditing(alarm.id);setWhen(alarm.time);setRepeat(alarm.repeat);setLabel(alarm.label);}}>{ar?'عدّل':'Edit'}</button>
+        <button type="button" disabled={busy} onClick={()=>{setEditing(alarm.id);setWhen(alarm.time);setRepeat(alarm.repeat);setLabel(alarm.label);setWeekdays(alarm.weekdays||[]);setSound(alarm.sound||'classic');}}>{ar?'عدّل':'Edit'}</button>
         {alarm.last_fired&&<button type="button" disabled={busy} onClick={()=>void snooze(alarm.id)}>{ar?'غفوة ٥ دقايق':'Snooze 5 min'}</button>}
         <button type="button" aria-label={alarm.enabled?'Disable alarm':'Enable alarm'} onClick={()=>void modifyAlarm(alarm.id,!alarm.enabled)} disabled={busy}>{alarm.enabled?<Check size={16}/>:<Plus size={16}/>}</button><button type="button" aria-label={ar?'حذف المنبّه':'Delete alarm'} disabled={busy} onClick={()=>void modifyAlarm(alarm.id)}><Trash2 size={16}/></button></div>
       </div>)}

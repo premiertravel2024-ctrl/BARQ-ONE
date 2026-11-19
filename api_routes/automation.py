@@ -6,6 +6,7 @@ import json
 import re
 import threading
 import time
+from typing import Annotated, Literal
 from urllib.parse import urlencode
 from urllib.request import Request, urlopen
 from zoneinfo import ZoneInfo
@@ -145,16 +146,22 @@ def list_alarms():
     return {"alarms":automation_alarms.alarms(), "runs_while_app_open":True}
 
 
+Weekday = Annotated[int, Field(ge=0, le=6)]
+AlarmSound = Literal["classic", "soft", "alert"]
+
+
 class AlarmRequest(BaseModel):
     time: str = Field(pattern=r"^(?:[01]\d|2[0-3]):[0-5]\d$")
     label: str = Field(min_length=1,max_length=70)
     repeat: bool = True
+    weekdays: list[Weekday] = Field(default_factory=list, max_length=7)
+    sound: AlarmSound = "classic"
 
 
 @router.post("/alarms")
 def create_alarm(payload: AlarmRequest):
     try:
-        return automation_alarms.create_alarm(payload.time,payload.label,payload.repeat)
+        return automation_alarms.create_alarm(payload.time,payload.label,payload.repeat,payload.weekdays,payload.sound)
     except ValueError as exc:
         raise HTTPException(400,str(exc)) from exc
 
@@ -164,6 +171,8 @@ class AlarmToggle(BaseModel):
     time: str | None = Field(default=None, pattern=r"^(?:[01]\d|2[0-3]):[0-5]\d$")
     label: str | None = Field(default=None, min_length=1, max_length=70)
     repeat: bool | None = None
+    weekdays: list[Weekday] | None = Field(default=None, max_length=7)
+    sound: AlarmSound | None = None
 
 
 @router.patch("/alarms/{alarm_id}")

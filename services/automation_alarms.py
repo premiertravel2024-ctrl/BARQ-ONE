@@ -55,7 +55,7 @@ def alarms() -> list[dict]:
         return _read()
 
 
-def create_alarm(when: str, label: str, repeat: bool) -> dict:
+def create_alarm(when: str, label: str, repeat: bool, weekdays=None, sound="classic") -> dict:
     if not _TIME_RE.fullmatch(when):
         raise ValueError("وقت المنبّه لازم يكون بالشكل HH:MM.")
     label = label.strip()
@@ -66,7 +66,8 @@ def create_alarm(when: str, label: str, repeat: bool) -> dict:
         if len(entries) >= 30:
             raise ValueError("الحد الأقصى 30 منبّه.")
         alarm = {"id": uuid.uuid4().hex, "time": when, "label": label,
-                 "repeat": bool(repeat), "enabled": True, "last_fired": ""}
+                 "repeat": bool(repeat), "enabled": True, "last_fired": "",
+                 "weekdays": weekdays if repeat and weekdays else [], "sound": sound}
         entries.append(alarm)
         _write(entries)
         return alarm
@@ -110,11 +111,15 @@ def delete_alarm(identifier: str) -> bool:
         return True
 
 
-def _notify(label: str) -> None:
+def _notify(label: str, sound: str = "classic") -> None:
     """Only a user-created scheduled alarm can call this. No shell used."""
     try:
         import winsound
-        winsound.MessageBeep(winsound.MB_ICONEXCLAMATION)
+        winsound.MessageBeep({
+            "classic": winsound.MB_ICONEXCLAMATION,
+            "soft": winsound.MB_OK,
+            "alert": winsound.MB_ICONHAND,
+        }.get(sound, winsound.MB_ICONEXCLAMATION))
     except (ImportError, OSError):
         pass
     if os.name == "nt":
@@ -135,6 +140,8 @@ def tick(now: datetime | None = None, notify=_notify) -> int:
         dirty = False
         for alarm in entries:
             scheduled = alarm.get("enabled") and alarm.get("time") == marker[-5:] and alarm.get("last_fired") != marker
+            weekdays = alarm.get("weekdays") if alarm.get("repeat") else []
+            scheduled = scheduled and (not weekdays or now.weekday() in weekdays)
             snoozed = alarm.get("snoozed_until")
             snooze_due = bool(snoozed and now >= datetime.fromisoformat(snoozed))
             if not scheduled and not snooze_due:
@@ -144,12 +151,13 @@ def tick(now: datetime | None = None, notify=_notify) -> int:
                 alarm.pop("snoozed_until", None)
             if scheduled and not alarm.get("repeat"):
                 alarm["enabled"] = False
-            due.append(str(alarm.get("label") or "منبّه"))
+            due.append((str(alarm.get("label") or "منبّه"), alarm.get("sound", "classic")))
             dirty = True
         if dirty:
             _write(entries)
-    for label in due:
-        threading.Thread(target=notify, args=(label,), daemon=True).start()
+    for label, sound in due:
+        args = (label, sound) if notify is _notify else (label,)
+        threading.Thread(target=notify, args=args, daemon=True).start()
     return len(due)
 
 

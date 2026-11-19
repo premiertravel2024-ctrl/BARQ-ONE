@@ -20,7 +20,7 @@ export function focusDeadline():number{
  return Number(localStorage.getItem(FOCUS_DEADLINE))||0;
 }
 
-type Alarm={time:string;label:string;enabled:boolean;snoozed_until?:string;last_fired?:string};
+type Alarm={time:string;label:string;enabled:boolean;snoozed_until?:string;last_fired?:string;repeat?:boolean;weekdays?:number[]};
 export function nextAlarm(alarms:Alarm[],now:number){
  return alarms.flatMap(alarm=>{
   const timestamps:number[]=[];
@@ -30,6 +30,10 @@ export function nextAlarm(alarms:Alarm[],now:number){
    target.setHours(hours,minutes,0,0);
    if(target.getTime()+60000<=now||alarm.last_fired?.endsWith(alarm.time)&&alarm.last_fired.slice(0,10)===
     [target.getFullYear(),String(target.getMonth()+1).padStart(2,'0'),String(target.getDate()).padStart(2,'0')].join('-'))target.setDate(target.getDate()+1);
+   if(alarm.repeat&&alarm.weekdays?.length){
+    const days=alarm.weekdays;
+    for(let offset=0;offset<7&&!days.includes((target.getDay()+6)%7);offset++)target.setDate(target.getDate()+1);
+   }
    timestamps.push(target.getTime());
   }
   const snoozed=Date.parse(alarm.snoozed_until||'');
