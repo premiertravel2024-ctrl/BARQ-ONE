@@ -191,6 +191,7 @@ export function AutomationDashboard(){
     })}</div>:<p className="ba-muted">{loading?(ar?'بنجيب توقعات الأسبوع...':'Loading forecast...'):(ar?'مفيش توقعات متاحة.':'Forecast unavailable.')}</p>}
   </section>
   <div className="ba-lower-grid">
+   <div className="ba-side-stack">
    <section className="ba-card">
     <div className="ba-section-head"><div><CalendarDays size={18}/><h3>{ar?'مواقيت الصلاة اليوم':'Today’s prayer times'}</h3></div><span>{ar?'طريقة أم القرى للسعودية':'Local calculation method'}</span></div>
     <div className="ba-prayer-list">
@@ -199,16 +200,34 @@ export function AutomationDashboard(){
     </div>
     <small className="ba-attribution"><a href="https://aladhan.com/prayer-times-api" target="_blank" rel="noopener noreferrer">AlAdhan</a> · {ar?'ممكن تختلف الدقائق عن مسجدك':'Check local mosque for any differences'}</small>
    </section>
+   <section className="ba-card ba-focus">
+    <div className="ba-section-head"><div><Clock3 size={18}/><h3>{ar?'وقت التركيز':'Focus timer'}</h3></div></div>
+    <div className="ba-focus-clock" dir="ltr">{duration(focusSeconds)}</div>
+    <div className="ba-focus-controls">
+     <label>{ar?'المدة بالدقايق':'Duration in minutes'}
+      <input type="number" min={1} max={180} defaultValue={25} disabled={focusActive}
+       onChange={event=>{const value=event.currentTarget.valueAsNumber;if(Number.isInteger(value)&&value>=1&&value<=180)setFocus(value);}}/>
+     </label>
+     <button type="button" className="ba-primary" onClick={toggleFocus} disabled={!focusActive&&focusSeconds===0}>
+      {focusActive?<Pause size={16}/>:<Play size={16}/>} {focusActive?(ar?'إيقاف مؤقت':'Pause'):(ar?'ابدأ التركيز':'Start focus')}
+     </button>
+     <button type="button" onClick={()=>setFocus(25)}>{ar?'إعادة ضبط':'Reset'}</button>
+    </div>
+    <p className="ba-muted">{ar?'مؤقت التركيز بيكمل وإنت بتتنقّل جوّه برق.':'The timer keeps running as you move around BARQ.'}</p>
+   </section>
+   </div>
    <section className="ba-card">
     <div className="ba-section-head"><div><AlarmClock size={18}/><h3>{ar?'المنبّهات':'Alarms'}</h3></div><span>{alarms.length} / 30</span></div>
     {nextWake&&<p className="ba-muted">{ar?'المنبّه الجاي':'Next alarm'} · <bdi>{nextWake.label} {new Date(nextWake.at).toLocaleTimeString(ar?'ar-EG':'en-GB',{hour:'2-digit',minute:'2-digit'})}</bdi></p>}
     <form onSubmit={e=>void addAlarm(e)} className="ba-alarm-form">
       <label>{ar?'الوقت':'Time'}<input type="time" value={when} onChange={e=>setWhen(e.target.value)} required/></label>
       <label>{ar?'عنوان التنبيه':'Alarm label'}<input value={label} maxLength={70} onChange={e=>setLabel(e.target.value)} placeholder={ar?'مثلاً: اجتماع أو استراحة':'e.g. meeting'} required/></label>
-      <label className="ba-repeat"><input type="checkbox" checked={repeat} onChange={e=>setRepeat(e.target.checked)}/>{ar?'يتكرر':'Repeat'}</label>
-      {repeat&&<fieldset className="ba-alarm-days"><legend>{ar?'الأيام (الكل لو مفيش اختيار)':'Days (all if none selected)'}</legend>
-       {(ar?['إث','ثل','أر','خم','جم','سب','أح']:['M','Tu','W','Th','F','Sa','Su']).map((day,index)=>
-        <label key={day}><input type="checkbox" checked={weekdays.includes(index)} onChange={()=>setWeekdays(weekdays.includes(index)?weekdays.filter(item=>item!==index):[...weekdays,index])}/>{day}</label>)}
+      <label className="ba-repeat"><span>{ar?'التكرار':'Repeat'}</span><select value={repeat?'repeat':'once'} onChange={e=>setRepeat(e.target.value==='repeat')}><option value="once">{ar?'مرة واحدة':'Once'}</option><option value="repeat">{ar?'يتكرر':'Repeat'}</option></select></label>
+      {repeat&&<fieldset className="ba-alarm-days"><legend>{ar?'أيام التكرار':'Repeat days'}</legend>
+       <div className="ba-weekdays">
+       {(ar?['الاتنين','التلات','الأربع','الخميس','الجمعة','السبت','الأحد']:['Mon','Tue','Wed','Thu','Fri','Sat','Sun']).map((day,index)=>
+        <button key={day} type="button" aria-pressed={weekdays.includes(index)} onClick={()=>setWeekdays(weekdays.includes(index)?weekdays.filter(item=>item!==index):[...weekdays,index])}>{day}</button>)}
+       </div><small>{ar?'لو مفيش يوم محدد، المنبّه هيتكرر يوميًا.':'With no days selected, the alarm repeats daily.'}</small>
       </fieldset>}
       <label>{ar?'صوت المنبّه':'Alarm sound'}<select value={sound} onChange={event=>setSound(event.target.value)}>
        <option value="classic">{ar?'كلاسيكي':'Classic'}</option><option value="soft">{ar?'هادي':'Soft'}</option><option value="alert">{ar?'تنبيه واضح':'Alert'}</option>
@@ -227,21 +246,7 @@ export function AutomationDashboard(){
     </div>
     <p className="ba-muted ba-note"><Bell size={14}/>{ar?'المنبّهات بتشتغل على الكمبيوتر طول ما خدمة برق مفتوحة، حتى لو النافذة مصغّرة أو برق في الـTray.':'Alarms trigger on this computer while BARQ is running, including while in the system tray.'}</p>
    </section>
-   <section className="ba-card ba-focus">
-    <div className="ba-section-head"><div><Clock3 size={18}/><h3>{ar?'وقت التركيز':'Focus timer'}</h3></div></div>
-    <div className="ba-focus-clock" dir="ltr">{duration(focusSeconds)}</div>
-    <div className="ba-focus-controls">
-     <label>{ar?'المدة بالدقايق':'Duration in minutes'}
-      <input type="number" min={1} max={180} defaultValue={25} disabled={focusActive}
-       onChange={event=>{const value=event.currentTarget.valueAsNumber;if(Number.isInteger(value)&&value>=1&&value<=180)setFocus(value);}}/>
-     </label>
-     <button type="button" className="ba-primary" onClick={toggleFocus} disabled={!focusActive&&focusSeconds===0}>
-      {focusActive?<Pause size={16}/>:<Play size={16}/>} {focusActive?(ar?'إيقاف مؤقت':'Pause'):(ar?'ابدأ التركيز':'Start focus')}
-     </button>
-     <button type="button" onClick={()=>setFocus(25)}>{ar?'إعادة ضبط':'Reset'}</button>
-    </div>
-    <p className="ba-muted">{ar?'مؤقت التركيز بيكمل وإنت بتتنقّل جوّه برق.':'The timer keeps running as you move around BARQ.'}</p>
-   </section>
+
   </div>
  </div>;
 }

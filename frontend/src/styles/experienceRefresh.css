@@ -11,7 +11,12 @@
 .ops-header nav button[aria-current='page']{background:#ef6a8b20;border-color:#ed6e9452;color:#ffa8be;font-weight:800}
 .ops-header nav button:hover{color:#fff;background:#ffffff0c}
 .ops-header-actions{gap:6px}
-.ops-header-actions>button{width:35px;min-width:35px;height:35px;padding:7px;border-radius:10px}
+.ops-header-actions>button{display:inline-flex;flex:none;align-items:center;justify-content:center;gap:6px;inline-size:max-content;min-inline-size:35px;min-block-size:35px;padding:7px;border-radius:10px;line-height:1.2}
+.ops-header-actions>button>svg{flex:none}
+.ops-header-actions>.ops-day-status{padding-inline:9px}
+.ops-header-actions>.ops-update-button{position:relative}
+.ops-update-button[data-available="true"]::after{content:'';position:absolute;inset-block-start:5px;inset-inline-end:5px;width:6px;height:6px;border-radius:50%;background:#ff9bb8;pointer-events:none}
+@media(max-width:560px){.ops-header-actions{gap:4px}.ops-header-actions>.ops-day-status{padding-inline:6px}.ops-header-actions>.ops-day-status .ops-day-alarm{display:none}}
 .ops-header-actions .ops-search{width:auto;min-width:0;padding-inline:11px}
 .ops-body{gap:12px;padding:12px}
 .ops-rail{border:1px solid var(--barq-ui-border);border-radius:18px;padding:12px 9px;scrollbar-width:thin}

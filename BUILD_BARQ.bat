@@ -2,7 +2,7 @@
 setlocal EnableExtensions DisableDelayedExpansion
 set "ROOT=%~dp0"
 echo ================================================================
-echo BARQ AI v2.41.9 - Windows Installer Builder
+echo BARQ AI v2.41.10 - Windows Installer Builder
 echo ================================================================
 echo [INFO] Source folder: "%ROOT%"
 if not exist "%ROOT%scripts\build_windows.ps1" (
@@ -16,10 +16,10 @@ if not exist "%ROOT%scripts\build_windows.ps1" (
 )
 call "%ROOT%BUILD_WINDOWS_EXE.bat"
 if errorlevel 1 (echo [ERROR] The BARQ build did not finish.& pause& exit /b 1)
-if not exist "%ROOT%release\BARQ_Setup_2.41.9.exe" (echo [ERROR] Missing Setup.exe.& pause& exit /b 2)
-if not exist "%ROOT%release\build-ok-v2.41.9.marker" (echo [ERROR] Missing build success marker.& pause& exit /b 3)
+if not exist "%ROOT%release\BARQ_Setup_2.41.10.exe" (echo [ERROR] Missing Setup.exe.& pause& exit /b 2)
+if not exist "%ROOT%release\build-ok-v2.41.10.marker" (echo [ERROR] Missing build success marker.& pause& exit /b 3)
 echo.
-echo [SUCCESS] Installer: "%ROOT%release\BARQ_Setup_2.41.9.exe"
+echo [SUCCESS] Installer: "%ROOT%release\BARQ_Setup_2.41.10.exe"
 explorer.exe "%ROOT%release"
 pause
 exit /b 0
