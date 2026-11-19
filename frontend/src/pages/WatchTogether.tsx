@@ -56,6 +56,21 @@ export function WatchTogether({mode = 'video',track,onTrack,requestedProvider,on
     setProviderOpen(true);
   }, [requestedProvider, current?.room_id]);
   const frame=useRef<HTMLIFrameElement>(null);
+  const [frameHeight,setFrameHeight]=useState<number>();
+  useEffect(()=>{
+    setFrameHeight(undefined);
+    const url=guest||current?.host_url;
+    if(!url)return;
+    const origin=new URL(url,window.location.href).origin;
+    const resize=(event:MessageEvent)=>{
+      if(event.source!==frame.current?.contentWindow||event.origin!==origin||event.data?.type!=='barq-room-size')return;
+      const height=event.data.height;
+      if(typeof height==='number'&&Number.isFinite(height)&&height>=250&&height<=3000)setFrameHeight(Math.ceil(height));
+    };
+    window.addEventListener('message',resize);
+    return()=>window.removeEventListener('message',resize);
+  },[guest,current?.host_url]);
+
   const pendingShare=useRef('');
   const sharedSelection=useRef(false);
   const [trackStatus,setTrackStatus]=useState('');
@@ -250,7 +265,7 @@ export function WatchTogether({mode = 'video',track,onTrack,requestedProvider,on
         {!sharedSelection.current&&<button type="button" onClick={sendTrack}>{ar?'شارك الاختيار':'Share selection'}</button>}
         <span role="status">{trackStatus}</span>
       </div>}
-      <iframe ref={frame} title={ar ? 'مشغّل الغرفة' : 'Room player'} src={guest || current?.host_url} allow="autoplay; encrypted-media; fullscreen; picture-in-picture" allowFullScreen referrerPolicy="no-referrer"/>
+      <iframe ref={frame} style={frameHeight?{height:frameHeight}:undefined} title={ar ? 'مشغّل الغرفة' : 'Room player'} src={guest || current?.host_url} allow="autoplay; encrypted-media; fullscreen; picture-in-picture" allowFullScreen referrerPolicy="no-referrer"/>
     </section>}
   </div>;
 }

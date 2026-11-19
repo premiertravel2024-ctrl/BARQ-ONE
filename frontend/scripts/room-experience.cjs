@@ -38,6 +38,8 @@ const fs=require('node:fs'),path=require('node:path'),assert=require('node:asser
    await dialog.getByRole('button',{name:local?'الشبكة المحلية':'عبر الإنترنت',exact:true}).click();
    const frame=page.frameLocator('iframe[title="مشغّل الغرفة"]');
    await frame.locator('#uploadMedia').waitFor();
+   await page.waitForFunction(()=>parseInt(document.querySelector('iframe[title="مشغّل الغرفة"]').style.height)>250);
+   await frame.locator('body').evaluate(()=>document.fonts.ready);
    assert.deepEqual(starts.at(-1),{mode,lan:local});
    await dialog.waitFor({state:'detached'});
    assert.equal(await frame.locator('#sources').getAttribute('open'),null);

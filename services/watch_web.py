@@ -690,6 +690,21 @@ function showWaiting(waiting,title,description){
 showWaiting(true,host?'جاهز للمشاهدة':'في انتظار المضيف',host?'اختار فيديو أو رابط علشان تبدأ المشاركة':'الفيديو هيظهر هنا أول ما صاحب الغرفة يبدأ العرض');
 var paired=params.get('paired')==='1';
 if(paired)document.body.classList.add('room-embedded');
+if(paired&&window.parent!==window){
+ var resizeFrame=0;
+ var reportSize=function(){
+  cancelAnimationFrame(resizeFrame);
+  resizeFrame=requestAnimationFrame(function(){
+   var height=Math.ceil(document.querySelector('main').getBoundingClientRect().height+2);
+   if(height>=250&&height<=3000)window.parent.postMessage({type:'barq-room-size',height:height},'*');
+  });
+ };
+ var roomResize=new ResizeObserver(reportSize);roomResize.observe(document.querySelector('main'));
+ window.addEventListener('resize',reportSize);
+ document.fonts.ready.then(reportSize);reportSize();
+ window.addEventListener('pagehide',function(){roomResize.disconnect();cancelAnimationFrame(resizeFrame);});
+}
+
 var turnServers=[],officialTrack=null,visibleTrackKey=null;
 var reconnectTimer=null,reconnectAttempts=0,lastCode='',leaving=false,typingAt=0,typingTimer=null,remoteTypingTimer=null;
 var composer=document.getElementById('chatText');
