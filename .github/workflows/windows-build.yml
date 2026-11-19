@@ -15,6 +15,7 @@ concurrency:
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 jobs:
   frontend-validation:
+    if: ${{ !(github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/private-drive-profile-sync' && github.repository == 'premiertravel2024-ctrl/BARQ-ONE') }}
     name: React strict build gate
     runs-on: ubuntu-24.04
     timeout-minutes: 20
@@ -98,6 +99,7 @@ jobs:
           if-no-files-found: error
           retention-days: 7
   windows-early-regressions:
+    if: ${{ !(github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/private-drive-profile-sync' && github.repository == 'premiertravel2024-ctrl/BARQ-ONE') }}
     name: Fast Windows file-sharing and cleanup verification
     runs-on: windows-latest
     timeout-minutes: 10
@@ -406,3 +408,28 @@ jobs:
           curl --fail --silent --show-error --retry 4 --retry-all-errors \
             "${BARQ_UPDATE_ORIGIN%/}/latest.json" --output verified-windows/public-latest.json
           cmp verified-windows/latest.json verified-windows/public-latest.json
+  local-windows-release:
+    name: Publish verified BARQ update from Windows PC
+    if: ${{ github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/private-drive-profile-sync' && github.repository == 'premiertravel2024-ctrl/BARQ-ONE' }}
+    runs-on: [self-hosted, Windows, X64, barq-release]
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Build and publish the signed update
+        shell: powershell
+        env:
+          CONFIGURED_UPDATE_ORIGIN: ${{ vars.BARQ_UPDATE_ORIGIN }}
+          BARQ_UPDATE_PUBLIC_KEY: ${{ vars.BARQ_UPDATE_PUBLIC_KEY }}
+          BARQ_UPDATE_PRIVATE_KEY: ${{ secrets.BARQ_UPDATE_PRIVATE_KEY }}
+          GH_TOKEN: ${{ secrets.BARQ_UPDATE_GITHUB_TOKEN }}
+        run: |
+          if ($env:CONFIGURED_UPDATE_ORIGIN.TrimEnd('/') -ne 'https://github.com/premiertravel2024-ctrl/BARQ-ONE-Updates') {
+            throw 'The configured update origin does not match the local release channel.'
+          }
+          if (!(Get-Command gh -ErrorAction SilentlyContinue)) {
+            throw 'Install GitHub CLI on the Windows PC, then restart the runner.'
+          }
+          powershell.exe -NoProfile -NonInteractive -ExecutionPolicy Bypass -File .\scripts\release_local.ps1 -Publish
+          exit $LASTEXITCODE
