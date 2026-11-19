@@ -71,7 +71,7 @@ export function AppUpdates({ar}:{ar:boolean}){
   check?.status==='unavailable'?(ar?'التحديث من داخل برق متاح للنسخ المثبّتة على ويندوز.':'In-app updates require an installed Windows copy.'):
   (ar?'تعذّر التحقق من التحديثات.':'Unable to check for updates.');
  return <>
-  <button type="button" className="ops-update-button" data-available={available} onClick={()=>setOpen(true)} title={label} aria-label={label}><Download size={16}/>{available&&<span>{label}</span>}</button>
+  <button type="button" className="ops-update-button" data-available={available} onClick={()=>setOpen(true)} title={label} aria-label={label}><Download size={16}/></button>
   <Modal open={open} onClose={close} title={ar?'تحديثات BARQ ONE':'BARQ ONE updates'}>
    <div className="ops-update-content">
     {check?.current&&<p>{ar?'الإصدار الحالي':'Current version'} <bdi>{check.current}</bdi></p>}
