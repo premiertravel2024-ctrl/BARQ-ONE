@@ -122,15 +122,14 @@ await page.locator('.bs-pdf-scroll').dispatchEvent('wheel',{ctrlKey:true,deltaY:
 await page.waitForFunction(width=>document.querySelector('canvas[aria-label="PDF 1"]')?.getBoundingClientRect().width>width,oldWidth);
 await page.getByRole('combobox',{name:'ألوان القراءة'}).selectOption('warm');
 assert.equal(await page.locator('.bs-document').getAttribute('data-paper'),'warm');
-const pageNumber=page.getByRole('spinbutton',{name:'انتقل إلى صفحة'});
-await pageNumber.fill('2');
-await pageNumber.press('Enter');
-await page.waitForFunction(()=>document.querySelector('.bs-page-jump input')?.value==='2');
+await page.locator('.bs-pdf-scroll').focus();
+await page.keyboard.press('End');
+await page.waitForFunction(()=>document.querySelector('.bs-reader-progress')?.value===2);
 await page.getByRole('button',{name:'علّم الصفحة',exact:true}).click();
 assert.equal(await page.getByRole('button',{name:'علّم الصفحة'}).getAttribute('aria-pressed'),'true');
 await page.getByRole('button',{name:'رجوع للمكتبة'}).click();
 await page.getByRole('button',{name:'اقرأ في برق',exact:true}).click();
-await page.waitForFunction(()=>document.querySelector('.bs-page-jump input')?.value==='2');
+await page.waitForFunction(()=>document.querySelector('.bs-reader-progress')?.value===2);
 
 await page.addInitScript(()=>{
  window.pywebview={api:{
