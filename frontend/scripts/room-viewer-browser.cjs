@@ -49,6 +49,7 @@ async function verifyPlayback(browser,mode){
    };
   });
   await host.goto('http://localhost:44331/r/test?role=host&paired=1&mode='+mode);
+  await host.locator('#sources summary').click();
   await host.locator('#linkMedia').click();
   const field=await host.locator('#linkMedia').evaluate(input=>({
    height:input.getBoundingClientRect().height,
@@ -135,6 +136,10 @@ async function verifyPlayback(browser,mode){
   await guestComposer.press('Enter');
   await host.waitForFunction(()=>document.querySelector('#messages .msg span')?.textContent==='أهلاً  برق\nسطر تاني');
   await host.locator('#chatText').fill('رد المضيف');
+  assert.equal(await host.locator('#chatText').evaluate(field=>getComputedStyle(field).outlineStyle),'none');
+  const toolbar=await host.locator('.room-viewer-actions').boundingBox();
+  const player=await host.locator('#videoStage').boundingBox();
+  assert.ok(toolbar.y+toolbar.height<=player.y+1,'room controls must stay above the media');
   await host.locator('#send').click();
   await guest.locator('#messages .msg[data-mine="false"]').getByText('رد المضيف').waitFor();
   if(mode==='music'){

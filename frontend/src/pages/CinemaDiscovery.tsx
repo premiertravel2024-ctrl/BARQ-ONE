@@ -90,7 +90,7 @@ export function CinemaDiscovery({ar,onRoom,onJoin,roomActive}:{ar:boolean;onRoom
  const featured=rails[0]?.items.find(t=>t.backdrop),shown=local?(tab==='favorites'?favorites:watchlist).filter(t=>t.title.toLocaleLowerCase().includes(search.toLocaleLowerCase())):result?.results||[];
  return <section className="barq-cinema" dir={ar?'rtl':'ltr'}>
   <header className="bc-top">
-   <div><h1>{ar?'سينما برق':'BARQ Cinema'}</h1><p>{ar?'أفلام ومسلسلات وأنمي، وغرفة تتفرجوا فيها سوا.':'Find movies, series and anime, and watch together.'}</p></div>
+   <div><h1>{ar?'سينما برق':'BARQ Cinema'}</h1></div>
    <div className="bc-room-actions">
     <button className="bc-primary" onClick={onRoom}><UsersRound size={17}/>{roomActive?(ar?'غرفتك':'Your room'):(ar?'افتح غرفة مشاهدة':'Host a watch room')}</button>
     <button className="bc-join" type="button" onClick={onJoin}><KeyRound size={17}/>{ar?'ادخل بكود':'Join with code'}</button>

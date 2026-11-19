@@ -182,3 +182,28 @@
 .barq-watch-player>.barq-room-provider-picker{border-width:0 0 1px;border-radius:0}
 .barq-watch-player>.barq-room-provider-picker>summary{min-height:40px}
 .barq-watch-player>.barq-room-provider-picker .bm-room-discovery{margin-top:8px}
+
+.barq-room-connections {
+  align-self: flex-start;
+  padding: 4px;
+  gap: 4px;
+  border: 1px solid #ffffff1c;
+  border-radius: 10px;
+  background: #15181e;
+}
+.barq-room-connections .barq-button-group-item {
+  min-height: 36px;
+  padding: 7px 13px;
+  border: 1px solid transparent;
+  border-radius: 7px;
+  background: transparent;
+  color: #bcb5bd;
+  font-size: .82rem;
+}
+.barq-room-connections .barq-button-group-item[aria-pressed="true"] {
+  border-color: #c6597d66;
+  background: #8e294b;
+  color: #fff;
+}
+.barq-room-connection-kind { color: #bcb5bd; font-size: .72rem; white-space: nowrap; }
+@media(max-width:600px) { .barq-room-connections .barq-button-group-item { min-height: 42px; } }
