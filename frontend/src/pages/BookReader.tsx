@@ -2,7 +2,7 @@ import {useEffect,useRef,useState} from 'react';
 import {Virtuoso,type VirtuosoHandle} from 'react-virtuoso';
 import {ReadingSound} from './ReadingSound';
 import type {PDFDocumentProxy} from 'pdfjs-dist';
-import {ArrowRight,Bookmark,ChevronLeft,ChevronRight,Minus,Plus} from 'lucide-react';
+import {ArrowRight,Bookmark,Layers} from 'lucide-react';
 
 export type ReadingEdition={id:string;title:string;format:'pdf'|'text';file?:File;driveId?:string};
 type Progress={page:number;marks:number[]};
@@ -56,7 +56,6 @@ export default function BookReader({book,ar,onClose}:{book:ReadingEdition;ar:boo
  const [retry,setRetry]=useState(0);
  const [zoom,setZoom]=useState(100);
  const [paper,setPaper]=useState<'default'|'warm'|'night'>('default');
- const [pageInput,setPageInput]=useState<string|null>(null);
  const viewport=useRef<VirtuosoHandle>(null);
  const content=useRef<HTMLDivElement>(null);
  const [width,setWidth]=useState(640);
@@ -72,7 +71,13 @@ export default function BookReader({book,ar,onClose}:{book:ReadingEdition;ar:boo
   if(!element)return;
   const observer=new ResizeObserver(([entry])=>setWidth(entry.contentRect.width));
   observer.observe(element);
-  return()=>observer.disconnect();
+  function zoomWithMouse(event:WheelEvent){
+   if(!event.ctrlKey||event.deltaY===0)return;
+   event.preventDefault();
+   setZoom(previous=>Math.max(80,Math.min(160,previous+(event.deltaY<0?10:-10))));
+  }
+  element.addEventListener('wheel',zoomWithMouse,{passive:false});
+  return()=>{observer.disconnect();element.removeEventListener('wheel',zoomWithMouse);};
  },[]);
  useEffect(()=>{
   const controller=new AbortController();
@@ -130,8 +135,7 @@ export default function BookReader({book,ar,onClose}:{book:ReadingEdition;ar:boo
  }
  function go(next:number){
   save({...progress,page:next});
-  if(pdf&&viewport.current)viewport.current.scrollToIndex({index:next-1,align:'start'});
-  else content.current?.scrollIntoView({block:'start'});
+  viewport.current?.scrollToIndex({index:next-1,align:'start'});
  }
  return <section className="bs-document" data-paper={paper} aria-label={book.title}>
   <header className="bs-document-toolbar">
@@ -142,36 +146,19 @@ export default function BookReader({book,ar,onClose}:{book:ReadingEdition;ar:boo
    </div>
    <div className="bs-document-actions">
    {count>0&&<div className="bs-document-controls">
-    <button type="button" disabled={page<=1} aria-label={ar?'الصفحة السابقة':'Previous page'} onClick={()=>go(page-1)}><ChevronRight size={18}/></button>
-    <form className="bs-page-jump" onSubmit={event=>{
-     event.preventDefault();
-     if(pageInput?.trim()){
-      const target=Number(pageInput);
-      if(Number.isInteger(target))go(Math.max(1,Math.min(count,target)));
-     }
-     setPageInput(null);
-    }} dir="ltr">
-     <input type="number" min={1} max={count} inputMode="numeric" aria-label={ar?'انتقل إلى صفحة':'Go to page'}
-      value={pageInput??page} onFocus={event=>event.currentTarget.select()} onChange={event=>setPageInput(event.target.value)}
-      onBlur={()=>setPageInput(null)}/>
-     <span aria-live="off">/ {count}</span>
-    </form>
-    <button type="button" disabled={page>=count} aria-label={ar?'الصفحة التالية':'Next page'} onClick={()=>go(page+1)}><ChevronLeft size={18}/></button>
     <button type="button" aria-label={ar?'علّم الصفحة':'Bookmark page'} aria-pressed={progress.marks.includes(page)}
      onClick={()=>save({...progress,page,marks:progress.marks.includes(page)?progress.marks.filter(mark=>mark!==page):[...progress.marks,page]})}><Bookmark size={17}/></button>
     {!!progress.marks.length&&<select aria-label={ar?'الصفحات المعلّمة':'Bookmarked pages'} value="" onChange={event=>go(Number(event.target.value))}>
      <option value="" disabled>{ar?'العلامات':'Bookmarks'}</option>{progress.marks.filter(mark=>mark>0&&mark<=count).sort((a,b)=>a-b).map(mark=><option key={mark} value={mark}>{mark}</option>)}</select>}
    </div>}
-   {count>0&&<div className="bs-reader-display">
-    <button type="button" aria-label={ar?'تصغير القراءة':'Zoom out'} disabled={zoom<=80} onClick={()=>setZoom(zoom-20)}><Minus size={15}/></button>
-    <button type="button" className="bs-zoom-level" aria-label={ar?'إعادة حجم القراءة':'Reset zoom'} onClick={()=>setZoom(100)}>{zoom}%</button>
-    <button type="button" aria-label={ar?'تكبير القراءة':'Zoom in'} disabled={zoom>=160} onClick={()=>setZoom(zoom+20)}><Plus size={15}/></button>
+   {count>0&&<label className="bs-reader-display bs-paper-picker">
+    <Layers size={16} aria-hidden="true"/>
     <select aria-label={ar?'ألوان القراءة':'Reading colors'} value={paper} onChange={event=>setPaper(event.target.value as typeof paper)}>
      <option value="default">{ar?'عادي':'Default'}</option>
      <option value="warm">{ar?'ورق دافئ':'Warm paper'}</option>
      <option value="night">{ar?'ليلي':'Night'}</option>
     </select>
-   </div>}
+   </label>}
    </div>
    {count>0&&<progress className="bs-reader-progress" value={page} max={count} aria-label={ar?'تقدّم القراءة':'Reading progress'}/>}
   </header>
@@ -181,14 +168,14 @@ export default function BookReader({book,ar,onClose}:{book:ReadingEdition;ar:boo
      error==='pdf'?(ar?'تعذّر قراءة ملف الـPDF. افتح نسخة سليمة أو جرّب تاني.':'Could not read the PDF. Open another copy or retry.'):
       (ar?'تعذّر تحميل الكتاب من المصدر. جرّب تاني بعد رجوع الاتصال.':'The book source is unavailable. Retry when connected.')}</p>
     <button type="button" onClick={()=>setRetry(x=>x+1)}>{ar?'إعادة المحاولة':'Retry'}</button></div>:
-    pdf?<Virtuoso className="bs-pdf-scroll" ref={viewport} dir="ltr" tabIndex={0} style={{height:'var(--pdf-viewport)'}}
-     aria-label={ar?'صفحات الكتاب':'Book pages'} totalCount={pdf.numPages}
-     initialTopMostItemIndex={Math.min(initialPage.current,pdf.numPages)-1}
-     defaultItemHeight={Math.ceil(pdfWidth*ratio)+12}
+    (pdf||text)?<Virtuoso className="bs-pdf-scroll" ref={viewport} dir="ltr" tabIndex={0} style={{height:'var(--pdf-viewport)'}}
+     aria-label={ar?'صفحات الكتاب':'Book pages'} totalCount={count}
+     initialTopMostItemIndex={Math.min(initialPage.current,count)-1}
+     defaultItemHeight={pdf?Math.ceil(pdfWidth*ratio)+12:undefined}
      rangeChanged={({startIndex})=>notePage(startIndex)}
-     itemContent={index=><div className="bs-pdf-item" style={index===pdf.numPages-1?{minHeight:'var(--pdf-viewport)'}:undefined}>
+     itemContent={index=>pdf?<div className="bs-pdf-item" style={index===count-1?{minHeight:'var(--pdf-viewport)'}:undefined}>
       <PdfPage pdf={pdf} page={index+1} width={pdfWidth} estimate={ratio} ar={ar}/>
-     </div>}/>:text?<article dir="auto" style={{fontSize:`${1.05*zoom/100}rem`}}>{text[page-1]}</article>:
+     </div>:<article className="bs-text-chunk" dir="auto" style={{fontSize:`${1.05*zoom/100}rem`}}>{text?.[index]}</article>}/>:
      <p role="status">{ar?'جاري تحميل الكتاب…':'Loading book…'}</p>}
   </div>
  </section>;
