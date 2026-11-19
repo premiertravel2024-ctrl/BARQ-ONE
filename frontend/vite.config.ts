@@ -26,7 +26,9 @@ function pdfResources(): Plugin {
     },
   };
 }
+const {version} = JSON.parse(readFileSync(new URL('./package.json', import.meta.url), 'utf8'));
 export default defineConfig({
+  define: { 'import.meta.env.VITE_BARQ_RELEASE_MARKER': JSON.stringify(`v${version}-build-gated-ui`) },
   plugins: [react(), pdfResources()],
   base: '/',
   build: { outDir: '../web/react', emptyOutDir: true },
