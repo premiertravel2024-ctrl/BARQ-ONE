@@ -223,7 +223,7 @@ export function AutomationDashboard(){
     <form onSubmit={e=>void addAlarm(e)} className="ba-alarm-form">
       <label>{ar?'الوقت':'Time'}<input type="time" value={when} onChange={e=>setWhen(e.target.value)} required/></label>
       <label>{ar?'عنوان التنبيه':'Alarm label'}<input value={label} maxLength={70} onChange={e=>setLabel(e.target.value)} placeholder={ar?'مثلاً: اجتماع أو استراحة':'e.g. meeting'} required/></label>
-      <label className="ba-repeat"><span>{ar?'التكرار':'Repeat'}</span><select value={repeat?'repeat':'once'} onChange={e=>setRepeat(e.target.value==='repeat')}><option value="once">{ar?'مرة واحدة':'Once'}</option><option value="repeat">{ar?'يتكرر':'Repeat'}</option></select></label>
+      <Switch checked={repeat} onChange={setRepeat} showLabel label={ar?'تكرار المنبّه':'Repeat alarm'}/>
       {repeat&&<fieldset className="ba-alarm-days"><legend>{ar?'أيام التكرار':'Repeat days'}</legend>
        <div className="ba-weekdays">
        {(ar?['الاتنين','التلات','الأربع','الخميس','الجمعة','السبت','الأحد']:['Mon','Tue','Wed','Thu','Fri','Sat','Sun']).map((day,index)=>
