@@ -347,7 +347,8 @@ def sync_with_covers(device, records, claim_primary=False):
     from api_routes.reading import apply_cover_sync, cover_sync_snapshot
 
     with SYNC_LOCK:
-        result = exchange_sync(device, records, cover_sync_snapshot(), claim_primary)
+        before = cover_sync_snapshot()
+        result = exchange_sync(device, records, before, claim_primary)
         merged = result['records']
         primary = result.get('primary')
         is_primary = bool(primary and primary['device'] == device)
@@ -356,7 +357,7 @@ def sync_with_covers(device, records, claim_primary=False):
         }
         return {
             'records': {key: entry for key, entry in merged.items() if not key.startswith('cover:')},
-            'covers_changed': not is_primary and apply_cover_sync(covers, authoritative=bool(primary)),
+            'covers_changed': not is_primary and apply_cover_sync(covers, authoritative=bool(primary), expected=before),
             'covers_primary': is_primary,
         }
 
