@@ -5,6 +5,8 @@
  * drive.readonly. The encrypted refresh token never reaches the browser.
  */
 import { page } from './library_page.mjs';
+import ui from './library_ui.mjs';
+import style from './library_style.mjs';
 
 const GOOGLE_AUTH = 'https://accounts.google.com/o/oauth2/v2/auth';
 const GOOGLE_TOKEN = 'https://oauth2.googleapis.com/token';
@@ -371,8 +373,8 @@ export default {
       if(path==='/'&&request.method==='GET')return new Response(page,{headers:{...headers,
         'Content-Type':'text/html; charset=utf-8',
         'Content-Security-Policy':"default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data:; frame-src 'self'; connect-src 'self'; form-action 'self'; base-uri 'none'; frame-ancestors 'none'" }});
-      if(path==='/ui.js'&&request.method==='GET')return new Response((await import('./library_ui.mjs')).default,{headers:{...headers,'Content-Type':'text/javascript; charset=utf-8'}});
-      if(path==='/ui.css'&&request.method==='GET')return new Response((await import('./library_style.mjs')).default,{headers:{...headers,'Content-Type':'text/css; charset=utf-8'}});
+      if(path==='/ui.js'&&request.method==='GET')return new Response(ui,{headers:{...headers,'Content-Type':'text/javascript; charset=utf-8'}});
+      if(path==='/ui.css'&&request.method==='GET')return new Response(style,{headers:{...headers,'Content-Type':'text/css; charset=utf-8'}});
       return problem(404,'Not found');
     }catch(err) {
       const status=Number.isInteger(err?.status)?err.status:500;
