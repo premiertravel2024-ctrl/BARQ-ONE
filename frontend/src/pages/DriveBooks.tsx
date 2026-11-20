@@ -3,7 +3,7 @@ import {useEffect,useRef,useState,type ChangeEvent} from 'react';
 import {BookOpen,FolderOpen} from 'lucide-react';
 import type {ReadingEdition} from './BookReader';
 import {Modal} from '../components/ui/Modal';
-import {ArrowLeft,Settings2,Layers} from 'lucide-react';
+import {ArrowLeft,Settings2,Layers,Play} from 'lucide-react';
 
 export type DriveBook={edition:ReadingEdition;cover?:File;coverId?:string;group:string;issueNumber?:number;sortPosition?:number;seriesId?:string;manualSeries?:boolean;reviewReason?:string};
 let pickedBooks:DriveBook[]|undefined;
@@ -155,11 +155,11 @@ export function DriveBooks({books,ar,onOpen,heading=true,collectionLabel}:{
       <button className="bs-series-open" type="button" onClick={()=>setSelectedGroup(group.key)}>
        {ar?'عرض الأعداد':'View issues'} <ArrowLeft size={14}/>
       </button>
-      <button className="bs-series-open" type="button" onClick={()=>onOpen(group.items[0].edition)}>
-       {ar?'ابدأ':'Start'}
-      </button>
-      <button className="bs-library-manage-shortcut" type="button" title={ar?'تعديل السلسلة':'Edit series'}
-       aria-label={(ar?'إدارة':'Manage')+' '+group.title} onClick={()=>manage(group.seriesId)}>
+      <button className="bs-library-icon-action" type="button"
+       title={ar?'ابدأ القراءة':'Start reading'} aria-label={(ar?'ابدأ قراءة ':'Start reading ')+group.title}
+       onClick={()=>onOpen(group.items[0].edition)}><Play size={15}/></button>
+      <button className="bs-library-icon-action" type="button" title={ar?'تعديل السلسلة':'Edit series'}
+       aria-label={(ar?'إدارة ':'Manage ')+group.title} onClick={()=>manage(group.seriesId)}>
        <Settings2 size={15}/>
       </button>
      </div>
