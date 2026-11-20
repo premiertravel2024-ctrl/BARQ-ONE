@@ -71,6 +71,7 @@ class Release:
     size: int
     digest: str
     notes: str
+    source_sha: str | None = None
 
     @property
     def path(self) -> str:
@@ -89,7 +90,11 @@ class Release:
                 or not re.fullmatch(r'[0-9a-f]{64}', data['sha256'])
                 or not isinstance(data['notes'], str) or len(data['notes']) > 1500):
             raise ValueError('Invalid signed release')
-        return cls(data['version'], data['size'], data['sha256'], data['notes'])
+        source_sha = data.get('source_sha')
+        if source_sha is not None and (not isinstance(source_sha, str)
+                                       or not re.fullmatch(r'[0-9a-f]{40}', source_sha)):
+            raise ValueError('Invalid release source commit')
+        return cls(data['version'], data['size'], data['sha256'], data['notes'], source_sha)
 
 
 @contextmanager
