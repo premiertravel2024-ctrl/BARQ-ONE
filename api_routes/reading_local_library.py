@@ -1,8 +1,7 @@
-"""Private owner-side SQLite library index. BARQ's desktop API must remain loopback-only.
+"""Owner-side BARQ ONE catalogue and automatic reading library organizer.
 
-The index stores book metadata, publication choices and series, NOT Google tokens.
-Google OAuth stays in the existing keyring-backed reading_drive module.
-New books are private until the owner publishes them in the isolated online gateway.
+Uses local SQLite, never shares Google Drive credentials or files with online readers.
+The isolated public Cloudflare library retains its own explicit publish permissions.
 """
 from __future__ import annotations
 
@@ -18,22 +17,75 @@ from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, Field
 
 from core.paths import data_dir
+from services.library_organizer import organize, normalized
 
-router = APIRouter(prefix='/library')
+router = APIRouter(prefix="/library")
 LOCK = RLock()
-ID = re.compile(r'^[a-zA-Z0-9_-]{10,160}$')
-SERIES_ID = re.compile(r'^[a-f0-9-]{36}$')
+ID = re.compile(r"^[a-zA-Z0-9_-]{10,160}$")
+SERIES_ID = re.compile(r"^[a-f0-9-]{36}$")
 
 
 def db_path() -> Path:
-    configured = os.environ.get('BARQ_READING_DB_DIR', '').strip()
+    configured = os.environ.get("BARQ_READING_DB_DIR", "").strip()
     if configured:
         parent = Path(configured).expanduser()
-    elif os.name == 'nt' and Path('G:/BARQ DATABASE').is_dir():
-        parent = Path('G:/BARQ DATABASE')
+    elif os.name == "nt" and Path("G:/BARQ DATABASE").is_dir():
+        parent = Path("G:/BARQ DATABASE")
     else:
-        parent = data_dir() / 'reading'
-    return parent / 'barq_library.sqlite3'
+        parent = data_dir() / "reading"
+    return parent / "barq_library.sqlite3"
+
+
+def schema(db):
+    db.executescript("""
+        CREATE TABLE IF NOT EXISTS series (
+            id TEXT PRIMARY KEY,
+            title TEXT NOT NULL,
+            description TEXT NOT NULL DEFAULT '',
+            position INTEGER NOT NULL DEFAULT 0
+        );
+        CREATE TABLE IF NOT EXISTS books (
+            id TEXT PRIMARY KEY,
+            title TEXT NOT NULL,
+            source_title TEXT NOT NULL,
+            folder_name TEXT NOT NULL DEFAULT '',
+            cover_id TEXT,
+            active INTEGER NOT NULL DEFAULT 1,
+            published INTEGER NOT NULL DEFAULT 0,
+            series_id TEXT REFERENCES series(id) ON DELETE SET NULL,
+            issue_number INTEGER,
+            position INTEGER NOT NULL DEFAULT 0
+        );
+    """)
+    series_columns = {row["name"] for row in db.execute("PRAGMA table_info(series)")}
+    if "source_key" not in series_columns:
+        db.execute("ALTER TABLE series ADD COLUMN source_key TEXT")
+    if "genre" not in series_columns:
+        db.execute("ALTER TABLE series ADD COLUMN genre TEXT NOT NULL DEFAULT ''")
+    columns = {row["name"] for row in db.execute("PRAGMA table_info(books)")}
+    additions = {
+        "manual_series": "INTEGER NOT NULL DEFAULT 0",
+        "manual_issue": "INTEGER NOT NULL DEFAULT 0",
+        "manual_title": "INTEGER NOT NULL DEFAULT 0",
+        "manual_position": "INTEGER NOT NULL DEFAULT 0",
+        "hidden": "INTEGER NOT NULL DEFAULT 0",
+        "review_reason": "TEXT NOT NULL DEFAULT ''",
+    }
+    for name, definition in additions.items():
+        if name not in columns:
+            db.execute(f"ALTER TABLE books ADD COLUMN {name} {definition}")
+            if name == "manual_series":
+                # Pre-upgrade owner assignments must never be changed by indexing.
+                db.execute("UPDATE books SET manual_series=1 WHERE series_id IS NOT NULL")
+            if name == "manual_issue":
+                db.execute("UPDATE books SET manual_issue=1 WHERE issue_number IS NOT NULL")
+            if name == "manual_position":
+                db.execute("UPDATE books SET manual_position=1 WHERE position<>0")
+            if name == "manual_title":
+                db.execute("UPDATE books SET manual_title=1 WHERE title<>source_title")
+    db.execute("CREATE UNIQUE INDEX IF NOT EXISTS idx_series_source ON series(source_key)")
+    db.execute("CREATE INDEX IF NOT EXISTS idx_books_series ON books(series_id,issue_number,position)")
+    db.execute("CREATE INDEX IF NOT EXISTS idx_books_review ON books(active,review_reason)")
 
 
 @contextmanager
@@ -42,155 +94,294 @@ def database():
     destination.parent.mkdir(parents=True, exist_ok=True)
     with closing(sqlite3.connect(str(destination), timeout=15)) as db:
         db.row_factory = sqlite3.Row
-        db.execute('PRAGMA busy_timeout=15000')
-        db.execute('PRAGMA journal_mode=WAL')
-        db.execute('PRAGMA foreign_keys=ON')
-        db.executescript('''
-            CREATE TABLE IF NOT EXISTS series (
-                id TEXT PRIMARY KEY,
-                title TEXT NOT NULL,
-                description TEXT NOT NULL DEFAULT '',
-                position INTEGER NOT NULL DEFAULT 0
-            );
-            CREATE TABLE IF NOT EXISTS books (
-                id TEXT PRIMARY KEY,
-                title TEXT NOT NULL,
-                source_title TEXT NOT NULL,
-                folder_name TEXT NOT NULL DEFAULT '',
-                cover_id TEXT,
-                active INTEGER NOT NULL DEFAULT 1,
-                published INTEGER NOT NULL DEFAULT 0,
-                series_id TEXT REFERENCES series(id) ON DELETE SET NULL,
-                issue_number INTEGER,
-                position INTEGER NOT NULL DEFAULT 0
-            );
-            CREATE INDEX IF NOT EXISTS idx_books_series ON books(series_id,issue_number,position);
-        ''')
+        db.execute("PRAGMA busy_timeout=15000")
+        db.execute("PRAGMA journal_mode=WAL")
+        db.execute("PRAGMA foreign_keys=ON")
+        schema(db)
         with db:
             yield db
 
 
+def identifier(value: str) -> str:
+    if not ID.fullmatch(value):
+        raise HTTPException(422, "Invalid Drive file identifier")
+    return value
+
+
+def series_id(value: str) -> str:
+    if not SERIES_ID.fullmatch(value):
+        raise HTTPException(422, "Invalid series identifier")
+    return value
+
+
+def series_exists(db, value):
+    if value is not None and not db.execute("SELECT 1 FROM series WHERE id=?", (series_id(value),)).fetchone():
+        raise HTTPException(422, "Series does not exist")
+
+
+def snapshot(db):
+    books = [dict(row) for row in db.execute(
+        "SELECT id,title,source_title,folder_name,cover_id,active,published,hidden,"
+        "series_id,issue_number,position,review_reason,manual_series,manual_issue,"
+        "manual_title,manual_position FROM books ORDER BY position,issue_number,title")]
+    series = [dict(row) for row in db.execute(
+        "SELECT id,title,description,genre,position,source_key FROM series ORDER BY position,title")]
+    return {"books": books, "series": series}
+
+
 class SeriesInput(BaseModel):
     title: str = Field(min_length=1, max_length=120)
-    description: str = Field(default='', max_length=500)
+    description: str = Field(default="", max_length=500)
+    genre: str = Field(default="", max_length=60)
+
+
+class SeriesEdit(BaseModel):
+    title: str | None = Field(default=None, max_length=120)
+    description: str | None = Field(default=None, max_length=500)
+    genre: str | None = Field(default=None, max_length=60)
+    position: int | None = Field(default=None, ge=0, le=100000)
 
 
 class EditBook(BaseModel):
     id: str
     title: str | None = Field(default=None, max_length=250)
+    hidden: bool | None = None
     published: bool | None = None
     series_id: str | None = None
     issue_number: int | None = Field(default=None, ge=1, le=100000)
     position: int | None = Field(default=None, ge=0, le=100000)
 
 
-def validate_id(value: str) -> None:
-    if not ID.fullmatch(value):
-        raise HTTPException(422, 'Invalid Google Drive file ID')
+class BulkEdit(BaseModel):
+    ids: list[str] = Field(min_length=1, max_length=400)
+    series_id: str | None = None
+    hidden: bool | None = None
+    published: bool | None = None
 
 
-def snapshot(db):
-    books = [dict(row) for row in db.execute(
-        'SELECT id,title,folder_name,cover_id,active,published,series_id,issue_number,position '
-        'FROM books ORDER BY position,issue_number,title')]
-    series = [dict(row) for row in db.execute(
-        'SELECT id,title,description,position FROM series ORDER BY position,title')]
-    return {'books': books, 'series': series}
+class SeriesMerge(BaseModel):
+    source: str
+    target: str
 
 
-@router.get('/items')
+class Reorder(BaseModel):
+    ids: list[str] = Field(min_length=1, max_length=400)
+
+
+@router.get("/items")
 def items():
     with LOCK, database() as db:
         return snapshot(db)
 
 
-@router.get('/status')
+@router.get("/status")
 def status():
     with LOCK, database() as db:
-        count = db.execute('SELECT COUNT(*) FROM books WHERE active=1').fetchone()[0]
-        return {'count': count, 'database': str(db_path())}
+        active = db.execute("SELECT COUNT(*) FROM books WHERE active=1").fetchone()[0]
+        grouped = db.execute(
+            "SELECT COUNT(*) FROM books WHERE active=1 AND series_id IS NOT NULL").fetchone()[0]
+        review = db.execute(
+            "SELECT COUNT(*) FROM books WHERE active=1 AND review_reason<>''").fetchone()[0]
+        groups = db.execute("SELECT COUNT(*) FROM series").fetchone()[0]
+        return {"count": active, "database": str(db_path()), "grouped": grouped,
+                "review": review, "series": groups, "automatic": True}
 
 
-@router.post('/refresh')
+@router.get("/preview")
+def preview():
+    with LOCK, database() as db:
+        return organize(db, apply=False)
+
+
+@router.post("/organize")
+def auto_organize():
+    with LOCK, database() as db:
+        return organize(db)
+
+
+@router.post("/refresh")
 def refresh():
     from api_routes import reading_drive
-    catalogue = reading_drive.catalogue()
-    books = catalogue.get('books', [])
-    for book in books:
-        validate_id(book['id'])
+    # Google Drive must be read successfully before touching existing metadata.
+    # reading_drive.catalogue also updates its allowed media IDs for the reader.
+    result = reading_drive.catalogue()
+    listing = result.get("books", [])
+    if len(listing) > 4000:
+        raise HTTPException(413, "Too many books")
+    books = []
+    for item in listing:
+        file_id = identifier(str(item["id"]))
+        cover_id = item.get("cover")
+        if cover_id is not None:
+            identifier(str(cover_id))
+        books.append((file_id, str(item["title"])[:250], str(item.get("group") or "")[:300], cover_id))
     with LOCK, database() as db:
-        # A single transaction avoids a half-written catalogue if Google Drive fails.
-        db.execute('UPDATE books SET active=0')
-        for book in books:
-            title = str(book['title'])[:250]
-            folder = str(book.get('group', ''))[:300]
-            cover_id = book.get('cover')
-            if cover_id is not None:
-                validate_id(cover_id)
-            db.execute('''
+        db.execute("UPDATE books SET active=0")
+        for file_id, title, folder, cover in books:
+            db.execute("""
                 INSERT INTO books(id,title,source_title,folder_name,cover_id,active)
                 VALUES(?,?,?,?,?,1)
                 ON CONFLICT(id) DO UPDATE SET
-                  source_title=excluded.source_title,
-                  folder_name=excluded.folder_name,
-                  cover_id=excluded.cover_id,
-                  active=1
-            ''', (book['id'], title, title, folder, cover_id))
-        return {'synced': len(books), 'database': str(db_path())}
+                    title=CASE WHEN books.manual_title=1 THEN books.title ELSE excluded.title END,
+                    source_title=excluded.source_title,
+                    folder_name=excluded.folder_name,
+                    cover_id=excluded.cover_id,
+                    active=1
+            """, (file_id, title, title, folder, cover))
+        report = organize(db)
+        return {"synced": len(books), "database": str(db_path()), **report}
 
 
-@router.post('/series')
+@router.post("/series")
 def add_series(info: SeriesInput):
     name = info.title.strip()
     if not name:
-        raise HTTPException(422, 'Series name required')
-    identifier = str(uuid.uuid4())
+        raise HTTPException(422, "Series name required")
+    value = str(uuid.uuid4())
     with LOCK, database() as db:
-        db.execute('INSERT INTO series(id,title,description) VALUES(?,?,?)',
-                   (identifier, name, info.description))
-    return {'id': identifier, 'title': name}
+        for existing in db.execute("SELECT id,title FROM series"):
+            if normalized(existing["title"]) == normalized(name):
+                return {"id": existing["id"], "title": existing["title"], "already_exists": True}
+        db.execute("INSERT INTO series(id,title,description,genre) VALUES(?,?,?,?)",
+                   (value, name, info.description, info.genre))
+    return {"id": value, "title": name, "already_exists": False}
 
 
-@router.post('/book')
-def edit_book(info: EditBook):
-    validate_id(info.id)
-    if info.series_id is not None and not SERIES_ID.fullmatch(info.series_id):
-        raise HTTPException(422, 'Invalid series ID')
+@router.post("/series/{value}")
+def edit_series(value: str, info: SeriesEdit):
+    series_id(value)
+    updates = {}
+    fields = info.model_fields_set
+    for field in ("title", "description", "genre", "position"):
+        if field in fields:
+            entry = getattr(info, field)
+            if entry is None:
+                raise HTTPException(422, "Null series metadata is not allowed")
+            updates[field] = entry.strip() if isinstance(entry, str) else entry
+    if "title" in updates and not updates["title"]:
+        raise HTTPException(422, "Series title required")
     with LOCK, database() as db:
-        row = db.execute('SELECT id FROM books WHERE id=? AND active=1', (info.id,)).fetchone()
-        if row is None:
-            raise HTTPException(404, 'Book not found')
-        fields = info.model_fields_set
-        if 'series_id' in fields and info.series_id is not None:
-            exists = db.execute('SELECT id FROM series WHERE id=?', (info.series_id,)).fetchone()
-            if exists is None:
-                raise HTTPException(422, 'Series not found')
-        updates = {}
-        if 'title' in fields:
-            if not info.title or not info.title.strip():
-                raise HTTPException(422, 'Empty title')
-            updates['title'] = info.title.strip()
-        if 'published' in fields:
-            if info.published is None:
-                raise HTTPException(422, 'Publication must be true or false')
-            updates['published'] = int(info.published)
-        if 'series_id' in fields:
-            updates['series_id'] = info.series_id
-        if 'issue_number' in fields:
-            updates['issue_number'] = info.issue_number
-        if 'position' in fields:
-            updates['position'] = info.position
+        if not db.execute("SELECT 1 FROM series WHERE id=?", (value,)).fetchone():
+            raise HTTPException(404, "Series not found")
         if updates:
-            columns = ', '.join(key + '=?' for key in updates)
-            db.execute('UPDATE books SET ' + columns + ' WHERE id=?',
-                       (*updates.values(), info.id))
-    return {'updated': True}
+            sql = ", ".join(key+"=?" for key in updates)
+            db.execute("UPDATE series SET "+sql+" WHERE id=?", (*updates.values(), value))
+    return {"updated": True}
 
 
-@router.delete('/series/{series_id}')
-def delete_series(series_id: str):
-    if not SERIES_ID.fullmatch(series_id):
-        raise HTTPException(422, 'Invalid series ID')
+@router.post("/merge")
+def merge_series(info: SeriesMerge):
+    source, target = series_id(info.source), series_id(info.target)
+    if source == target:
+        raise HTTPException(422, "Cannot merge series into itself")
     with LOCK, database() as db:
-        db.execute('DELETE FROM series WHERE id=?', (series_id,))
-    return {'deleted': True}
+        series_exists(db, source)
+        series_exists(db, target)
+        db.execute(
+            "UPDATE books SET series_id=?,manual_series=1 WHERE series_id=?",
+            (target,source))
+        db.execute("DELETE FROM series WHERE id=?", (source,))
+    return {"merged": True}
+
+
+@router.post("/book")
+def edit_book(info: EditBook):
+    identifier(info.id)
+    with LOCK, database() as db:
+        if not db.execute("SELECT 1 FROM books WHERE id=? AND active=1", (info.id,)).fetchone():
+            raise HTTPException(404, "Book not found")
+        fields = info.model_fields_set
+        if "series_id" in fields:
+            series_exists(db, info.series_id)
+        updates = {}
+        if "title" in fields:
+            if not info.title or not info.title.strip():
+                raise HTTPException(422, "Book title required")
+            updates.update(title=info.title.strip(),manual_title=1)
+        if "series_id" in fields:
+            updates.update(series_id=info.series_id,manual_series=1)
+        if "issue_number" in fields:
+            updates.update(issue_number=info.issue_number,manual_issue=1)
+        if "position" in fields:
+            updates.update(position=info.position,manual_position=1)
+        for field in ("published", "hidden"):
+            if field in fields:
+                value = getattr(info, field)
+                if value is None:
+                    raise HTTPException(422, field+" must be a boolean")
+                updates[field] = int(value)
+        if updates:
+            db.execute("UPDATE books SET "+", ".join(key+"=?" for key in updates)+" WHERE id=?",
+                       (*updates.values(),info.id))
+        # Rebuild review flags after the owner's modifications while preserving overrides.
+        organize(db)
+    return {"updated": True}
+
+
+@router.post("/bulk")
+def bulk_edit(info: BulkEdit):
+    if len(info.ids) != len(set(info.ids)):
+        raise HTTPException(422, "Duplicate book identifiers")
+    for value in info.ids:
+        identifier(value)
+    fields = info.model_fields_set
+    if not fields.intersection({"series_id", "hidden", "published"}):
+        raise HTTPException(422, "Choose a bulk action")
+    with LOCK, database() as db:
+        if "series_id" in fields:
+            series_exists(db, info.series_id)
+        updates = {}
+        if "series_id" in fields:
+            updates.update(series_id=info.series_id,manual_series=1)
+        for field in ("hidden", "published"):
+            if field in fields:
+                if getattr(info, field) is None:
+                    raise HTTPException(422, "Expected boolean")
+                updates[field] = int(getattr(info, field))
+        sql = "UPDATE books SET " + ", ".join(k+"=?" for k in updates) + " WHERE id=? AND active=1"
+        affected = 0
+        for value in info.ids:
+            affected += db.execute(sql, (*updates.values(), value)).rowcount
+        organize(db)
+    return {"updated": affected}
+
+
+@router.post("/reorder")
+def reorder_books(info: Reorder):
+    if len(set(info.ids)) != len(info.ids):
+        raise HTTPException(422, "Duplicate books in ordering")
+    for value in info.ids:
+        identifier(value)
+    with LOCK, database() as db:
+        placeholders = ",".join("?" for _ in info.ids)
+        rows = db.execute(
+            f"SELECT id,series_id FROM books WHERE active=1 AND id IN ({placeholders})",
+            info.ids).fetchall()
+        if len(rows) != len(info.ids) or len({row["series_id"] for row in rows}) != 1:
+            raise HTTPException(422, "Reordering requires books from the same series")
+        for index, value in enumerate(info.ids):
+            db.execute("UPDATE books SET position=?,manual_position=1 WHERE id=?",
+                       ((index+1)*10,value))
+    return {"updated": len(info.ids)}
+
+
+@router.post("/book/{value}/auto")
+def reset_auto(value: str):
+    identifier(value)
+    with LOCK, database() as db:
+        if not db.execute("SELECT 1 FROM books WHERE id=? AND active=1", (value,)).fetchone():
+            raise HTTPException(404, "Book not found")
+        db.execute("UPDATE books SET manual_series=0,manual_issue=0,manual_position=0,manual_title=0,"
+                   "title=source_title WHERE id=?", (value,))
+        return organize(db)
+
+
+@router.delete("/series/{value}")
+def delete_series(value: str):
+    series_id(value)
+    with LOCK, database() as db:
+        # Explicitly detached books must not be automatically regrouped next refresh.
+        db.execute("UPDATE books SET series_id=NULL,manual_series=1 WHERE series_id=?", (value,))
+        db.execute("DELETE FROM series WHERE id=?", (value,))
+        organize(db)
+    return {"deleted": True}

@@ -3,32 +3,53 @@ import {Cloud,RefreshCw} from 'lucide-react';
 import {APIError,requestJSON} from '../lib/backend';
 import {Switch} from '../components/ui/Switch';
 import {driveSyncDevice} from '../lib/driveSync';
-import {LocalLibraryManager} from './LocalLibraryManager';
 import {OnlineLibrarySettings} from './OnlineLibraryLink';
 import type {DriveBook} from './DriveBooks';
 
 type Connection={connected:boolean;pending:boolean;failed:boolean;folder:string;sync?:boolean};
 type Item={id:string;title:string;group:string;cover:string|null};
 const root='/v1/reading/drive';
+let lastScanAt=0;
+let lastScanFolder='';
+let pendingScan:Promise<void>|undefined;
 
-export async function loadCloudBooks(){
- const result=await requestJSON<{books:Item[]}>(root+'/catalogue');
- type LocalBook={id:string;title:string;active:number;series_id:string|null;issue_number:number|null;position:number};
- type LocalSeries={id:string;title:string};
- const metadata=await requestJSON<{books:LocalBook[];series:LocalSeries[]}>('/v1/reading/library/items').catch(()=>undefined);
- const byId=new Map((metadata?.books||[]).filter(book=>book.active===1).map(book=>[book.id,book]));
- const seriesById=new Map((metadata?.series||[]).map(series=>[series.id,series.title]));
- return result.books.map<DriveBook>(item=>{
-  const saved=byId.get(item.id);
-  const series=saved?.series_id?seriesById.get(saved.series_id):undefined;
-  return {
-   edition:{id:'google:'+item.id,title:saved?.title||item.title,format:'pdf',driveId:item.id},
-   group:series||item.group,coverId:item.cover||undefined,
-   issueNumber:saved?.issue_number||undefined,sortPosition:saved?.position||0,
-  };
- }).sort((a,b)=>(a.sortPosition||0)-(b.sortPosition||0)||
-  (a.issueNumber??Infinity)-(b.issueNumber??Infinity)||
-  a.edition.title.localeCompare(b.edition.title,undefined,{numeric:true}));
+export async function loadCloudBooks(force=false,folder=''){
+ type LocalBook={
+  id:string;title:string;active:number;hidden:number;folder_name:string;cover_id:string|null;
+  series_id:string|null;issue_number:number|null;position:number;manual_series:number;review_reason:string;
+ };
+ type LocalSeries={id:string;title:string;position:number};
+ try{
+  // One Drive read updates the media allowlist and local metadata in one transaction.
+  // Indexing is automatic on opening the connected library; owner edits are preserved.
+  if(force||!lastScanAt||lastScanFolder!==folder||Date.now()-lastScanAt>=15*60*1000){
+   if(!pendingScan)pendingScan=requestJSON('/v1/reading/library/refresh',{method:'POST'})
+    .then(()=>{lastScanAt=Date.now();lastScanFolder=folder;})
+    .finally(()=>{pendingScan=undefined;});
+   await pendingScan;
+  }
+  const metadata=await requestJSON<{books:LocalBook[];series:LocalSeries[]}>('/v1/reading/library/items');
+  const bySeries=new Map(metadata.series.map(group=>[group.id,group]));
+  return metadata.books.filter(item=>item.active===1&&!item.hidden).map<DriveBook>(item=>{
+   const series=item.series_id?bySeries.get(item.series_id):undefined;
+   return {
+    edition:{id:'google:'+item.id,title:item.title,format:'pdf',driveId:item.id},
+    group:series?.title||item.folder_name,
+    coverId:item.cover_id||undefined,seriesId:series?.id,
+    issueNumber:item.issue_number||undefined,sortPosition:item.position||0,
+    manualSeries:!!item.manual_series,reviewReason:item.review_reason,
+   };
+  }).sort((a,b)=>(a.sortPosition||0)-(b.sortPosition||0)||
+   (a.issueNumber??Infinity)-(b.issueNumber??Infinity)||
+   a.edition.title.localeCompare(b.edition.title,undefined,{numeric:true}));
+ }catch{
+  // A damaged/unavailable local index must not prevent an otherwise working reader.
+  const result=await requestJSON<{books:Item[]}>(root+'/catalogue');
+  return result.books.map<DriveBook>(item=>({
+   edition:{id:'google:'+item.id,title:item.title,format:'pdf',driveId:item.id},
+   group:item.group,coverId:item.cover||undefined,
+  })).sort((a,b)=>a.edition.title.localeCompare(b.edition.title,undefined,{numeric:true}));
+ }
 }
 
 export function useCloudBooks(){
@@ -36,6 +57,12 @@ export function useCloudBooks(){
  const [loading,setLoading]=useState(true);
  const [failed,setFailed]=useState(false);
  const [attempt,setAttempt]=useState(0);
+ useEffect(()=>{
+  // Keep the local index current without manual re-indexing after every Drive change.
+  // Fifteen-minute cadence avoids hammering Drive's API or interrupting the reader.
+  const timer=window.setInterval(()=>setAttempt(value=>value+1),15*60*1000);
+  return()=>window.clearInterval(timer);
+ },[]);
  useEffect(()=>{
   const changed=()=>setAttempt(value=>value+1);
   window.addEventListener('barq:library-changed',changed);
@@ -45,7 +72,10 @@ export function useCloudBooks(){
   let live=true;
   setLoading(true);setFailed(false);
   void requestJSON<Connection>(root+'/status')
-   .then(status=>status.connected?loadCloudBooks():undefined)
+   .then(status=>{
+    if(!status.connected){lastScanAt=0;lastScanFolder='';return undefined;}
+    return loadCloudBooks(false,status.folder);
+   })
    .then(items=>{if(live)setBooks(items);})
    .catch(error=>{if(live&&(!(error instanceof APIError)||error.status!==404))setFailed(true);})
    .finally(()=>{if(live)setLoading(false);});
@@ -68,11 +98,12 @@ export function CloudReading({ar}:{ar:boolean}){
  const [primaryError,setPrimaryError]=useState(false);
  const [revision,setRevision]=useState(0);
  const label=(a:string,e:string)=>ar?a:e;
- const refresh=useCallback(async()=>{
+ const refresh=useCallback(async(selectedFolder='')=>{
   setBusy(true);
   setError('');
   try{
-   await loadCloudBooks();
+   await loadCloudBooks(true,selectedFolder);
+   window.dispatchEvent(new Event('barq:library-changed'));
   }catch{
    setError(ar?'تعذّر تحميل مكتبة Drive. راجع صلاحية الفولدر أو أعد الربط.':'Could not load Drive books. Check folder access or reconnect.');
   }finally{setBusy(false);}
@@ -93,7 +124,7 @@ export function CloudReading({ar}:{ar:boolean}){
      setError(ar?'ربط Google ما اكتملش. راجع إعدادات OAuth وحاول تاني.':'Google connection failed. Check your OAuth setup and retry.');
      setConfig(true);
     }else if(current.connected){
-     setFolder(current.folder);setConfig(false);setUrl('');await refresh();
+     setFolder(current.folder);setConfig(false);setUrl('');await refresh(current.folder);
     }else{setUrl('');}
    }catch{if(!stopped)setError(ar?'ميزة الربط تتطلب نسخة برق المكتبية المحدّثة.':'Cloud linking requires the updated BARQ desktop app.');}
   }
@@ -147,7 +178,7 @@ export function CloudReading({ar}:{ar:boolean}){
   <div className="bs-drive-header">
    <button className="bs-muted-btn" type="button" onClick={()=>setConfig(!config)} aria-expanded={config}><Cloud size={16}/>
     {connection?.connected?label('Google Drive متصل','Google Drive connected'):label('اربط Google Drive','Connect Google Drive')}</button>
-   {connection?.connected&&<button className="bs-muted-btn" type="button" disabled={busy||connection.pending} onClick={()=>void refresh()}>
+   {connection?.connected&&<button className="bs-muted-btn" type="button" disabled={busy||connection.pending} onClick={()=>void refresh(connection?.folder||'')}>
     <RefreshCw size={15}/>{label('حدّث الروايات','Refresh books')}</button>}
   </div>
   {connection?.sync&&<div className="bs-primary-cover">
@@ -175,6 +206,6 @@ export function CloudReading({ar}:{ar:boolean}){
   {connection?.pending&&<p role="status">{label('كمّل موافقة Google في المتصفح وارجع لبرق.','Complete Google consent in your browser and return to BARQ.')}</p>}
   {url&&<a href={url} target="_blank" rel="noreferrer">{label('افتح موافقة Google','Open Google consent')}</a>}
   {error&&<p className="bs-alert" role="alert">{error}</p>}
-  {connection?.connected&&<><LocalLibraryManager ar={ar}/><OnlineLibrarySettings ar={ar}/></>}
+  {connection?.connected&&<OnlineLibrarySettings ar={ar}/>}
  </div>;
 }

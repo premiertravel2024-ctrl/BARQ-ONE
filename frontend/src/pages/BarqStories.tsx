@@ -10,6 +10,7 @@ import {paranormalCollection,paranormalEbooks,paranormalIssues} from './paranorm
 import {DriveBooks,pickedDriveBooks} from './DriveBooks';
 import {useCloudBooks} from './CloudReading';
 import {OnlineLibraryLink} from './OnlineLibraryLink';
+import {LocalLibraryManager} from './LocalLibraryManager';
 import './barqStories.css';
 
 const BookReader=lazy(()=>import('./BookReader'));
@@ -18,7 +19,7 @@ import type {ReadingEdition} from './BookReader';
 const genres=[
  ['الكل','All'],['سلاسل مصرية','Egyptian series'],['روايات مصرية','Egyptian books'],['روايات عالمية','World literature'],
  ['رعب','Horror'],['أدب كلاسيكي','Classics'],['فانتازيا','Fantasy'],['غموض','Mystery'],
- ['خيال علمي','Science fiction'],['مغامرة','Adventure'],['كوميكس','Comics'],['مكتبتي','My library'],
+ ['خيال علمي','Science fiction'],['مغامرة','Adventure'],['كوميكس','Comics'],['غير مصنف','Unclassified'],['مكتبتي','My library'],
 ];
 function searchKey(value:string){
  return value.toLowerCase().replace(/[\u064b-\u065f\u0670\u0640]/g,'').replace(/[أإآ]/g,'ا').replace(/ى/g,'ي');
@@ -70,6 +71,7 @@ export function BarqStories(){
  const paranormalByIssue=new Map(paranormalEntries.map(item=>[(item.special?'special-':'')+item.number,item]));
  const paranormalIds=new Set(paranormalEntries.map(item=>item.edition.id));
  const matchesDrive=(book:PublishedBook)=>availableDriveBooks.filter(item=>{
+  if(item.manualSeries&&!item.seriesId)return false;
   if(paranormalIds.has(item.edition.id))return book.id==='paranormal';
   const names=[item.edition.title,...item.group.split(' / ')];
   const titles=book.title.split(' / ').map(normalize);
@@ -86,13 +88,15 @@ export function BarqStories(){
  const visibleIssues=readableIssues.filter(item=>
   /^\d+$/.test(issueTerm)?item.number===Number(issueTerm):searchKey(item.edition.title).includes(issueTerm));
  const cataloguedIds=new Set(publishedBooks.flatMap(book=>matchesDrive(book).map(item=>item.edition.id)));
- const visibleDrive=availableDriveBooks.filter(item=>!paranormalIds.has(item.edition.id)&&!cataloguedIds.has(item.edition.id)&&
+ const visibleDrive=availableDriveBooks.filter(item=>
+  (genre==='الكل'||(genre==='غير مصنف'&&!item.seriesId)||genre==='سلاسل مصرية'&&!!item.seriesId||genre==='مكتبتي')&&
+  !paranormalIds.has(item.edition.id)&&!cataloguedIds.has(item.edition.id)&&
   terms.every(term=>searchKey(item.edition.title+' '+item.group).includes(term)));
 
  const results=publishedBooks.filter(book=>{
   const visible=genre==='الكل'||genre===book.category||genre===book.genre||
    (genre==='سلاسل مصرية'&&book.series)||(genre==='مكتبتي'&&favorites.includes(book.id));
-  return visible&&terms.every(term=>searchKey([book.title,book.author,book.description,book.genre].join(' ')).includes(term));
+  return genre!=='غير مصنف'&&visible&&terms.every(term=>searchKey([book.title,book.author,book.description,book.genre].join(' ')).includes(term));
  });
  useAppView('stories',{mode:edition?'reader':series?'series':'catalogue',item:edition?.file?undefined:edition?.title||series?.title,count:results.length});
 
@@ -139,6 +143,7 @@ export function BarqStories(){
     <button className="bs-muted-btn" type="button" onClick={()=>pickFile()}><Upload size={16}/>{label('افتح PDF من جهازك','Open local PDF')}</button><OnlineLibraryLink ar={ar}/></div>
    </header>
 
+   <LocalLibraryManager ar={ar}/>
    <section className="bs-collection">
     <div className="bs-title-row"><h2>{label('الكتب والسلاسل','Books and series')}</h2>
      <div className="bs-search"><Search size={18} aria-hidden="true"/><input type="search" dir="auto" aria-label={label('ابحث في الكتب','Search books')}

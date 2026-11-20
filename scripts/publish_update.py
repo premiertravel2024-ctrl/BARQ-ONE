@@ -45,7 +45,32 @@ def should_publish() -> bool:
         if error.response.status_code == 404:
             return True
         raise
-    return version_key(VERSION) > version_key(previous.version)
+    current_version = version_key(VERSION)
+    public_version = version_key(previous.version)
+    if current_version == public_version:
+        source = os.environ.get('GITHUB_SHA', '').strip().lower()
+        if (previous.source_sha and source and previous.source_sha != source):
+            raise SystemExit(
+                f'BARQ source changed since published v{VERSION}. '
+                'Increase the release version before merging; never silently skip changed binaries.'
+            )
+    return current_version > public_version
+
+
+
+def verify_live() -> None:
+    """Check the actual PUBLIC feed, not just successful artifact upload."""
+    channel = configured_channel()
+    if channel is None:
+        raise SystemExit('Signed BARQ update channel is missing')
+    try:
+        live = check_release(channel)
+    except Exception as error:
+        raise SystemExit(f'Public BARQ update feed is not readable or its signature is invalid: {type(error).__name__}') from error
+    if version_key(live.version) < version_key(VERSION):
+        raise SystemExit(f'Public BARQ feed is stale: {live.version}; expected at least {VERSION}')
+    print(f'Verified live signed BARQ update: {live.version}')
+
 
 
 def sign(artifact: Path, tag: str) -> None:
@@ -59,10 +84,16 @@ def sign(artifact: Path, tag: str) -> None:
     if evidence['sha256']['release/' + setup.name] != digest:
         raise SystemExit('Setup does not match Windows CI evidence')
     notes = os.environ.get('BARQ_UPDATE_NOTES', '').strip()[:1500]
-    data = json.dumps({
+    commit = os.environ.get('GITHUB_SHA', '').strip().lower()
+    if commit and (len(commit) != 40 or any(ch not in '0123456789abcdef' for ch in commit)):
+        raise SystemExit('Invalid release source commit SHA')
+    payload = {
         'schema': 1, 'product': 'BARQ ONE', 'platform': 'windows-x64', 'version': VERSION,
         'size': setup.stat().st_size, 'sha256': digest, 'notes': notes,
-    }, ensure_ascii=False).encode()
+    }
+    if commit:
+        payload['source_sha'] = commit
+    data = json.dumps(payload, ensure_ascii=False).encode()
     private = Ed25519PrivateKey.from_private_bytes(base64.b64decode(os.environ['BARQ_UPDATE_PRIVATE_KEY'], validate=True))
     manifest = json.dumps({
         'payload': base64.b64encode(data).decode('ascii'),
@@ -82,7 +113,7 @@ def sign(artifact: Path, tag: str) -> None:
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('command', choices=('configure', 'sign', 'should-publish'))
+    parser.add_argument('command', choices=('configure', 'sign', 'should-publish', 'verify-live'))
     parser.add_argument('--artifact', type=Path, default=Path('verified-windows'))
     parser.add_argument('--tag', default='')
     args = parser.parse_args()
@@ -90,5 +121,7 @@ if __name__ == '__main__':
         configure()
     elif args.command == 'should-publish':
         print('true' if should_publish() else 'false')
+    elif args.command == 'verify-live':
+        verify_live()
     else:
         sign(args.artifact, args.tag)
