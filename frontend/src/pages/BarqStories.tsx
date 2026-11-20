@@ -145,16 +145,24 @@ export function BarqStories(){
 
    <LocalLibraryManager ar={ar}/>
    <section className="bs-collection">
-    <div className="bs-title-row"><h2>{label('الكتب والسلاسل','Books and series')}</h2>
-     <div className="bs-search"><Search size={18} aria-hidden="true"/><input type="search" dir="auto" aria-label={label('ابحث في الكتب','Search books')}
-      placeholder={label('اسم كتاب، سلسلة، مؤلف…','Book, series, author…')} value={query} onChange={event=>setQuery(event.target.value)}/>
-      {query&&<button type="button" className="bs-clear-search" aria-label={label('امسح البحث','Clear search')} onClick={()=>setQuery('')}><X size={16}/></button>}
-     </div>
+    <div className="bs-title-row">
+     <h2>{label('الكتب والسلاسل','Books and series')}</h2>
+     <p className="bs-result-count" role="status">
+      {label('عدد الكتب والسلاسل','Books and series')}{' · '}
+      {(results.length+visibleDrive.length).toLocaleString(ar?'ar-EG':'en')}
+     </p>
     </div>
-    <ButtonGroup className="bs-filters" size="sm" aria-label={label('تصنيف الكتب','Book categories')}>
-     {genres.map(([id,en])=><ButtonGroupItem key={id} aria-pressed={genre===id} onClick={()=>setGenre(id)}>{label(id,en)}</ButtonGroupItem>)}
-    </ButtonGroup>
-    <p className="bs-result-count" role="status">{label('عدد الكتب والسلاسل','Books and series')}{' · '}{(results.length+visibleDrive.length).toLocaleString(ar?'ar-EG':'en')}</p>
+    <div className="bs-discovery-row">
+     <ButtonGroup className="bs-filters" size="sm" aria-label={label('تصنيف الكتب','Book categories')}>
+      {genres.map(([id,en])=><ButtonGroupItem key={id} aria-pressed={genre===id} onClick={()=>setGenre(id)}>{label(id,en)}</ButtonGroupItem>)}
+     </ButtonGroup>
+     <label className="bs-search">
+      <Search size={18} aria-hidden="true"/>
+      <input type="search" dir="auto" aria-label={label('ابحث في الكتب','Search books')}
+       placeholder={label('اسم كتاب، سلسلة، مؤلف…','Book, series, author…')} value={query} onChange={event=>setQuery(event.target.value)}/>
+      {query&&<button type="button" className="bs-clear-search" aria-label={label('امسح البحث','Clear search')} onClick={()=>setQuery('')}><X size={16}/></button>}
+     </label>
+    </div>
     {results.length||visibleDrive.length?<div className="bs-real-grid bs-unified-library">
      {visibleDrive.length>0&&<DriveBooks books={visibleDrive} ar={ar} onOpen={setEdition} heading={false}/>}{results.map(book=><article className="bs-real-card bs-published-card" key={book.id} data-genre={book.genre}>
      <EditableCover id={book.id} title={book.title} ar={ar}><Cover book={book}/></EditableCover>
