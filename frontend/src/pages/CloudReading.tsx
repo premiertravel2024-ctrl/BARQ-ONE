@@ -4,6 +4,7 @@ import {APIError,requestJSON} from '../lib/backend';
 import {Switch} from '../components/ui/Switch';
 import {driveSyncDevice} from '../lib/driveSync';
 import {LocalLibraryManager} from './LocalLibraryManager';
+import {OnlineLibrarySettings} from './OnlineLibraryLink';
 import type {DriveBook} from './DriveBooks';
 
 type Connection={connected:boolean;pending:boolean;failed:boolean;folder:string;sync?:boolean};
@@ -174,6 +175,6 @@ export function CloudReading({ar}:{ar:boolean}){
   {connection?.pending&&<p role="status">{label('كمّل موافقة Google في المتصفح وارجع لبرق.','Complete Google consent in your browser and return to BARQ.')}</p>}
   {url&&<a href={url} target="_blank" rel="noreferrer">{label('افتح موافقة Google','Open Google consent')}</a>}
   {error&&<p className="bs-alert" role="alert">{error}</p>}
-  {connection?.connected&&<LocalLibraryManager ar={ar}/>}
+  {connection?.connected&&<><LocalLibraryManager ar={ar}/><OnlineLibrarySettings ar={ar}/></>}
  </div>;
 }
