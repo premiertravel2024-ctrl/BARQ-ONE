@@ -182,3 +182,74 @@ def test_owner_book_title_and_hidden_state_survive_reindex(tmp_path,monkeypatch)
     book=api.get("/library/items").json()["books"][0]
     assert book["title"]=="My custom title" and book["source_title"]=="Renamed on Drive"
     assert book["hidden"]==1 and book["manual_title"]==1
+
+
+
+def test_reading_progress_and_favorites_survive_reopening_sqlite(tmp_path, monkeypatch):
+    api, destination = client(tmp_path, monkeypatch)
+    progress = '{"page":51,"marks":[3,51]}'
+    favorites = '{"favorites":["egy-zenab","world-dracula"]}'
+    assert api.put('/library/state/barq-reader:google:book-01',json={'value':progress}).json()['saved']
+    assert api.put('/library/state/barq-stories-v1',json={'value':favorites}).status_code == 200
+    reopened, _ = client(tmp_path, monkeypatch)
+    assert reopened.get('/library/state/barq-reader:google:book-01').json()['value'] == progress
+    assert reopened.get('/library/state/barq-stories-v1').json()['value'] == favorites
+    # Browser cache can be blank after a WebView reset: DB remains authoritative.
+    snapshot = reopened.post('/library/state/sync',json={'records':{}}).json()['records']
+    assert snapshot['barq-reader:google:book-01'] == progress
+    assert snapshot['barq-stories-v1'] == favorites
+    assert reopened.post('/library/state/sync',json={'records':{'barq-stories-v1':'{"favorites":[]}'}}).json()['records']['barq-stories-v1'] == favorites
+    with sqlite3.connect(destination) as con:
+        assert con.execute('SELECT COUNT(*) FROM reader_state').fetchone()[0] == 2
+        assert con.execute('PRAGMA quick_check(1)').fetchone()[0] == 'ok'
+    status = reopened.get('/library/status').json()
+    assert status['reading_records'] == 2
+    assert status['persistent']
+    assert status['last_saved_at']
+    assert status['db_bytes'] > 0
+
+
+def test_backup_snapshot_is_safe_and_has_saved_reading_rows(tmp_path, monkeypatch):
+    api, path = client(tmp_path, monkeypatch)
+    api.post('/library/series',json={'title':'ما وراء الطبيعة'})
+    api.put('/library/state/barq-reader:google:book-42',json={'value':'{"page":42,"marks":[]}'})
+    from hashlib import sha256
+    image_id = sha256('library-series:backup'.encode()).hexdigest()
+    with reading_local_library.LOCK, reading_local_library.database() as db:
+        db.execute('INSERT INTO cover_overrides(id,image,modified_ms) VALUES(?,?,?)',
+                   (image_id,b'\xff\xd8\xffexample\xff\xd9',1234))
+    response = api.post('/library/backup')
+    assert response.status_code == 200,response.text
+    result = response.json()
+    from pathlib import Path
+    backup = Path(result['file'])
+    assert backup.exists() and backup.parent == path.parent / 'backups'
+    with sqlite3.connect(backup) as copy:
+        assert copy.execute('PRAGMA quick_check(1)').fetchone()[0] == 'ok'
+        assert copy.execute('SELECT COUNT(*) FROM series').fetchone()[0] == 1
+        assert copy.execute("SELECT value FROM reader_state WHERE key='barq-reader:google:book-42'").fetchone()[0] == '{"page":42,"marks":[]}'
+        assert bytes(copy.execute('SELECT image FROM cover_overrides WHERE id=?',(image_id,)).fetchone()[0]).startswith(b'\xff\xd8\xff')
+
+
+def test_old_appdata_catalogue_migrates_to_selected_g_drive_without_data_loss(tmp_path, monkeypatch):
+    legacy_profile = tmp_path / 'OldProfile'
+    old_db = legacy_profile / 'reading' / 'barq_library.sqlite3'
+    new_db = tmp_path / 'G_BARQ_DATABASE' / 'barq_library.sqlite3'
+    monkeypatch.delenv('BARQ_READING_DB_DIR', raising=False)
+    monkeypatch.setattr(reading_local_library, 'data_dir', lambda: legacy_profile)
+    monkeypatch.setattr(reading_local_library, 'db_path', lambda: old_db)
+    with reading_local_library.LOCK, reading_local_library.database() as db:
+        db.execute('INSERT INTO series(id,title) VALUES(?,?)',
+                   ('12345678-1234-1234-1234-123456789abc','Legacy saved group'))
+        db.execute('INSERT INTO reader_state(key,value) VALUES(?,?)',
+                   ('barq-reader:old','{"page":23,"marks":[]}'))
+    assert old_db.exists()
+    monkeypatch.setattr(reading_local_library, 'db_path', lambda: new_db)
+    app = FastAPI()
+    app.include_router(reading_local_library.router)
+    api = TestClient(app)
+    series = api.get('/library/items').json()['series']
+    assert len(series) == 1 and series[0]['title'] == 'Legacy saved group'
+    assert api.get('/library/state/barq-reader:old').json()['value'] == '{"page":23,"marks":[]}'
+    assert old_db.exists() and new_db.exists()
+    assert api.get('/library/status').json()['persistent']
