@@ -2,8 +2,10 @@ import {EditableCover} from './EditableCover';
 import {useEffect,useRef,useState,type ChangeEvent} from 'react';
 import {BookOpen,FolderOpen} from 'lucide-react';
 import type {ReadingEdition} from './BookReader';
+import {Modal} from '../components/ui/Modal';
+import {ArrowLeft,Settings2,Layers} from 'lucide-react';
 
-export type DriveBook={edition:ReadingEdition;cover?:File;coverId?:string;group:string;issueNumber?:number;sortPosition?:number};
+export type DriveBook={edition:ReadingEdition;cover?:File;coverId?:string;group:string;issueNumber?:number;sortPosition?:number;seriesId?:string;manualSeries?:boolean;reviewReason?:string};
 let pickedBooks:DriveBook[]|undefined;
 export function pickedDriveBooks(){return pickedBooks;}
 
@@ -103,38 +105,78 @@ export function DriveFolderButton({ar,onSelect}:{ar:boolean;onSelect?:(books:Dri
  </>;
 }
 
-export function DriveBooks({books,ar,onOpen,heading=true,collectionLabel}:{books:DriveBook[];ar:boolean;onOpen:(edition:ReadingEdition)=>void;heading?:boolean;collectionLabel?:string}){
+export function DriveBooks({books,ar,onOpen,heading=true,collectionLabel}:{
+ books:DriveBook[];ar:boolean;onOpen:(edition:ReadingEdition)=>void;heading?:boolean;collectionLabel?:string;
+}){
+ const [selectedGroup,setSelectedGroup]=useState<string>();
  const groups=new Map<string,DriveBook[]>();
+ const singles:DriveBook[]=[];
+ const sortBooks=(a:DriveBook,b:DriveBook)=>(a.sortPosition??0)-(b.sortPosition??0)||
+  (a.issueNumber??Infinity)-(b.issueNumber??Infinity)||
+  a.edition.title.localeCompare(b.edition.title,undefined,{numeric:true});
  for(const book of books){
-  const key=book.group||'';
-  groups.set(key,[...(groups.get(key)||[]),book]);
+  const key=book.seriesId||book.group;
+  if(key)groups.set(key,[...(groups.get(key)||[]),book]);
+  else singles.push(book);
  }
- function cards(items:DriveBook[]){
-  return <div className="bs-real-grid">{items.map(book=><article className="bs-real-card bs-published-card" key={book.edition.id}>
-   <EditableCover id={book.edition.id} title={book.edition.title} ar={ar}><DriveCover book={book}/></EditableCover>
-   <div className="bs-real-copy"><h3 dir="auto">{book.edition.title}</h3>
-    <button className="bs-series-open" type="button" onClick={()=>onOpen(book.edition)}>{ar?'اقرأ':'Read'}</button>
+ const collected:Array<{key:string;title:string;items:DriveBook[];seriesId?:string}>=[];
+ for(const [key,items] of groups) {
+  if(items.length===1&&!items[0].seriesId)singles.push(items[0]);
+  else collected.push({key,title:items[0].group.split(' / ').slice(-1)[0]||items[0].group,items:[...items].sort(sortBooks),seriesId:items[0].seriesId});
+ }
+ const current=collected.find(group=>group.key===selectedGroup);
+ function bookCard(item:DriveBook){
+  return <article className="bs-real-card bs-published-card" key={item.edition.id}>
+   <EditableCover id={item.edition.id} title={item.edition.title} ar={ar}><DriveCover book={item}/></EditableCover>
+   <div className="bs-real-copy">
+    {item.issueNumber&&<span>{ar?'العدد':'Issue'} {item.issueNumber}</span>}
+    <h3 dir="auto">{item.edition.title}</h3>
+    <button className="bs-series-open" type="button" onClick={()=>onOpen(item.edition)}>
+     {ar?'اقرأ':'Read'} <ArrowLeft size={14}/>
+    </button>
    </div>
-  </article>)}</div>;
+  </article>;
+ }
+ function manage(seriesId?:string) {
+  window.dispatchEvent(new CustomEvent('barq:library-manage',{detail:seriesId||null}));
  }
  return <section className="bs-drive-section" aria-label={collectionLabel||(ar?'الروايات':'Books')}>
   {heading&&<h2>{collectionLabel||(ar?'رواياتي':'My books')}</h2>}
-  {books.length===0?<p role="status">{ar?'مفيش ملفات PDF متاحة في الفولدر (الحد 64 ميجابايت للملف).':'No readable PDFs in this folder (64 MB limit per file).'}</p>:
-   Array.from(groups,([title,items])=>title&&items.length>1?
-    <details className="bs-drive-group bs-series-card" key={title}>
-     <summary dir="auto" className="bs-series-card-trigger">
-      <span className="bs-series-card-icon"><BookOpen size={26}/></span>
-      <span className="bs-series-card-label">
-       <small>{ar?'سلسلة روايات':'Novel series'}</small>
-       <strong>{title}</strong>
-       <small>{items.length} {ar?'عدد':'issues'}</small>
-      </span>
-      <span className="bs-series-card-expand">{ar?'عرض الأعداد':'Browse issues'}</span>
-     </summary>
-     {cards([...items].sort((a,b)=>(a.sortPosition||0)-(b.sortPosition||0)||
-      (a.issueNumber??Infinity)-(b.issueNumber??Infinity)||
-      a.edition.title.localeCompare(b.edition.title,undefined,{numeric:true})))}
-    </details>:
-    <div key={title}>{cards(items)}</div>)}
+  {books.length===0?<p role="status">{ar?'مفيش روايات في الفولدر.':'No books in this folder.'}</p>:<>
+   {collected.map(group=><article className="bs-real-card bs-published-card bs-series-grid-card" key={group.key}>
+    <EditableCover id={'library-series:'+(group.seriesId||group.key)} title={group.title} ar={ar}>
+     <DriveCover book={group.items.find(item=>item.coverId||item.cover)||group.items[0]}/>
+    </EditableCover>
+    <div className="bs-real-copy">
+     <span className="bs-series-chip"><Layers size={13}/>{ar?'سلسلة روايات':'Book series'} · {group.items.length} {ar?'عدد':'issues'}</span>
+     <h3 dir="auto">{group.title}</h3>
+     <p>{ar?'الأعداد مرتبة وجاهزة للقراءة':'Issues organized and ready to read'}</p>
+     <div className="bs-published-actions">
+      <button className="bs-series-open" type="button" onClick={()=>setSelectedGroup(group.key)}>
+       {ar?'عرض الأعداد':'View issues'} <ArrowLeft size={14}/>
+      </button>
+      <button className="bs-series-open" type="button" onClick={()=>onOpen(group.items[0].edition)}>
+       {ar?'ابدأ':'Start'}
+      </button>
+      <button className="bs-library-manage-shortcut" type="button" title={ar?'تعديل السلسلة':'Edit series'}
+       aria-label={(ar?'إدارة':'Manage')+' '+group.title} onClick={()=>manage(group.seriesId)}>
+       <Settings2 size={15}/>
+      </button>
+     </div>
+    </div>
+   </article>)}
+   {singles.map(bookCard)}
+  </>}
+  <Modal open={!!current} onClose={()=>setSelectedGroup(undefined)} title={current?.title||''} wide bodyClassName="bs-series-scroll">
+   {current&&<div className="bs-series-books-view" dir={ar?'rtl':'ltr'}>
+    <div className="bs-series-overview">
+     <span>{current.items.length} {ar?'عدد في السلسلة':'issues in series'}</span>
+     <button className="bs-muted-btn" type="button" onClick={()=>manage(current.seriesId)}>
+      <Settings2 size={15}/>{ar?'إدارة الأعداد':'Manage issues'}
+     </button>
+    </div>
+    <div className="bs-series-modal-grid">{current.items.map(bookCard)}</div>
+   </div>}
+  </Modal>
  </section>;
 }
