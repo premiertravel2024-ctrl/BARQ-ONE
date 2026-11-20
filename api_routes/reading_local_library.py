@@ -17,7 +17,7 @@ from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, Field
 
 from core.paths import data_dir
-from services.library_organizer import organize
+from services.library_organizer import organize, normalized
 
 router = APIRouter(prefix="/library")
 LOCK = RLock()
@@ -239,9 +239,12 @@ def add_series(info: SeriesInput):
         raise HTTPException(422, "Series name required")
     value = str(uuid.uuid4())
     with LOCK, database() as db:
+        for existing in db.execute("SELECT id,title FROM series"):
+            if normalized(existing["title"]) == normalized(name):
+                return {"id": existing["id"], "title": existing["title"], "already_exists": True}
         db.execute("INSERT INTO series(id,title,description,genre) VALUES(?,?,?,?)",
                    (value, name, info.description, info.genre))
-    return {"id": value, "title": name}
+    return {"id": value, "title": name, "already_exists": False}
 
 
 @router.post("/series/{value}")
