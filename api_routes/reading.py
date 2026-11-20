@@ -232,40 +232,49 @@ def cover_sync_snapshot():
 
 
 def apply_cover_sync(records, *, authoritative=False, expected=None):
+    """Import remote covers only into slots that have never been customized locally.
+
+    Google sync runs every ~45 seconds. The former authoritative branch deleted
+    local covers absent from the other device's snapshot, so a freshly uploaded
+    cover vanished after the next sync tick. A remote device must never delete
+    or silently overwrite a user's local image, even with a newer timestamp.
+
+    Explicit local upload/hide/restore actions own the slot. A missing slot may
+    still be initialized from Drive. 'authoritative' remains accepted for old
+    callers but never authorizes destructive changes.
+    """
     directory = data_dir() / 'reading' / 'covers'
     changed = False
     with COVER_LOCK:
-        if authoritative:
-            # A missing override on the primary means use the catalogue cover.
-            for path in directory.glob('*'):
-                if re.fullmatch(r'[a-f0-9]{64}', path.name) and 'cover:' + path.name not in records:
-                    if expected is not None and read_cover_sync(path) != expected.get('cover:' + path.name):
-                        continue
-                    path.unlink(missing_ok=True)
-                    changed = True
         for key, entry in records.items():
             if not re.fullmatch(r'cover:[a-f0-9]{64}', key):
                 continue
             if not isinstance(entry, dict) or type(entry.get('at')) is not int or 'value' not in entry:
                 continue
-            value = entry['value']
-            try:
-                if value is not None and (not isinstance(value, str) or len(value) > (MAX_COVER + 2) // 3 * 4):
-                    continue
-                data = COVER_ORIGINAL if value is None else base64.b64decode(value, validate=True)
-                if value is not None and data and not (data.startswith(b'\xff\xd8\xff') and data.endswith(b'\xff\xd9')):
-                    continue
-            except ValueError:
-                continue
             if not 0 <= entry['at'] <= 4_102_444_800_000:
                 continue
-            path = directory / key[6:]
-            local = read_cover_sync(path)
-            if expected is not None and local != expected.get(key):
+            value = entry['value']
+            try:
+                if value is not None and (
+                    not isinstance(value, str) or len(value) > (MAX_COVER + 2) // 3 * 4
+                ):
+                    continue
+                data = COVER_ORIGINAL if value is None else base64.b64decode(value, validate=True)
+                if len(data) > MAX_COVER:
+                    continue
+                if value is not None and data and not (
+                    data.startswith(b'\xff\xd8\xff') and data.endswith(b'\xff\xd9')
+                ):
+                    continue
+            except (ValueError, TypeError):
                 continue
-            if local and (local == entry or (
-                    not authoritative and (local['at'], json.dumps(local['value'])) >= (entry['at'], json.dumps(value))
-            )):
+            path = directory / key[6:]
+            # Missing records in an authoritative snapshot are NOT deletions.
+            # Never overwrite an existing local cover/hidden/original marker.
+            # This also guards a save racing an in-flight Google sync.
+            if path.exists():
+                continue
+            if expected is not None and expected.get(key) is not None:
                 continue
             write_cover(path, data, modified_ms=entry['at'])
             changed = True
