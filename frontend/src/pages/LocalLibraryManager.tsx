@@ -10,7 +10,7 @@ type Book={
 };
 type Series={id:string;title:string;description:string;genre:string;position:number;source_key:string|null};
 type Snapshot={books:Book[];series:Series[]};
-type Stats={count:number;grouped:number;review:number;series:number;database:string;automatic:boolean};
+type Stats={count:number;grouped:number;review:number;series:number;database:string;automatic:boolean;persistent:boolean;db_bytes:number;custom_covers:number;reading_records:number;last_saved_at:string|null;journal_mode:string};
 type Report={books:number;series:number;assigned:number;numbered:number;review:number;new_series:number;preview:boolean};
 type Filter='all'|'review'|'ungrouped'|'hidden'|'series';
 const base='/v1/reading/library';
@@ -60,8 +60,13 @@ export function LocalLibraryManager({ar}:{ar:boolean}){
    const group=data.series.find(s=>s.id===id);
    if(group)beginSeries(group);
   };
+  const storageChanged=()=>{void requestJSON<Stats>(base+'/status').then(setStats).catch(()=>{});};
   window.addEventListener('barq:library-manage',manage);
-  return()=>window.removeEventListener('barq:library-manage',manage);
+  window.addEventListener('barq:library-storage-changed',storageChanged);
+  return()=>{
+   window.removeEventListener('barq:library-manage',manage);
+   window.removeEventListener('barq:library-storage-changed',storageChanged);
+  };
  },[ar,data.series]);
  async function action(url:string,body?:object,method='POST'){
   setBusy(true);setError('');setNotice('');
@@ -178,8 +183,11 @@ export function LocalLibraryManager({ar}:{ar:boolean}){
     <RefreshCw size={15}/>{t('تحديث الفهرس','Refresh index')}</button>
    <button className="bs-muted-btn bs-auto-btn" type="button" disabled={busy} onClick={()=>void organize()}>
     <Sparkles size={16}/>{t('تنظيم تلقائي','Auto organize')}</button>
-   {!!stats&&<span className="bs-organizer-counter" role="status">
-    {stats.count} {t('كتاب','books')} · {stats.series} {t('سلسلة','series')} · {stats.review} {t('للمراجعة','to review')}</span>}
+   {!!stats&&<div className="bs-organizer-counter" role="status" title={stats.database}>
+    <Database size={14}/>
+    <strong>{stats.persistent?t('محفوظ محليًا','Saved locally'):t('فحص القاعدة مطلوب','Check database')}</strong>
+    <span>{stats.count} {t('كتاب','books')} · {stats.series} {t('سلسلة','series')} · {stats.custom_covers} {t('غلاف','covers')} · {stats.reading_records} {t('سجل قراءة','reading records')}</span>
+   </div>}
   </div>
   {(notice||error)&&<p role="status" className={error?'bs-alert':'bs-organizer-ok'}>{error||notice}</p>}
   {!!report&&<p className="bs-organizer-report" role="status">
@@ -191,6 +199,16 @@ export function LocalLibraryManager({ar}:{ar:boolean}){
     <p>{t('برق بيقرأ أسماء الملفات والمجلدات من Drive، يحدد السلاسل وأرقام الأعداد، وبيراجع غير الواضح. تعديلاتك اليدوية لها الأولوية دائمًا.','BARQ scans Drive filenames and folders, groups series and extracts issue numbers. Owner edits always take priority.')}</p>
     <small dir="ltr">{stats?.database}</small></div>
     <button className="bs-muted-btn" type="button" disabled={busy} onClick={()=>void preview()}>{t('معاينة التنظيم','Preview changes')}</button></div>
+   {stats&&<details className="bs-organizer-storage">
+    <summary><Database size={15}/>{t('تفاصيل قاعدة البيانات المحلية','Local database details')}</summary>
+    <div>
+     <span>{t('الملف','File')} <code dir="ltr">{stats.database}</code></span>
+     <span>{t('سلامة القاعدة','Database integrity')}: {stats.persistent?'OK':t('بحاجة مراجعة','Needs attention')}</span>
+     <span>{t('آخر حفظ','Last saved')}: {stats.last_saved_at?new Date(stats.last_saved_at).toLocaleString(ar?'ar-EG':'en-US'):t('لا توجد تغييرات محفوظة بعد','No saved changes yet')}</span>
+     <span>{t('الحجم','Size')}: {(stats.db_bytes/1024).toFixed(0)} KB</span>
+     <span>{t('ملفات WAL و SHM مؤقتة ومن الطبيعي اختفاؤها بعد إغلاق الاتصال.','WAL and SHM are temporary SQLite files and may disappear when connections close.')}</span>
+    </div>
+   </details>}
    <div className="bs-organizer-summary">
     <span><Layers size={15}/>{stats?.grouped||0} {t('كتاب ضمن سلاسل','books grouped')}</span>
     <span><Search size={15}/>{stats?.review||0} {t('يحتاج مراجعة','need review')}</span>
