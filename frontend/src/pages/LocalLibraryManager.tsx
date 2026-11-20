@@ -53,10 +53,15 @@ export function LocalLibraryManager({ar}:{ar:boolean}){
  }
  useEffect(()=>{
   void reload().catch(()=>setError(t('تعذّر فتح فهرس المكتبة المحلية','Could not load local catalogue')));
-  const manage=()=>setOpen(true);
+  const manage=(event:Event)=>{
+   setOpen(true);
+   const id=(event as CustomEvent<string|null>).detail;
+   const group=data.series.find(s=>s.id===id);
+   if(group)beginSeries(group);
+  };
   window.addEventListener('barq:library-manage',manage);
   return()=>window.removeEventListener('barq:library-manage',manage);
- },[ar]);
+ },[ar,data.series]);
  async function action(url:string,body?:object,method='POST'){
   setBusy(true);setError('');setNotice('');
   try{
