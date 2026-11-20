@@ -1,0 +1,64 @@
+name: BARQ — signed update delivery watchdog
+
+# Merging a tested release to main publishes immediately via windows-build.yml.
+# This light recovery workflow checks twice per day and re-triggers the SAME
+# verified build only if the signed public feed is behind the source version.
+on:
+  schedule:
+    - cron: '23 2,14 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: write
+
+concurrency:
+  group: barq-signed-release-watchdog
+  cancel-in-progress: false
+
+jobs:
+  recover-stale-release:
+    name: Verify live version and retry missing signed release
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    env:
+      BARQ_UPDATE_ORIGIN: \${{ vars.BARQ_UPDATE_ORIGIN }}
+      BARQ_UPDATE_PUBLIC_KEY: \${{ vars.BARQ_UPDATE_PUBLIC_KEY }}
+      GH_TOKEN: \${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Validate immutable release configuration
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -n "$BARQ_UPDATE_ORIGIN" || { echo "::error::BARQ_UPDATE_ORIGIN is missing"; exit 1; }
+          test -n "$BARQ_UPDATE_PUBLIC_KEY" || { echo "::error::BARQ_UPDATE_PUBLIC_KEY is missing"; exit 1; }
+          python -m pip install "cryptography>=42,<51" "httpx>=0.27,<1"
+      - name: Recheck the official signed feed and recover only when needed
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ "$(python -m scripts.publish_update should-publish)" == "false" ]]; then
+            python -m scripts.publish_update verify-live
+            echo "Signed update channel is healthy; no Windows build needed."
+            exit 0
+          fi
+
+          # A main-branch installer run may already be compiling/publishing.
+          active="$(gh run list --workflow windows-build.yml --branch main --limit 30 --json headSha,status)"
+          if jq -e --arg sha "$GITHUB_SHA" \
+            '[.[] | select(.headSha == $sha and (.status == "queued" or .status == "in_progress" or .status == "waiting" or .status == "pending" or .status == "requested"))] | length > 0' \
+            <<<"$active" >/dev/null; then
+            echo "A verified main-branch Windows release is already running."
+            exit 0
+          fi
+
+          echo "::warning::Public signed BARQ update is behind main. Starting one verified rebuild and release attempt."
+          gh workflow run windows-build.yml --ref main
+          echo "Recovery dispatched; Windows CI must pass before any release is signed/published."
