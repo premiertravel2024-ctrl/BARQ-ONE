@@ -223,3 +223,41 @@
 .bs-real-copy { min-inline-size: 0; }
 .bs-real-copy h3, .bs-real-cover strong { overflow-wrap: anywhere; }
 .bs-real-card { align-items: start; }
+
+
+/* BARQ ONE owner library: compact control surface + single series card per folder. */
+.bs-local-manager{margin-top:14px;max-width:100%;min-width:0}
+.bs-local-manager-panel{margin-top:12px;padding:14px;background:#191d24;border:1px solid #343942;border-radius:15px;display:grid;gap:12px}
+.bs-local-manager-panel h3{margin:0;font-size:1rem}
+.bs-local-manager-panel p{overflow-wrap:anywhere;font-size:.82rem;margin:0}
+.bs-local-series-form{display:flex;gap:10px;align-items:end;flex-wrap:wrap}
+.bs-local-series-form label,.bs-local-manager-search{display:flex;gap:6px;flex:1;min-width:170px;flex-direction:column;font-size:.78rem}
+.bs-local-series-form input,.bs-local-manager-search input,.bs-local-manager-item select,.bs-local-manager-item input{
+ background:#111419;border:1px solid #3a3e47;border-radius:10px;color:#f3f3f3;padding:9px;min-width:0;max-width:100%;font:inherit
+}
+.bs-local-manager-list{max-height:350px;overflow-y:auto;display:grid;gap:9px}
+.bs-local-manager-item{display:grid;grid-template-columns:minmax(100px,1fr) minmax(100px,150px) 80px auto;align-items:center;gap:8px;padding:10px;background:#12151a;border-radius:12px;border:1px solid #2e333d}
+.bs-local-manager-item strong,.bs-local-manager-item small{display:block;overflow-wrap:anywhere}
+.bs-local-manager-item strong{font-size:.78rem}
+.bs-local-manager-item small{font-size:.7rem;color:#929ba8}
+.bs-local-manager-item label{font-size:.68rem;display:flex;gap:4px;flex-direction:column}
+.bs-local-manager-item button{background:#252a32;color:#f0f0f0;border:1px solid #424855;padding:8px;border-radius:9px;cursor:pointer;font-size:.72rem}
+.bs-series-card{display:block;width:100%;max-width:100%;margin:0 0 18px}
+.bs-series-card-trigger{display:flex;align-items:center;gap:15px;cursor:pointer;padding:16px 18px;border:1px solid #373841;border-radius:18px;background:linear-gradient(125deg,#2a1c26,#181e27 80%);list-style:none;transition:transform .2s,border-color .2s}
+.bs-series-card-trigger::-webkit-details-marker{display:none}
+.bs-series-card-trigger:hover{transform:translateY(-2px);border-color:#a14a57}
+.bs-series-card-trigger:focus-visible{outline:2px solid #c8505e;outline-offset:3px}
+.bs-series-card-icon{display:grid;place-items:center;width:56px;height:67px;border-radius:11px;background:#9f3245;color:#fff;flex:none}
+.bs-series-card-label{flex:1;min-width:0;display:grid;gap:3px}
+.bs-series-card-label strong{font-size:1rem;overflow-wrap:anywhere}
+.bs-series-card-label small{font-size:.73rem;color:#beb4bf}
+.bs-series-card-expand{font-size:.76rem;color:#f4bdc5}
+.bs-series-card[open] .bs-series-card-trigger{border-radius:18px 18px 8px 8px}
+.bs-series-card .bs-real-grid{padding:15px;background:#12161d;border:1px solid #343942;border-top:0;border-radius:0 0 16px 16px}
+@media(max-width:700px){
+ .bs-local-manager-item{grid-template-columns:1fr 1fr}
+ .bs-local-manager-item>div{grid-column:1/-1}
+ .bs-series-card-trigger{padding:12px;gap:10px}
+ .bs-series-card-expand{font-size:.68rem}
+}
+@media(prefers-reduced-motion:reduce){.bs-series-card-trigger{transition:none}}
