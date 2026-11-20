@@ -13,7 +13,6 @@ import os
 import re
 import sqlite3
 import uuid
-import shutil
 from tempfile import NamedTemporaryFile
 
 from fastapi import APIRouter, HTTPException
@@ -251,8 +250,8 @@ def state_value(value: str) -> str:
 
 @router.post("/state/sync")
 def sync_local_reading_state(info: StateSync):
-    if len(info.records) > 500:
-        raise HTTPException(413, "Too many reading records")
+    if len(info.records) > 2500 or sum(len(value.encode("utf-8")) for value in info.records.values()) > 2_097_152:
+        raise HTTPException(413, "Reading state sync exceeds safe limits")
     validated = [(state_key(key), state_value(value)) for key, value in info.records.items()]
     with LOCK, database() as db:
         for key, value in validated:
@@ -305,6 +304,28 @@ def status():
                 "custom_covers": covers, "reading_records": reading_records,
                 "last_saved_at": record[0] if record else None,
                 "journal_mode": db.execute("PRAGMA journal_mode").fetchone()[0]}
+
+
+@router.post("/backup")
+def backup_database():
+    """Owner-requested consistent on-disk snapshot including all covers/read state."""
+    with LOCK, database() as db:
+        destination = db_path()
+        folder = destination.parent / "backups"
+        folder.mkdir(parents=True, exist_ok=True)
+        stamp = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
+        backup = folder / f"barq_library_{stamp}_{uuid.uuid4().hex[:8]}.sqlite3"
+        with NamedTemporaryFile(dir=folder, prefix=".barq-backup-", suffix=".sqlite3", delete=False) as tmp:
+            temp = Path(tmp.name)
+        try:
+            with closing(sqlite3.connect(str(temp))) as target:
+                db.backup(target)
+                if target.execute("PRAGMA quick_check(1)").fetchone()[0] != "ok":
+                    raise RuntimeError("SQLite backup failed integrity verification")
+            temp.replace(backup)
+        finally:
+            temp.unlink(missing_ok=True)
+        return {"saved": True, "file": str(backup), "bytes": backup.stat().st_size}
 
 
 @router.get("/preview")
