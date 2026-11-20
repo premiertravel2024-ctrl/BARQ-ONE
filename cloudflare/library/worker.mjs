@@ -139,6 +139,8 @@ function newNonce() {
 async function oauthStart(request,env,base,flow,user) {
   if(flow==='drive')requireOwner(user,env);
   const state=newNonce();
+  const verifier=newNonce()+newNonce();
+  const challenge=b64(new Uint8Array(await crypto.subtle.digest('SHA-256',bytes(verifier))));
   const response=redirect(GOOGLE_AUTH+'?'+new URLSearchParams({
     client_id:env.GOOGLE_CLIENT_ID,
     redirect_uri:base+'/auth/callback',
@@ -146,10 +148,10 @@ async function oauthStart(request,env,base,flow,user) {
     access_type:flow==='drive'?'offline':'online',
     prompt:flow==='drive'?'consent':'select_account',
     scope:'openid email profile'+(flow==='drive'?' https://www.googleapis.com/auth/drive.readonly':''),
-    state
+    state,code_challenge:challenge,code_challenge_method:'S256'
   }).toString(),302);
   return setCookie(response,STATE_COOKIE,
-    await seal({state,flow,sub:user?.sub||'',exp:Date.now()+600000},env),600);
+    await seal({state,flow,sub:user?.sub||'',verifier,exp:Date.now()+600000},env),600);
 }
 async function oauthCallback(request,env,base,user) {
   const url=new URL(request.url);
@@ -159,7 +161,7 @@ async function oauthCallback(request,env,base,user) {
   const response=await fetch(GOOGLE_TOKEN,{
     method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},
     body:new URLSearchParams({client_id:env.GOOGLE_CLIENT_ID,client_secret:env.GOOGLE_CLIENT_SECRET,
-      code:url.searchParams.get('code'),grant_type:'authorization_code',redirect_uri:base+'/auth/callback'})
+      code:url.searchParams.get('code'),grant_type:'authorization_code',redirect_uri:base+'/auth/callback',code_verifier:saved.verifier})
   });
   if (!response.ok) return problem(401,'Google sign-in failed');
   const token=await response.json();
