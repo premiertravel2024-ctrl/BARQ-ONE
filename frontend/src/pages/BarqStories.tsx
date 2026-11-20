@@ -138,7 +138,6 @@ export function BarqStories(){
     <button className="bs-muted-btn" type="button" onClick={()=>pickFile()}><Upload size={16}/>{label('افتح PDF من جهازك','Open local PDF')}</button></div>
    </header>
 
-   {visibleDrive.length>0&&<DriveBooks books={visibleDrive} ar={ar} onOpen={setEdition} collectionLabel={label('رواياتي','My books')}/>}
    <section className="bs-collection">
     <div className="bs-title-row"><h2>{label('الكتب والسلاسل','Books and series')}</h2>
      <div className="bs-search"><Search size={18} aria-hidden="true"/><input type="search" dir="auto" aria-label={label('ابحث في الكتب','Search books')}
@@ -149,8 +148,9 @@ export function BarqStories(){
     <ButtonGroup className="bs-filters" size="sm" aria-label={label('تصنيف الكتب','Book categories')}>
      {genres.map(([id,en])=><ButtonGroupItem key={id} aria-pressed={genre===id} onClick={()=>setGenre(id)}>{label(id,en)}</ButtonGroupItem>)}
     </ButtonGroup>
-    <p className="bs-result-count" role="status">{label('عدد الكتب والسلاسل','Books and series')}{' · '}{results.length.toLocaleString(ar?'ar-EG':'en')}</p>
-    {results.length?<div className="bs-real-grid">{results.map(book=><article className="bs-real-card bs-published-card" key={book.id} data-genre={book.genre}>
+    <p className="bs-result-count" role="status">{label('عدد الكتب والسلاسل','Books and series')}{' · '}{(results.length+visibleDrive.length).toLocaleString(ar?'ar-EG':'en')}</p>
+    {results.length||visibleDrive.length?<div className="bs-real-grid bs-unified-library">
+     {visibleDrive.length>0&&<DriveBooks books={visibleDrive} ar={ar} onOpen={setEdition} heading={false}/>}{results.map(book=><article className="bs-real-card bs-published-card" key={book.id} data-genre={book.genre}>
      <EditableCover id={book.id} title={book.title} ar={ar}><Cover book={book}/></EditableCover>
      <div className="bs-real-copy"><span>{book.genre}</span><h3 dir="auto">{book.title}</h3><strong dir="auto">{book.author}</strong><p>{book.description}</p>
       <div className="bs-published-actions">
