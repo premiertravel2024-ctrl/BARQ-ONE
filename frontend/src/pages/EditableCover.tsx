@@ -71,6 +71,7 @@ export function EditableCover({id,title,ar,children}:{id:string;title:string;ar:
    setImageFailed(false);
    setRevision(value=>value+1);
    window.dispatchEvent(new Event('barq:drive-sync'));
+   window.dispatchEvent(new Event('barq:library-storage-changed'));
    setOpen(false);
   }catch{
    setError(action==='upload'?(ar?'تعذّر حفظ الصورة. اختار JPG أو PNG أو WebP بحجم أقل من ١٢ ميجابايت.':
