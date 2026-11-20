@@ -48,6 +48,22 @@ def should_publish() -> bool:
     return version_key(VERSION) > version_key(previous.version)
 
 
+
+def verify_live() -> None:
+    """Check the actual PUBLIC feed, not just successful artifact upload."""
+    channel = configured_channel()
+    if channel is None:
+        raise SystemExit('Signed BARQ update channel is missing')
+    try:
+        live = check_release(channel)
+    except Exception as error:
+        raise SystemExit(f'Public BARQ update feed is not readable or its signature is invalid: {type(error).__name__}') from error
+    if version_key(live.version) < version_key(VERSION):
+        raise SystemExit(f'Public BARQ feed is stale: {live.version}; expected at least {VERSION}')
+    print(f'Verified live signed BARQ update: {live.version}')
+
+
+
 def sign(artifact: Path, tag: str) -> None:
     channel = configured_channel()
     if channel is None or tag != 'v' + VERSION:
@@ -82,7 +98,7 @@ def sign(artifact: Path, tag: str) -> None:
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('command', choices=('configure', 'sign', 'should-publish'))
+    parser.add_argument('command', choices=('configure', 'sign', 'should-publish', 'verify-live'))
     parser.add_argument('--artifact', type=Path, default=Path('verified-windows'))
     parser.add_argument('--tag', default='')
     args = parser.parse_args()
@@ -90,5 +106,7 @@ if __name__ == '__main__':
         configure()
     elif args.command == 'should-publish':
         print('true' if should_publish() else 'false')
+    elif args.command == 'verify-live':
+        verify_live()
     else:
         sign(args.artifact, args.tag)
