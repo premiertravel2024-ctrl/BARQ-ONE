@@ -228,7 +228,7 @@ def cover_sync_snapshot():
         }
 
 
-def apply_cover_sync(records, *, authoritative=False):
+def apply_cover_sync(records, *, authoritative=False, expected=None):
     directory = data_dir() / 'reading' / 'covers'
     changed = False
     with COVER_LOCK:
@@ -236,6 +236,8 @@ def apply_cover_sync(records, *, authoritative=False):
             # A missing override on the primary means use the catalogue cover.
             for path in directory.glob('*'):
                 if re.fullmatch(r'[a-f0-9]{64}', path.name) and 'cover:' + path.name not in records:
+                    if expected is not None and read_cover_sync(path) != expected.get('cover:' + path.name):
+                        continue
                     path.unlink(missing_ok=True)
                     changed = True
         for key, entry in records.items():
@@ -256,6 +258,8 @@ def apply_cover_sync(records, *, authoritative=False):
                 continue
             path = directory / key[6:]
             local = read_cover_sync(path)
+            if expected is not None and local != expected.get(key):
+                continue
             if local and (local == entry or (
                     not authoritative and (local['at'], json.dumps(local['value'])) >= (entry['at'], json.dumps(value))
             )):
