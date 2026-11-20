@@ -9,8 +9,11 @@ import type {DriveBook} from './DriveBooks';
 type Connection={connected:boolean;pending:boolean;failed:boolean;folder:string;sync?:boolean};
 type Item={id:string;title:string;group:string;cover:string|null};
 const root='/v1/reading/drive';
+let lastScanAt=0;
+let lastScanFolder='';
+let pendingScan:Promise<void>|undefined;
 
-export async function loadCloudBooks(){
+export async function loadCloudBooks(force=false,folder=''){
  type LocalBook={
   id:string;title:string;active:number;hidden:number;folder_name:string;cover_id:string|null;
   series_id:string|null;issue_number:number|null;position:number;manual_series:number;review_reason:string;
@@ -19,7 +22,12 @@ export async function loadCloudBooks(){
  try{
   // One Drive read updates the media allowlist and local metadata in one transaction.
   // Indexing is automatic on opening the connected library; owner edits are preserved.
-  await requestJSON('/v1/reading/library/refresh',{method:'POST'});
+  if(force||!lastScanAt||lastScanFolder!==folder||Date.now()-lastScanAt>=15*60*1000){
+   if(!pendingScan)pendingScan=requestJSON('/v1/reading/library/refresh',{method:'POST'})
+    .then(()=>{lastScanAt=Date.now();lastScanFolder=folder;})
+    .finally(()=>{pendingScan=undefined;});
+   await pendingScan;
+  }
   const metadata=await requestJSON<{books:LocalBook[];series:LocalSeries[]}>('/v1/reading/library/items');
   const bySeries=new Map(metadata.series.map(group=>[group.id,group]));
   return metadata.books.filter(item=>item.active===1&&!item.hidden).map<DriveBook>(item=>{
@@ -64,7 +72,10 @@ export function useCloudBooks(){
   let live=true;
   setLoading(true);setFailed(false);
   void requestJSON<Connection>(root+'/status')
-   .then(status=>status.connected?loadCloudBooks():undefined)
+   .then(status=>{
+    if(!status.connected){lastScanAt=0;lastScanFolder='';return undefined;}
+    return loadCloudBooks(false,status.folder);
+   })
    .then(items=>{if(live)setBooks(items);})
    .catch(error=>{if(live&&(!(error instanceof APIError)||error.status!==404))setFailed(true);})
    .finally(()=>{if(live)setLoading(false);});
@@ -91,7 +102,8 @@ export function CloudReading({ar}:{ar:boolean}){
   setBusy(true);
   setError('');
   try{
-   await loadCloudBooks();
+   await loadCloudBooks(true,folder);
+   window.dispatchEvent(new Event('barq:library-changed'));
   }catch{
    setError(ar?'تعذّر تحميل مكتبة Drive. راجع صلاحية الفولدر أو أعد الربط.':'Could not load Drive books. Check folder access or reconnect.');
   }finally{setBusy(false);}
