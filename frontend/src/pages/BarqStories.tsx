@@ -1,5 +1,5 @@
 import {EditableCover} from './EditableCover';
-import {lazy,Suspense,useCallback,useRef,useState,type ChangeEvent} from 'react';
+import {lazy,Suspense,useCallback,useEffect,useRef,useState,type ChangeEvent} from 'react';
 import {ArrowLeft,BookOpen,ExternalLink,Heart,Search,Upload,X} from 'lucide-react';
 import {ButtonGroup, ButtonGroupItem} from '../components/ui/ButtonGroup';
 import {Modal} from '../components/ui/Modal';
@@ -11,6 +11,7 @@ import {DriveBooks,pickedDriveBooks} from './DriveBooks';
 import {useCloudBooks} from './CloudReading';
 import {OnlineLibraryLink} from './OnlineLibraryLink';
 import {LocalLibraryManager} from './LocalLibraryManager';
+import {hydrateReadingLocalState,saveReadingLocalState} from '../lib/readingLocalState';
 import './barqStories.css';
 
 const BookReader=lazy(()=>import('./BookReader'));
@@ -43,6 +44,13 @@ export function BarqStories(){
  const [query,setQuery]=useState('');
  const [genre,setGenre]=useState('الكل');
  const [favorites,setFavorites]=useState(savedFavorites);
+ useEffect(()=>{
+  let active=true;
+  const refresh=()=>{if(active)setFavorites(savedFavorites());};
+  window.addEventListener('barq:reading-state-hydrated',refresh);
+  void hydrateReadingLocalState().then(refresh).catch(()=>{});
+  return()=>{active=false;window.removeEventListener('barq:reading-state-hydrated',refresh);};
+ },[]);
  const [series,setSeries]=useState<PublishedBook>();
  const [issueQuery,setIssueQuery]=useState('');
  const closeSeries=useCallback(()=>setSeries(undefined),[]);
@@ -105,7 +113,7 @@ export function BarqStories(){
   setFavorites(next);
   try{
    const prior=JSON.parse(localStorage.getItem('barq-stories-v1')||'{}');
-   localStorage.setItem('barq-stories-v1',JSON.stringify({...prior,favorites:next}));
+   saveReadingLocalState('barq-stories-v1',JSON.stringify({...prior,favorites:next}));
   }catch{/* A storage error should not block the library. */}
  }
  function pickFile(target?:Pick<ReadingEdition,'id'|'title'>){

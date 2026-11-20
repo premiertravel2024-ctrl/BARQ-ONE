@@ -131,30 +131,68 @@ COVER_HEADERS = {'Cache-Control': 'no-store', 'X-Content-Type-Options': 'nosniff
 
 
 def cover_path(book_id: str) -> Path:
+    """Former path is retained as a read-only migration source."""
     if not 1 <= len(book_id) <= 2048:
         raise HTTPException(400, 'Invalid book identifier')
     return data_dir() / 'reading' / 'covers' / sha256(book_id.encode()).hexdigest()
 
 
+def _load_legacy_cover(db, digest: str):
+    """Import old AppData book covers into the user's G: SQLite database.
+
+    Legacy files remain intact for recovery. A custom/hidden/restored row already
+    present in SQLite is never replaced by an older AppData file.
+    """
+    if not re.fullmatch(r'[a-f0-9]{64}', digest):
+        return
+    if db.execute('SELECT 1 FROM cover_overrides WHERE id=?', (digest,)).fetchone():
+        return
+    legacy = data_dir() / 'reading' / 'covers' / digest
+    try:
+        with legacy.open('rb') as source:
+            raw = source.read(MAX_COVER + 1)
+        at = legacy.stat().st_mtime_ns // 1_000_000
+    except (FileNotFoundError, PermissionError):
+        return
+    if len(raw) > MAX_COVER or (raw not in (b'', COVER_ORIGINAL) and not (
+        raw.startswith(b'\xff\xd8\xff') and raw.endswith(b'\xff\xd9')
+    )):
+        return
+    db.execute('INSERT OR IGNORE INTO cover_overrides(id,image,modified_ms) VALUES(?,?,?)',
+               (digest, raw, at))
+
+
+def _migrate_legacy_covers(db):
+    directory = data_dir() / 'reading' / 'covers'
+    for path in directory.glob('*'):
+        if re.fullmatch(r'[a-f0-9]{64}', path.name) and path.is_file():
+            _load_legacy_cover(db, path.name)
+
+
+def _cover_row(db, digest: str):
+    _load_legacy_cover(db, digest)
+    return db.execute('SELECT image,modified_ms FROM cover_overrides WHERE id=?', (digest,)).fetchone()
+
+
 @router.get('/covers/state/{book_id:path}')
 def cover_state(book_id: str):
-    path = cover_path(book_id)
-    try:
-        with path.open('rb') as source:
-            first = source.read(1)
-    except FileNotFoundError:
-        return {'state': 'original'}
-    return {'state': 'original' if first == COVER_ORIGINAL else 'custom' if first else 'hidden'}
+    from api_routes.reading_local_library import database, LOCK
+    digest = cover_path(book_id).name
+    with COVER_LOCK, LOCK, database() as db:
+        row = _cover_row(db, digest)
+        if row is None:
+            return {'state': 'original'}
+        raw = bytes(row['image'])
+        return {'state': 'original' if raw == COVER_ORIGINAL else 'custom' if raw else 'hidden'}
 
 
 @router.get('/covers/image/{book_id:path}')
 def cover_image(book_id: str):
-    path = cover_path(book_id)
-    try:
-        with path.open('rb') as source:
-            data = source.read(MAX_COVER + 1)
-    except FileNotFoundError:
-        raise HTTPException(404, 'No custom cover')
+    from api_routes.reading_local_library import database, LOCK
+    digest = cover_path(book_id).name
+    with COVER_LOCK, LOCK, database() as db:
+        row = _cover_row(db, digest)
+        data = bytes(row['image']) if row is not None else b''
     if not data or data == COVER_ORIGINAL or len(data) > MAX_COVER:
         raise HTTPException(404, 'No custom cover')
     return Response(data, media_type='image/jpeg', headers=COVER_HEADERS)
@@ -177,23 +215,23 @@ async def set_cover(book_id: str, request: Request):
 
 
 def write_cover(path: Path, data: bytes | bytearray, *, modified_ms: int | None = None):
-    with COVER_LOCK:
-        _write_cover(path, data, modified_ms)
-
-
-def _write_cover(path: Path, data: bytes | bytearray, modified_ms: int | None):
-    path.parent.mkdir(parents=True, exist_ok=True)
-    temporary = None
-    try:
-        with NamedTemporaryFile(dir=path.parent, delete=False) as output:
-            temporary = Path(output.name)
-            output.write(data)
-        if modified_ms is not None:
-            os.utime(temporary, ns=(modified_ms * 1_000_000,) * 2)
-        temporary.replace(path)
-    finally:
-        if temporary is not None:
-            temporary.unlink(missing_ok=True)
+    """Atomically persist cover bytes in barq_library.sqlite3, not AppData."""
+    from api_routes.reading_local_library import database, LOCK
+    digest = path.name
+    if not re.fullmatch(r'[a-f0-9]{64}', digest):
+        raise ValueError('Invalid cover digest')
+    payload = bytes(data)
+    if len(payload) > MAX_COVER:
+        raise ValueError('Cover is too large')
+    if payload not in (b'', COVER_ORIGINAL) and not (
+        payload.startswith(b'\xff\xd8\xff') and payload.endswith(b'\xff\xd9')
+    ):
+        raise ValueError('Invalid cover image')
+    now = modified_ms if modified_ms is not None else __import__('time').time_ns() // 1_000_000
+    with COVER_LOCK, LOCK, database() as db:
+        db.execute("""INSERT INTO cover_overrides(id,image,modified_ms) VALUES(?,?,?)
+            ON CONFLICT(id) DO UPDATE SET image=excluded.image, modified_ms=excluded.modified_ms""",
+                   (digest, payload, now))
 
 
 @router.post('/covers/hide/{book_id:path}')
@@ -208,44 +246,42 @@ def restore_cover(book_id: str):
     return {'state': 'original'}
 
 
-
 def read_cover_sync(path: Path):
-    try:
-        with path.open('rb') as source:
-            data = source.read(MAX_COVER + 1)
-            at = os.fstat(source.fileno()).st_mtime_ns // 1_000_000
-    except FileNotFoundError:
+    from api_routes.reading_local_library import database, LOCK
+    with COVER_LOCK, LOCK, database() as db:
+        row = _cover_row(db, path.name)
+    if row is None:
         return None
-    if len(data) > MAX_COVER:
-        return None
-    return {'at': at, 'value': None if data == COVER_ORIGINAL else base64.b64encode(data).decode('ascii')}
+    data = bytes(row['image'])
+    return {'at': int(row['modified_ms']),
+            'value': None if data == COVER_ORIGINAL else base64.b64encode(data).decode('ascii')}
 
 
 def cover_sync_snapshot():
-    directory = data_dir() / 'reading' / 'covers'
-    with COVER_LOCK:
+    from api_routes.reading_local_library import database, LOCK
+    with COVER_LOCK, LOCK, database() as db:
+        _migrate_legacy_covers(db)
+        entries = db.execute('SELECT id,image,modified_ms FROM cover_overrides').fetchall()
         return {
-            'cover:' + path.name: entry
-            for path in directory.glob('*')
-            if re.fullmatch(r'[a-f0-9]{64}', path.name) and (entry := read_cover_sync(path)) is not None
+            'cover:' + row['id']: {
+                'at': int(row['modified_ms']),
+                'value': None if bytes(row['image']) == COVER_ORIGINAL else
+                         base64.b64encode(bytes(row['image'])).decode('ascii')
+            }
+            for row in entries
         }
 
 
 def apply_cover_sync(records, *, authoritative=False, expected=None):
-    """Import remote covers only into slots that have never been customized locally.
+    """Fill missing slots only; never discard or overwrite a local override.
 
-    Google sync runs every ~45 seconds. The former authoritative branch deleted
-    local covers absent from the other device's snapshot, so a freshly uploaded
-    cover vanished after the next sync tick. A remote device must never delete
-    or silently overwrite a user's local image, even with a newer timestamp.
-
-    Explicit local upload/hide/restore actions own the slot. A missing slot may
-    still be initialized from Drive. 'authoritative' remains accepted for old
-    callers but never authorizes destructive changes.
+    Last version fixed the 45-second sync deleting images. The SQLite migration
+    preserves that non-destructive policy including explicit hide/restore markers.
     """
-    directory = data_dir() / 'reading' / 'covers'
+    from api_routes.reading_local_library import database, LOCK
     changed = False
-    with COVER_LOCK:
+    with COVER_LOCK, LOCK, database() as db:
+        _migrate_legacy_covers(db)
         for key, entry in records.items():
             if not re.fullmatch(r'cover:[a-f0-9]{64}', key):
                 continue
@@ -255,9 +291,7 @@ def apply_cover_sync(records, *, authoritative=False, expected=None):
                 continue
             value = entry['value']
             try:
-                if value is not None and (
-                    not isinstance(value, str) or len(value) > (MAX_COVER + 2) // 3 * 4
-                ):
+                if value is not None and (not isinstance(value, str) or len(value) > (MAX_COVER + 2) // 3 * 4):
                     continue
                 data = COVER_ORIGINAL if value is None else base64.b64decode(value, validate=True)
                 if len(data) > MAX_COVER:
@@ -266,16 +300,14 @@ def apply_cover_sync(records, *, authoritative=False, expected=None):
                     data.startswith(b'\xff\xd8\xff') and data.endswith(b'\xff\xd9')
                 ):
                     continue
-            except (ValueError, TypeError):
+            except (TypeError, ValueError):
                 continue
-            path = directory / key[6:]
-            # Missing records in an authoritative snapshot are NOT deletions.
-            # Never overwrite an existing local cover/hidden/original marker.
-            # This also guards a save racing an in-flight Google sync.
-            if path.exists():
+            digest = key[6:]
+            if db.execute('SELECT 1 FROM cover_overrides WHERE id=?', (digest,)).fetchone():
                 continue
             if expected is not None and expected.get(key) is not None:
                 continue
-            write_cover(path, data, modified_ms=entry['at'])
+            db.execute('INSERT OR IGNORE INTO cover_overrides(id,image,modified_ms) VALUES(?,?,?)',
+                       (digest, data, entry['at']))
             changed = True
     return changed

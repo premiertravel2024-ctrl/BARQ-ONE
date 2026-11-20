@@ -8,10 +8,12 @@ from __future__ import annotations
 from contextlib import closing, contextmanager
 from pathlib import Path
 from threading import RLock
+from datetime import datetime, timezone
 import os
 import re
 import sqlite3
 import uuid
+from tempfile import NamedTemporaryFile
 
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, Field
@@ -25,15 +27,44 @@ ID = re.compile(r"^[a-zA-Z0-9_-]{10,160}$")
 SERIES_ID = re.compile(r"^[a-f0-9-]{36}$")
 
 
+# Choose a persistent destination once per process. A temporary G: disconnect
+# must never silently switch BARQ to a second, apparently empty database.
+_PINNED_DB_PATH: Path | None = None
+
+
 def db_path() -> Path:
     configured = os.environ.get("BARQ_READING_DB_DIR", "").strip()
     if configured:
-        parent = Path(configured).expanduser()
-    elif os.name == "nt" and Path("G:/BARQ DATABASE").is_dir():
-        parent = Path("G:/BARQ DATABASE")
-    else:
-        parent = data_dir() / "reading"
-    return parent / "barq_library.sqlite3"
+        return Path(configured).expanduser() / "barq_library.sqlite3"
+    global _PINNED_DB_PATH
+    if _PINNED_DB_PATH is None:
+        preferred = Path("G:/BARQ DATABASE")
+        parent = preferred if os.name == "nt" and preferred.is_dir() else data_dir() / "reading"
+        _PINNED_DB_PATH = parent / "barq_library.sqlite3"
+    return _PINNED_DB_PATH
+
+
+def migrate_previous_database(destination: Path) -> None:
+    """Copy an existing default Windows catalogue to G: exactly once.
+
+    SQLite's online backup API captures WAL changes too; copying just the
+    .sqlite3 file risks losing recently committed changes.
+    """
+    if destination.exists() or os.environ.get("BARQ_READING_DB_DIR"):
+        return
+    legacy = data_dir() / "reading" / "barq_library.sqlite3"
+    if legacy == destination or not legacy.is_file():
+        return
+    with NamedTemporaryFile(dir=destination.parent, prefix=".barq-migration-", suffix=".sqlite3", delete=False) as tmp:
+        temporary = Path(tmp.name)
+    try:
+        with closing(sqlite3.connect(str(legacy), timeout=15)) as source, closing(sqlite3.connect(str(temporary))) as copied:
+            source.backup(copied)
+        # Exclusive migration runs under LOCK; never replace an existing G: catalogue.
+        if not destination.exists():
+            temporary.replace(destination)
+    finally:
+        temporary.unlink(missing_ok=True)
 
 
 def schema(db):
@@ -86,20 +117,40 @@ def schema(db):
     db.execute("CREATE UNIQUE INDEX IF NOT EXISTS idx_series_source ON series(source_key)")
     db.execute("CREATE INDEX IF NOT EXISTS idx_books_series ON books(series_id,issue_number,position)")
     db.execute("CREATE INDEX IF NOT EXISTS idx_books_review ON books(active,review_reason)")
+    # Images, hides and restores are durable metadata in the same user database.
+    db.execute("""CREATE TABLE IF NOT EXISTS cover_overrides (
+        id TEXT PRIMARY KEY,
+        image BLOB NOT NULL,
+        modified_ms INTEGER NOT NULL
+    )""")
+    db.execute("""CREATE TABLE IF NOT EXISTS library_meta (
+        key TEXT PRIMARY KEY,
+        value TEXT NOT NULL
+    )""")
+    db.execute("""CREATE TABLE IF NOT EXISTS reader_state (
+        key TEXT PRIMARY KEY,
+        value TEXT NOT NULL
+    )""")
 
 
 @contextmanager
 def database():
     destination = db_path()
     destination.parent.mkdir(parents=True, exist_ok=True)
+    migrate_previous_database(destination)
     with closing(sqlite3.connect(str(destination), timeout=15)) as db:
         db.row_factory = sqlite3.Row
         db.execute("PRAGMA busy_timeout=15000")
         db.execute("PRAGMA journal_mode=WAL")
+        db.execute("PRAGMA synchronous=FULL")
         db.execute("PRAGMA foreign_keys=ON")
         schema(db)
         with db:
             yield db
+            if db.total_changes:
+                db.execute("""INSERT INTO library_meta(key,value) VALUES('last_saved_at',?)
+                    ON CONFLICT(key) DO UPDATE SET value=excluded.value""",
+                    (datetime.now(timezone.utc).isoformat(timespec="seconds"),))
 
 
 def identifier(value: str) -> str:
@@ -168,6 +219,65 @@ class Reorder(BaseModel):
     ids: list[str] = Field(min_length=1, max_length=400)
 
 
+class StateSync(BaseModel):
+    records: dict[str, str] = Field(default_factory=dict)
+
+
+class StateValue(BaseModel):
+    value: str = Field(max_length=32768)
+
+
+def state_key(value: str) -> str:
+    if not (value == "barq-stories-v1" or (
+        value.startswith("barq-reader:") and 12 < len(value) <= 600
+    )):
+        raise HTTPException(422, "Unsupported reading state key")
+    return value
+
+
+def state_value(value: str) -> str:
+    import json
+    if len(value.encode("utf-8")) > 32768:
+        raise HTTPException(413, "Reading state exceeds limit")
+    try:
+        parsed = json.loads(value)
+    except (TypeError, ValueError):
+        raise HTTPException(422, "Invalid reading state JSON") from None
+    if not isinstance(parsed, dict):
+        raise HTTPException(422, "Expected reading state object")
+    return value
+
+
+@router.post("/state/sync")
+def sync_local_reading_state(info: StateSync):
+    if len(info.records) > 2500 or sum(len(value.encode("utf-8")) for value in info.records.values()) > 2_097_152:
+        raise HTTPException(413, "Reading state sync exceeds safe limits")
+    validated = [(state_key(key), state_value(value)) for key, value in info.records.items()]
+    with LOCK, database() as db:
+        for key, value in validated:
+            db.execute("INSERT OR IGNORE INTO reader_state(key,value) VALUES(?,?)", (key,value))
+        rows = db.execute("SELECT key,value FROM reader_state ORDER BY key").fetchall()
+        return {"records": {row["key"]: row["value"] for row in rows}}
+
+
+@router.put("/state/{key:path}")
+def store_reading_state(key: str, info: StateValue):
+    identifier = state_key(key)
+    value = state_value(info.value)
+    with LOCK, database() as db:
+        db.execute("""INSERT INTO reader_state(key,value) VALUES(?,?)
+            ON CONFLICT(key) DO UPDATE SET value=excluded.value""", (identifier,value))
+    return {"saved": True}
+
+
+@router.get("/state/{key:path}")
+def load_reading_state(key: str):
+    identifier = state_key(key)
+    with LOCK, database() as db:
+        row = db.execute("SELECT value FROM reader_state WHERE key=?", (identifier,)).fetchone()
+        return {"value": row["value"] if row else None}
+
+
 @router.get("/items")
 def items():
     with LOCK, database() as db:
@@ -177,14 +287,51 @@ def items():
 @router.get("/status")
 def status():
     with LOCK, database() as db:
+        from api_routes.reading import _migrate_legacy_covers
+        _migrate_legacy_covers(db)
         active = db.execute("SELECT COUNT(*) FROM books WHERE active=1").fetchone()[0]
         grouped = db.execute(
             "SELECT COUNT(*) FROM books WHERE active=1 AND series_id IS NOT NULL").fetchone()[0]
         review = db.execute(
             "SELECT COUNT(*) FROM books WHERE active=1 AND review_reason<>''").fetchone()[0]
         groups = db.execute("SELECT COUNT(*) FROM series").fetchone()[0]
-        return {"count": active, "database": str(db_path()), "grouped": grouped,
-                "review": review, "series": groups, "automatic": True}
+        covers = db.execute("SELECT COUNT(*) FROM cover_overrides WHERE length(image)>1").fetchone()[0]
+        reading_records = db.execute("SELECT COUNT(*) FROM reader_state").fetchone()[0]
+        record = db.execute("SELECT value FROM library_meta WHERE key='last_saved_at'").fetchone()
+        destination = db_path()
+        integrity = db.execute("PRAGMA quick_check(1)").fetchone()[0]
+        return {"count": active, "database": str(destination), "grouped": grouped,
+                "review": review, "series": groups, "automatic": True,
+                "persistent": integrity == "ok", "db_bytes": destination.stat().st_size,
+                "custom_covers": covers, "reading_records": reading_records,
+                "last_saved_at": record[0] if record else None,
+                "journal_mode": db.execute("PRAGMA journal_mode").fetchone()[0]}
+
+
+@router.post("/backup")
+def backup_database():
+    """Owner-requested consistent on-disk snapshot including all covers/read state."""
+    with LOCK, database() as db:
+        from api_routes.reading import _migrate_legacy_covers
+        _migrate_legacy_covers(db)
+        # SQLite backup must run against a committed read snapshot.
+        db.commit()
+        destination = db_path()
+        folder = destination.parent / "backups"
+        folder.mkdir(parents=True, exist_ok=True)
+        stamp = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
+        backup = folder / f"barq_library_{stamp}_{uuid.uuid4().hex[:8]}.sqlite3"
+        with NamedTemporaryFile(dir=folder, prefix=".barq-backup-", suffix=".sqlite3", delete=False) as tmp:
+            temp = Path(tmp.name)
+        try:
+            with closing(sqlite3.connect(str(temp))) as target:
+                db.backup(target)
+                if target.execute("PRAGMA quick_check(1)").fetchone()[0] != "ok":
+                    raise RuntimeError("SQLite backup failed integrity verification")
+            temp.replace(backup)
+        finally:
+            temp.unlink(missing_ok=True)
+        return {"saved": True, "file": str(backup), "bytes": backup.stat().st_size}
 
 
 @router.get("/preview")
