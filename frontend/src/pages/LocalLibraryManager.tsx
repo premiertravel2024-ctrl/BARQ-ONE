@@ -1,5 +1,5 @@
 import {useEffect,useState,type FormEvent} from 'react';
-import {Books,Database,RefreshCw} from 'lucide-react';
+import {BookOpen,Database,RefreshCw} from 'lucide-react';
 import {requestJSON} from '../lib/backend';
 type Book={id:string;title:string;folder_name:string;published:number;active:number;series_id:string|null;issue_number:number|null;position:number;};
 type Series={id:string;title:string;description:string};
@@ -66,7 +66,7 @@ export function LocalLibraryManager({ar}:{ar:boolean}){
     <label>{label('اسم كارت السلسلة','Series card title')}
      <input value={newSeries} maxLength={120} onChange={event=>setNewSeries(event.target.value)}
       placeholder={label('مثال: ما وراء الطبيعة','Example: Paranormal')}/></label>
-    <button className="bs-muted-btn" type="submit" disabled={busy||!newSeries.trim()}><Books size={15}/>{label('إنشاء سلسلة','Create series')}</button>
+    <button className="bs-muted-btn" type="submit" disabled={busy||!newSeries.trim()}><BookOpen size={15}/>{label('إنشاء سلسلة','Create series')}</button>
    </form>
    <label className="bs-local-manager-search">{label('ابحث في رواياتك','Find your books')}
     <input type="search" value={search} onChange={event=>setSearch(event.target.value)}
