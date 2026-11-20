@@ -164,6 +164,10 @@ class SeriesMerge(BaseModel):
     target: str
 
 
+class Reorder(BaseModel):
+    ids: list[str] = Field(min_length=1, max_length=400)
+
+
 @router.get("/items")
 def items():
     with LOCK, database() as db:
@@ -337,6 +341,25 @@ def bulk_edit(info: BulkEdit):
             affected += db.execute(sql, (*updates.values(), value)).rowcount
         organize(db)
     return {"updated": affected}
+
+
+@router.post("/reorder")
+def reorder_books(info: Reorder):
+    if len(set(info.ids)) != len(info.ids):
+        raise HTTPException(422, "Duplicate books in ordering")
+    for value in info.ids:
+        identifier(value)
+    with LOCK, database() as db:
+        placeholders = ",".join("?" for _ in info.ids)
+        rows = db.execute(
+            f"SELECT id,series_id FROM books WHERE active=1 AND id IN ({placeholders})",
+            info.ids).fetchall()
+        if len(rows) != len(info.ids) or len({row["series_id"] for row in rows}) != 1:
+            raise HTTPException(422, "Reordering requires books from the same series")
+        for index, value in enumerate(info.ids):
+            db.execute("UPDATE books SET position=?,manual_position=1 WHERE id=?",
+                       ((index+1)*10,value))
+    return {"updated": len(info.ids)}
 
 
 @router.post("/book/{value}/auto")
