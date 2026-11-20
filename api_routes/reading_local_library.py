@@ -128,6 +128,10 @@ def schema(db):
         key TEXT PRIMARY KEY,
         value TEXT NOT NULL
     )""")
+    db.execute("""CREATE TABLE IF NOT EXISTS reader_state (
+        key TEXT PRIMARY KEY,
+        value TEXT NOT NULL
+    )""")
 
 
 @contextmanager
@@ -216,6 +220,65 @@ class Reorder(BaseModel):
     ids: list[str] = Field(min_length=1, max_length=400)
 
 
+class StateSync(BaseModel):
+    records: dict[str, str] = Field(default_factory=dict)
+
+
+class StateValue(BaseModel):
+    value: str = Field(max_length=32768)
+
+
+def state_key(value: str) -> str:
+    if not (value == "barq-stories-v1" or (
+        value.startswith("barq-reader:") and 12 < len(value) <= 600
+    )):
+        raise HTTPException(422, "Unsupported reading state key")
+    return value
+
+
+def state_value(value: str) -> str:
+    import json
+    if len(value.encode("utf-8")) > 32768:
+        raise HTTPException(413, "Reading state exceeds limit")
+    try:
+        parsed = json.loads(value)
+    except (TypeError, ValueError):
+        raise HTTPException(422, "Invalid reading state JSON") from None
+    if not isinstance(parsed, dict):
+        raise HTTPException(422, "Expected reading state object")
+    return value
+
+
+@router.post("/state/sync")
+def sync_local_reading_state(info: StateSync):
+    if len(info.records) > 500:
+        raise HTTPException(413, "Too many reading records")
+    validated = [(state_key(key), state_value(value)) for key, value in info.records.items()]
+    with LOCK, database() as db:
+        for key, value in validated:
+            db.execute("INSERT OR IGNORE INTO reader_state(key,value) VALUES(?,?)", (key,value))
+        rows = db.execute("SELECT key,value FROM reader_state ORDER BY key").fetchall()
+        return {"records": {row["key"]: row["value"] for row in rows}}
+
+
+@router.put("/state/{key:path}")
+def store_reading_state(key: str, info: StateValue):
+    identifier = state_key(key)
+    value = state_value(info.value)
+    with LOCK, database() as db:
+        db.execute("""INSERT INTO reader_state(key,value) VALUES(?,?)
+            ON CONFLICT(key) DO UPDATE SET value=excluded.value""", (identifier,value))
+    return {"saved": True}
+
+
+@router.get("/state/{key:path}")
+def load_reading_state(key: str):
+    identifier = state_key(key)
+    with LOCK, database() as db:
+        row = db.execute("SELECT value FROM reader_state WHERE key=?", (identifier,)).fetchone()
+        return {"value": row["value"] if row else None}
+
+
 @router.get("/items")
 def items():
     with LOCK, database() as db:
@@ -232,13 +295,15 @@ def status():
             "SELECT COUNT(*) FROM books WHERE active=1 AND review_reason<>''").fetchone()[0]
         groups = db.execute("SELECT COUNT(*) FROM series").fetchone()[0]
         covers = db.execute("SELECT COUNT(*) FROM cover_overrides WHERE length(image)>1").fetchone()[0]
+        reading_records = db.execute("SELECT COUNT(*) FROM reader_state").fetchone()[0]
         record = db.execute("SELECT value FROM library_meta WHERE key='last_saved_at'").fetchone()
         destination = db_path()
         integrity = db.execute("PRAGMA quick_check(1)").fetchone()[0]
         return {"count": active, "database": str(destination), "grouped": grouped,
                 "review": review, "series": groups, "automatic": True,
                 "persistent": integrity == "ok", "db_bytes": destination.stat().st_size,
-                "custom_covers": covers, "last_saved_at": record[0] if record else None,
+                "custom_covers": covers, "reading_records": reading_records,
+                "last_saved_at": record[0] if record else None,
                 "journal_mode": db.execute("PRAGMA journal_mode").fetchone()[0]}
 
 
