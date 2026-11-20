@@ -66,3 +66,72 @@ def test_invalid_edit_is_rejected_and_not_published(tmp_path, monkeypatch):
 def test_local_database_location_can_be_configured(tmp_path, monkeypatch):
     monkeypatch.setenv('BARQ_READING_DB_DIR',str(tmp_path))
     assert reading_local_library.db_path() == tmp_path / 'barq_library.sqlite3'
+
+
+
+def test_auto_index_groups_folder_issues_and_respects_manual_detach(tmp_path, monkeypatch):
+    api, _ = client(tmp_path, monkeypatch)
+    from api_routes import reading_drive
+    pages = [
+        {"id":"abcdefghijklmnop","title":"٠١ - مصاص الدماء","group":"Egyptian / ما وراء الطبيعة","cover":None},
+        {"id":"qrstuvwxyzABCDEF","title":"002 - أسطورة النداهة","group":"Egyptian / ما وراء الطبيعة","cover":None},
+        {"id":"ABCDEFGHIJKLMNOP","title":"قصة واحدة","group":"كتب","cover":None},
+    ]
+    monkeypatch.setattr(reading_drive,"catalogue",lambda:{"books":pages})
+    scanned = api.post("/library/refresh")
+    assert scanned.status_code == 200, scanned.text
+    assert scanned.json()["synced"] == 3
+    books = {book["id"]:book for book in api.get("/library/items").json()["books"]}
+    first, second, other = books.values()
+    assert first["series_id"] == second["series_id"]
+    assert first["issue_number"] == 1
+    assert second["issue_number"] == 2
+    assert other["series_id"] is None
+    assert all(item["published"] == 0 for item in books.values())
+
+    # Owner explicitly detaches a book even though it still belongs to the folder.
+    assert api.post("/library/book",json={"id":first["id"],"series_id":None}).status_code == 200
+    assert api.post("/library/refresh").status_code == 200
+    revised = {row["id"]:row for row in api.get("/library/items").json()["books"]}
+    assert revised[first["id"]]["series_id"] is None
+    assert revised[second["id"]]["series_id"] == second["series_id"]
+    assert revised[first["id"]]["manual_series"] == 1
+    assert api.post("/library/book/"+first["id"]+"/auto").status_code == 200
+    assert {row["id"]:row for row in api.get("/library/items").json()["books"]}[first["id"]]["series_id"] == second["series_id"]
+
+
+def test_preview_and_bulk_operations_are_safe(tmp_path,monkeypatch):
+    api,_=client(tmp_path,monkeypatch)
+    from api_routes import reading_drive
+    ids=["abcdefghijklmnop","qrstuvwxyzABCDEF"]
+    monkeypatch.setattr(reading_drive,"catalogue",lambda:{"books":[
+        {"id":identifier,"title":str(n+1)+" - رواية","group":"هاري بوتر","cover":None}
+        for n,identifier in enumerate(ids)]})
+    assert api.post("/library/refresh").status_code==200
+    before=api.get("/library/items").json()
+    preview=api.get("/library/preview")
+    assert preview.status_code==200 and preview.json()["preview"]
+    assert api.get("/library/items").json()==before
+    assert api.post("/library/bulk",json={"ids":ids,"hidden":True}).json()["updated"]==2
+    assert all(row["hidden"]==1 for row in api.get("/library/items").json()["books"])
+    assert api.post("/library/bulk",json={"ids":[ids[0],"invalid!"],"hidden":False}).status_code==422
+    assert api.post("/library/bulk",json={"ids":ids,"series_id":"random-value"}).status_code==422
+    assert api.post("/library/bulk",json={"ids":ids,"published":True}).status_code==200
+
+
+def test_series_metadata_edit_merge_and_remove_preserves_manual_rules(tmp_path,monkeypatch):
+    api,_=client(tmp_path,monkeypatch)
+    from api_routes import reading_drive
+    monkeypatch.setattr(reading_drive,"catalogue",lambda:{"books":[
+        {"id":"abcdefghijklmnop","title":"01 - Entry","group":"My Series","cover":None}]})
+    api.post("/library/refresh")
+    first=api.post("/library/series",json={"title":"First"}).json()["id"]
+    second=api.post("/library/series",json={"title":"Second"}).json()["id"]
+    assert api.post("/library/book",json={"id":"abcdefghijklmnop","series_id":first}).status_code==200
+    assert api.post("/library/series/"+first,json={"title":"Changed","position":2,"genre":"مغامرة"}).status_code==200
+    assert api.post("/library/merge",json={"source":first,"target":second}).status_code==200
+    assert api.get("/library/items").json()["books"][0]["series_id"]==second
+    assert api.delete("/library/series/"+second).status_code==200
+    assert api.post("/library/refresh").status_code==200
+    book=api.get("/library/items").json()["books"][0]
+    assert book["series_id"] is None and book["manual_series"]==1
