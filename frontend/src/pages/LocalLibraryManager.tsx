@@ -129,10 +129,9 @@ export function LocalLibraryManager({ar}:{ar:boolean}){
     a.title.localeCompare(b.title,undefined,{numeric:true}));
   const at=peers.findIndex(other=>other.id===book.id);
   const target=peers[at+delta];if(!target)return;
-  const next=target.position===book.position?(at+delta+1)*10:target.position;
-  // The second rank also changes, preventing an ambiguous tie on reload.
-  const updated=await action('/book',{id:book.id,position:next});
-  if(updated)await action('/book',{id:target.id,position:(at+1)*10});
+  const order=peers.map(item=>item.id);
+  const exchange=order[at];order[at]=order[at+delta];order[at+delta]=exchange;
+  await action('/reorder',{ids:order});
  }
  async function merge(){
   if(!editingSeries||!mergeTarget||editingSeries===mergeTarget)return;
