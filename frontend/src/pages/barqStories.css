@@ -212,3 +212,14 @@
   gap: 8px 16px; padding: 10px 12px; border: 1px solid var(--stroke, #4d4350); border-radius: 9px;
 }
 .bs-primary-cover small { line-height: 1.45; overflow-wrap: anywhere; }
+
+.bs-unified-library > .bs-drive-section,
+.bs-unified-library > .bs-drive-section > div,
+.bs-unified-library > .bs-drive-section .bs-real-grid { display: contents; }
+.bs-unified-library > .bs-drive-section > details { grid-column: 1 / -1; }
+.bs-editable-cover { position: relative; flex: none; }
+.bs-cover-edit { inset-block-start: 4px; inset-inline-start: 4px; z-index: 2; }
+.bs-editable-cover .bs-real-cover > svg { margin-block-start: 18px; flex: none; }
+.bs-real-copy { min-inline-size: 0; }
+.bs-real-copy h3, .bs-real-cover strong { overflow-wrap: anywhere; }
+.bs-real-card { align-items: start; }
