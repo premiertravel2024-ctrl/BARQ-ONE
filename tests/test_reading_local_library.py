@@ -135,3 +135,48 @@ def test_series_metadata_edit_merge_and_remove_preserves_manual_rules(tmp_path,m
     assert api.post("/library/refresh").status_code==200
     book=api.get("/library/items").json()["books"][0]
     assert book["series_id"] is None and book["manual_series"]==1
+
+
+
+def test_reorder_is_atomic_and_enforces_same_series(tmp_path, monkeypatch):
+    api, _ = client(tmp_path, monkeypatch)
+    from api_routes import reading_drive
+    ids = ["abcdefghijklmnop", "qrstuvwxyzABCDEF", "ABCDEFGHIJKLMNOP"]
+    monkeypatch.setattr(reading_drive, "catalogue", lambda: {"books": [
+        {"id":id, "title":f"{i+1:02d} - book", "group":"Series Sorted", "cover":None}
+        for i, id in enumerate(ids)]})
+    assert api.post("/library/refresh").status_code == 200
+    assert api.post("/library/reorder", json={"ids":[ids[2], ids[0], ids[1]]}).json()["updated"] == 3
+    rows = api.get("/library/items").json()["books"]
+    assert [row["id"] for row in rows] == [ids[2], ids[0], ids[1]]
+    assert all(row["manual_position"] == 1 for row in rows)
+    assert api.post("/library/refresh").status_code == 200
+    assert [row["id"] for row in api.get("/library/items").json()["books"]] == [ids[2], ids[0], ids[1]]
+    assert api.post("/library/reorder", json={"ids":[ids[1], ids[1]]}).status_code == 422
+
+
+def test_auto_detection_is_conservative_for_generic_folders(tmp_path,monkeypatch):
+    api,_=client(tmp_path,monkeypatch)
+    from api_routes import reading_drive
+    monkeypatch.setattr(reading_drive,"catalogue",lambda:{"books":[
+        {"id":"abcdefghijklmnop","title":"مغامرة مستقلة","group":"روايات","cover":None},
+        {"id":"qrstuvwxyzABCDEF","title":"حكايات أخرى","group":"روايات","cover":None},
+    ]})
+    assert api.post("/library/refresh").status_code==200
+    entries=api.get("/library/items").json()["books"]
+    assert all(row["series_id"] is None for row in entries)
+    assert api.get("/library/status").json()["review"]==2
+
+
+def test_owner_book_title_and_hidden_state_survive_reindex(tmp_path,monkeypatch):
+    api,_=client(tmp_path,monkeypatch)
+    from api_routes import reading_drive
+    listing=[{"id":"abcdefghijklmnop","title":"Original title","group":"","cover":None}]
+    monkeypatch.setattr(reading_drive,"catalogue",lambda:{"books":listing})
+    assert api.post("/library/refresh").status_code==200
+    assert api.post("/library/book",json={"id":"abcdefghijklmnop","title":"My custom title","hidden":True}).status_code==200
+    listing[0]["title"]="Renamed on Drive"
+    assert api.post("/library/refresh").status_code==200
+    book=api.get("/library/items").json()["books"][0]
+    assert book["title"]=="My custom title" and book["source_title"]=="Renamed on Drive"
+    assert book["hidden"]==1 and book["manual_title"]==1
