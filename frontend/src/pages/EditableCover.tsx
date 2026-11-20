@@ -31,17 +31,25 @@ export function EditableCover({id,title,ar,children}:{id:string;title:string;ar:
  const [open,setOpen]=useState(false);
  const [busy,setBusy]=useState(false);
  const [error,setError]=useState('');
+ const [imageFailed,setImageFailed]=useState(false);
+ const writeVersion=useRef(0);
  const picker=useRef<HTMLInputElement>(null);
  const close=useCallback(()=>setOpen(false),[]);
  const edit=ar?'تعديل الغلاف':'Edit cover';
  useEffect(()=>{
   const controller=new AbortController();
-  const refresh=()=>void fetch(root+'state/'+key,{cache:'no-store',signal:controller.signal}).then(async response=>{
-   if(response.ok){
+  const refresh=()=>{
+   const initiatedAt=writeVersion.current;
+   void fetch(root+'state/'+key,{cache:'no-store',signal:controller.signal}).then(async response=>{
+    if(!response.ok)return;
     const next=(await response.json()).state as CoverState;
-    if(!controller.signal.aborted){setState(next);setRevision(value=>value+1);}
-   }
-  }).catch(()=>{});
+    // An old GET must not revert a more recent successful manual upload.
+    if(!controller.signal.aborted&&initiatedAt===writeVersion.current&&
+       (next==='original'||next==='custom'||next==='hidden')){
+     setState(next);setImageFailed(false);setRevision(value=>value+1);
+    }
+   }).catch(()=>{});
+  };
   refresh();
   window.addEventListener('barq:covers-synced',refresh);
   return()=>{controller.abort();window.removeEventListener('barq:covers-synced',refresh);};
@@ -56,7 +64,11 @@ export function EditableCover({id,title,ar,children}:{id:string;title:string;ar:
     headers:body?{'Content-Type':'image/jpeg'}:undefined,body,
    });
    if(!response.ok)throw new Error('Could not change cover');
-   setState((await response.json()).state as CoverState);
+   const result=await response.json() as {state:CoverState};
+   if(action==='upload'&&result.state!=='custom')throw new Error('Cover was not saved');
+   writeVersion.current+=1;
+   setState(result.state);
+   setImageFailed(false);
    setRevision(value=>value+1);
    window.dispatchEvent(new Event('barq:drive-sync'));
    setOpen(false);
@@ -67,8 +79,8 @@ export function EditableCover({id,title,ar,children}:{id:string;title:string;ar:
  }
 
  return <div className="bs-editable-cover">
-  {state==='original'?children:<div className="bs-real-cover" aria-hidden="true">
-   {state==='custom'?<img src={endpoint+'?v='+revision} alt="" loading="lazy" decoding="async"/>:
+  {state==='original'||(state==='custom'&&imageFailed)?children:<div className="bs-real-cover" aria-hidden="true">
+   {state==='custom'?<img src={endpoint+'?v='+revision} alt="" loading="lazy" decoding="async" onError={()=>setImageFailed(true)}/>:
     <><BookOpen size={24}/><strong>{title}</strong></>}
   </div>}
   <button className="bs-cover-edit" type="button" aria-label={edit+' · '+title} title={edit} onClick={()=>{setError('');setOpen(true);}}>
