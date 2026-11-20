@@ -1,11 +1,11 @@
 name: BARQ — signed update delivery watchdog
 
 # Merging a tested release to main publishes immediately via windows-build.yml.
-# This light recovery workflow checks twice per day and re-triggers the SAME
+# This light recovery workflow checks hourly and re-triggers the SAME
 # verified build only if the signed public feed is behind the source version.
 on:
   schedule:
-    - cron: '23 2,14 * * *'
+    - cron: '17 * * * *'
   workflow_dispatch:
 
 permissions:
