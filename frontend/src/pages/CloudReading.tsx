@@ -26,7 +26,10 @@ export async function loadCloudBooks(force=false,folder=''){
    if(!pendingScan)pendingScan=requestJSON('/v1/reading/library/refresh',{method:'POST'})
     .then(()=>{lastScanAt=Date.now();lastScanFolder=folder;})
     .finally(()=>{pendingScan=undefined;});
-   await pendingScan;
+   try{await pendingScan;}catch{
+    // When Google is offline, keep the last committed local catalogue visible.
+    // PDF media will still require Google unless the file itself is available locally.
+   }
   }
   const metadata=await requestJSON<{books:LocalBook[];series:LocalSeries[]}>('/v1/reading/library/items');
   const bySeries=new Map(metadata.series.map(group=>[group.id,group]));
