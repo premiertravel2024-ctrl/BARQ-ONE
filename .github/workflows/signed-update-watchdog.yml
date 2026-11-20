@@ -23,9 +23,9 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 12
     env:
-      BARQ_UPDATE_ORIGIN: \${{ vars.BARQ_UPDATE_ORIGIN }}
-      BARQ_UPDATE_PUBLIC_KEY: \${{ vars.BARQ_UPDATE_PUBLIC_KEY }}
-      GH_TOKEN: \${{ github.token }}
+      BARQ_UPDATE_ORIGIN: ${{ vars.BARQ_UPDATE_ORIGIN }}
+      BARQ_UPDATE_PUBLIC_KEY: ${{ vars.BARQ_UPDATE_PUBLIC_KEY }}
+      GH_TOKEN: ${{ github.token }}
     steps:
       - uses: actions/checkout@v4
         with:
