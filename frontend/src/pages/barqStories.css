@@ -328,3 +328,7 @@
 .bs-organizer-panel button:focus-visible,.bs-series-grid-card button:focus-visible{outline:2px solid #e27e99;outline-offset:2px}
 @media(max-width:800px){.bs-organizer-counter{width:100%}.bs-organizer-heading{flex-wrap:wrap}.bs-organizer-panel{padding:12px}.bs-organizer-book{flex-wrap:wrap}.bs-organizer-book-info{flex-basis:60%}.bs-series-modal-grid{grid-template-columns:1fr}}
 @media(prefers-reduced-motion:reduce){.bs-organizer-panel button,.bs-library-manage-shortcut{transition:none}}
+
+.bs-organizer-book[draggable=true]{cursor:grab}
+.bs-organizer-book[data-dragging=true]{opacity:.48;border-color:#d86b88;cursor:grabbing}
+.bs-organizer-book:hover{border-color:#665567}
