@@ -33,7 +33,7 @@ def test_default_private_and_series_changes_survive_drive_resync(tmp_path, monke
     assert created['title'] == 'Series A'
     save = test.post('/library/book', json={
         'id':'abcdefghijklmnop','series_id':created['id'],'issue_number':1,
-        'position':1,'published':True,
+        'position':1,'published':True,'title':'Owner edited Episode',
     })
     assert save.status_code == 200
 
@@ -45,7 +45,7 @@ def test_default_private_and_series_changes_survive_drive_resync(tmp_path, monke
     snapshot = test.get('/library/items').json()
     updated = next(book for book in snapshot['books'] if book['id'] == 'abcdefghijklmnop')
     removed = next(book for book in snapshot['books'] if book['id'] == 'qrstuvwxyzABCDEF')
-    assert updated['title'] == '01 - Episode'
+    assert updated['title'] == 'Owner edited Episode'
     assert updated['published'] == 1
     assert updated['series_id'] == created['id']
     assert updated['issue_number'] == 1
@@ -82,7 +82,9 @@ def test_auto_index_groups_folder_issues_and_respects_manual_detach(tmp_path, mo
     assert scanned.status_code == 200, scanned.text
     assert scanned.json()["synced"] == 3
     books = {book["id"]:book for book in api.get("/library/items").json()["books"]}
-    first, second, other = books.values()
+    first = books['abcdefghijklmnop']
+    second = books['qrstuvwxyzABCDEF']
+    other = books['ABCDEFGHIJKLMNOP']
     assert first["series_id"] == second["series_id"]
     assert first["issue_number"] == 1
     assert second["issue_number"] == 2
