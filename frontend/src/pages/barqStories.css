@@ -451,3 +451,77 @@
  .bs-hub .bs-published-card .bs-published-actions button{transition:none}
  .bs-hub .bs-published-card:hover{transform:none}
 }
+
+
+/* BARQ 2.41.22 — one aligned row of series actions, no floating buttons. */
+.bs-hub .bs-real-grid.bs-unified-library{
+  grid-template-columns:repeat(auto-fill,minmax(min(100%,305px),1fr));
+  align-items:stretch;gap:13px
+}
+.bs-hub .bs-unified-library .bs-series-grid-card{
+  display:grid;grid-template-columns:90px minmax(0,1fr);
+  align-items:stretch;min-height:192px;gap:12px;padding:12px
+}
+.bs-hub .bs-unified-library .bs-series-grid-card .bs-editable-cover{
+  align-self:start;min-width:0;max-width:90px
+}
+.bs-hub .bs-unified-library .bs-series-grid-card .bs-real-copy{
+  display:flex;flex-direction:column;align-items:stretch;
+  justify-content:flex-start;min-width:0;gap:6px
+}
+.bs-hub .bs-unified-library .bs-series-grid-card .bs-real-copy>p{
+  flex:1 1 auto;min-height:0;max-height:3.3em;
+  display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden
+}
+.bs-hub .bs-unified-library .bs-series-grid-card .bs-real-copy .bs-published-actions{
+  display:flex!important;flex-direction:row!important;flex-wrap:nowrap!important;
+  align-items:center!important;justify-content:stretch!important;
+  gap:5px!important;width:100%;min-width:0;margin-block-start:auto
+}
+.bs-hub .bs-unified-library .bs-series-grid-card .bs-published-actions>.bs-series-open{
+  display:inline-flex;align-items:center;justify-content:center;flex:1 1 0!important;
+  min-width:0;min-height:35px;padding:6px 4px;font-size:.68rem;
+  text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis
+}
+.bs-hub .bs-unified-library .bs-series-grid-card .bs-published-actions>.bs-series-open svg{flex:none;width:13px}
+.bs-hub .bs-unified-library .bs-series-grid-card .bs-published-actions>.bs-library-icon-action{
+  display:grid;place-items:center;flex:0 0 30px!important;
+  width:30px;min-width:30px;height:35px;min-height:35px;
+  padding:0;margin:0;align-self:center
+}
+.bs-hub .bs-organizer-counter{
+  display:flex;gap:8px;align-items:center;flex-wrap:wrap;
+  flex:0 1 auto;min-width:0;margin-inline-start:auto
+}
+.bs-hub .bs-organizer-counter strong{
+  color:#a7e1bb;font-size:.72rem;white-space:nowrap
+}
+.bs-hub .bs-organizer-counter span{font-size:.7rem;color:#b2bbc9}
+.bs-hub .bs-organizer-storage{
+  border:1px solid #343c48;border-radius:11px;background:#141922;
+  color:#bbc4d1;font-size:.76rem;min-width:0
+}
+.bs-hub .bs-organizer-storage>summary{
+  display:flex;gap:8px;align-items:center;cursor:pointer;
+  padding:10px 12px;list-style:none;font-weight:750
+}
+.bs-hub .bs-organizer-storage>summary::-webkit-details-marker{display:none}
+.bs-hub .bs-organizer-storage>div{
+  padding:0 12px 12px;display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,240px),1fr));
+  gap:8px;font-size:.72rem;line-height:1.5
+}
+.bs-hub .bs-organizer-storage code{
+  color:#f6d1df;overflow-wrap:anywhere;font-size:.72rem;
+  margin-inline-start:6px;white-space:normal
+}
+@media(max-width:720px){
+ .bs-hub .bs-real-grid.bs-unified-library{grid-template-columns:repeat(auto-fit,minmax(min(100%,300px),1fr))}
+ .bs-hub .bs-organizer-counter{margin-inline-start:0;width:100%}
+}
+@media(max-width:380px){
+ .bs-hub .bs-unified-library .bs-series-grid-card{grid-template-columns:80px minmax(0,1fr);gap:9px}
+ .bs-hub .bs-unified-library .bs-series-grid-card .bs-published-actions>.bs-library-icon-action{
+  flex-basis:27px!important;width:27px;min-width:27px
+ }
+ .bs-hub .bs-unified-library .bs-series-grid-card .bs-published-actions>.bs-series-open{font-size:.64rem}
+}
