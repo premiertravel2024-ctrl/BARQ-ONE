@@ -1,5 +1,6 @@
 import {useApp,type Conversation} from '../store';
 import {requestJSON,deleteConversation} from './backend';
+import {saveReadingLocalState} from './readingLocalState';
 
 type RecordValue={at:number;value:string|null};
 type Records=Record<string,RecordValue>;
@@ -31,7 +32,7 @@ function snapshot():Record<string,string>{
 function apply(key:string,value:string|null){
  if(isReadingKey(key)){
   if(value===null)localStorage.removeItem(key);
-  else localStorage.setItem(key,value);
+  else saveReadingLocalState(key,value);
   return;
  }
  if(key.startsWith('chat:')){
