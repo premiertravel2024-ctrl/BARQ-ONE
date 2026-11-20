@@ -82,6 +82,16 @@ export function LocalLibraryManager({ar}:{ar:boolean}){
    return undefined;
   }finally{setBusy(false);}
  }
+ async function backup(){
+  setBusy(true);setError('');setNotice('');
+  try{
+   const result=await requestJSON<{saved:boolean;file:string;bytes:number}>(base+'/backup',{method:'POST'});
+   if(!result.saved)throw new Error('Backup not saved');
+   setNotice(t('النسخة الاحتياطية اتحفظت: ','Backup saved: ')+result.file);
+   await reload();
+  }catch{setError(t('تعذّر إنشاء نسخة احتياطية، راجع صلاحية الكتابة على القرص.','Could not create backup; check disk write permissions.'));}
+  finally{setBusy(false);}
+ }
  async function scan(){
   const result=await action('/refresh');
   if(result&&'assigned' in result)setReport(result as Report);
@@ -207,6 +217,9 @@ export function LocalLibraryManager({ar}:{ar:boolean}){
      <span>{t('آخر حفظ','Last saved')}: {stats.last_saved_at?new Date(stats.last_saved_at).toLocaleString(ar?'ar-EG':'en-US'):t('لا توجد تغييرات محفوظة بعد','No saved changes yet')}</span>
      <span>{t('الحجم','Size')}: {(stats.db_bytes/1024).toFixed(0)} KB</span>
      <span>{t('ملفات WAL و SHM مؤقتة ومن الطبيعي اختفاؤها بعد إغلاق الاتصال.','WAL and SHM are temporary SQLite files and may disappear when connections close.')}</span>
+     <button type="button" className="bs-muted-btn" disabled={busy} onClick={()=>void backup()}>
+      {t('حفظ نسخة احتياطية على القرص','Create local database backup')}
+     </button>
     </div>
    </details>}
    <div className="bs-organizer-summary">
