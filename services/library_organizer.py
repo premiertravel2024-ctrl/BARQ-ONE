@@ -108,7 +108,7 @@ def organize(db, *, apply: bool = True) -> dict:
     unresolved = 0
     for book in books:
         source_key, series_name, issue, reason = infer(book, folders)
-        if source_key:
+        if source_key and not book["manual_series"]:
             series_id = existing.get(source_key) or by_title.get(normalized(series_name))
             if not series_id:
                 series_id = str(uuid.uuid5(NAMESPACE, source_key))
