@@ -3,7 +3,7 @@ import {useEffect,useRef,useState,type ChangeEvent} from 'react';
 import {BookOpen,FolderOpen} from 'lucide-react';
 import type {ReadingEdition} from './BookReader';
 
-export type DriveBook={edition:ReadingEdition;cover?:File;coverId?:string;group:string};
+export type DriveBook={edition:ReadingEdition;cover?:File;coverId?:string;group:string;issueNumber?:number;sortPosition?:number};
 let pickedBooks:DriveBook[]|undefined;
 export function pickedDriveBooks(){return pickedBooks;}
 
@@ -121,7 +121,20 @@ export function DriveBooks({books,ar,onOpen,heading=true,collectionLabel}:{books
   {heading&&<h2>{collectionLabel||(ar?'رواياتي':'My books')}</h2>}
   {books.length===0?<p role="status">{ar?'مفيش ملفات PDF متاحة في الفولدر (الحد 64 ميجابايت للملف).':'No readable PDFs in this folder (64 MB limit per file).'}</p>:
    Array.from(groups,([title,items])=>title&&items.length>1?
-    <details open={!heading} className="bs-drive-group" key={title}><summary dir="auto">{title} · {items.length}</summary>{cards(items)}</details>:
+    <details className="bs-drive-group bs-series-card" key={title}>
+     <summary dir="auto" className="bs-series-card-trigger">
+      <span className="bs-series-card-icon"><BookOpen size={26}/></span>
+      <span className="bs-series-card-label">
+       <small>{ar?'سلسلة روايات':'Novel series'}</small>
+       <strong>{title}</strong>
+       <small>{items.length} {ar?'عدد':'issues'}</small>
+      </span>
+      <span className="bs-series-card-expand">{ar?'عرض الأعداد':'Browse issues'}</span>
+     </summary>
+     {cards([...items].sort((a,b)=>(a.sortPosition||0)-(b.sortPosition||0)||
+      (a.issueNumber??Infinity)-(b.issueNumber??Infinity)||
+      a.edition.title.localeCompare(b.edition.title,undefined,{numeric:true})))}
+    </details>:
     <div key={title}>{cards(items)}</div>)}
  </section>;
 }
