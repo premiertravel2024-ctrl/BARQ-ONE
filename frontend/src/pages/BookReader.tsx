@@ -137,7 +137,7 @@ export default function BookReader({book,ar,onClose}:{book:ReadingEdition;ar:boo
    initialPage.current=previous.page;
    savedPage.current=previous.page;
    setProgress(previous);
-  }).finally(()=>{if(alive)setHydrated(true);});
+  }).catch(()=>{}).finally(()=>{if(alive)setHydrated(true);});
   return()=>{alive=false;};
  },[book.id]);
  useEffect(()=>{
@@ -183,7 +183,7 @@ export default function BookReader({book,ar,onClose}:{book:ReadingEdition;ar:boo
      error==='pdf'?(ar?'تعذّر قراءة ملف الـPDF. افتح نسخة سليمة أو جرّب تاني.':'Could not read the PDF. Open another copy or retry.'):
       (ar?'تعذّر تحميل الكتاب من المصدر. جرّب تاني بعد رجوع الاتصال.':'The book source is unavailable. Retry when connected.')}</p>
     <button type="button" onClick={()=>setRetry(x=>x+1)}>{ar?'إعادة المحاولة':'Retry'}</button></div>:
-    (pdf||text)?<Virtuoso className="bs-pdf-scroll" ref={viewport} dir="ltr" tabIndex={0} style={{height:'var(--pdf-viewport)'}}
+    (pdf||text)&&hydrated?<Virtuoso className="bs-pdf-scroll" ref={viewport} dir="ltr" tabIndex={0} style={{height:'var(--pdf-viewport)'}}
      aria-label={ar?'صفحات الكتاب':'Book pages'} totalCount={count}
      initialTopMostItemIndex={Math.min(initialPage.current,count)-1}
      defaultItemHeight={pdf?Math.ceil(pdfWidth*ratio)+12:undefined}
