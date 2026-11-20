@@ -29,6 +29,24 @@ jobs:
           node-version: '22'
           cache: 'npm'
           cache-dependency-path: frontend/package-lock.json
+      - name: Require automatic signed release settings on stable builds
+        if: github.event_name != 'pull_request' && (github.ref == 'refs/heads/main' || github.ref_type == 'tag')
+        working-directory: .
+        shell: bash
+        env:
+          BARQ_UPDATE_ORIGIN: ${{ vars.BARQ_UPDATE_ORIGIN }}
+          BARQ_UPDATE_PUBLIC_KEY: ${{ vars.BARQ_UPDATE_PUBLIC_KEY }}
+          BARQ_UPDATE_PRIVATE_KEY: ${{ secrets.BARQ_UPDATE_PRIVATE_KEY }}
+          BARQ_UPDATE_GITHUB_TOKEN: ${{ secrets.BARQ_UPDATE_GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          test -n "$BARQ_UPDATE_ORIGIN" || { echo "::error::Missing BARQ_UPDATE_ORIGIN; signed publishing cannot run."; exit 1; }
+          test -n "$BARQ_UPDATE_PUBLIC_KEY" || { echo "::error::Missing BARQ_UPDATE_PUBLIC_KEY; the app cannot verify updates."; exit 1; }
+          test -n "$BARQ_UPDATE_PRIVATE_KEY" || { echo "::error::Missing BARQ_UPDATE_PRIVATE_KEY; release signing would fail."; exit 1; }
+          if [[ "$BARQ_UPDATE_ORIGIN" == https://github.com/* ]]; then
+            test -n "$BARQ_UPDATE_GITHUB_TOKEN" || { echo "::error::Missing BARQ_UPDATE_GITHUB_TOKEN for GitHub release publishing."; exit 1; }
+          fi
+          echo "Signed BARQ update configuration is available."
       - name: Validate Cloudflare room server module syntax
         working-directory: .
         run: |
@@ -306,7 +324,7 @@ jobs:
 
   publish-app-update:
     name: Publish signed BARQ update
-    if: vars.BARQ_UPDATE_ORIGIN != '' && (github.ref_type == 'tag' || github.ref == 'refs/heads/main')
+    if: github.event_name != 'pull_request' && (github.ref_type == 'tag' || github.ref == 'refs/heads/main')
     needs: windows-x64
     runs-on: ubuntu-latest
     concurrency:
@@ -410,6 +428,12 @@ jobs:
           curl --fail --silent --show-error --retry 4 --retry-all-errors \
             "${BARQ_UPDATE_ORIGIN%/}/latest.json" --output verified-windows/public-latest.json
           cmp verified-windows/latest.json verified-windows/public-latest.json
+      - name: Verify official signed update feed after publishing or no-op
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m scripts.publish_update verify-live
+          echo "The official BARQ update feed serves a valid signed release at least as new as this build."
   local-windows-release:
     name: Publish verified BARQ update from Windows PC
     if: ${{ github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/private-drive-profile-sync' && github.repository == 'premiertravel2024-ctrl/BARQ-ONE' }}
