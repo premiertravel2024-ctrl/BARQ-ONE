@@ -26,6 +26,7 @@ export function LocalLibraryManager({ar}:{ar:boolean}){
  const [query,setQuery]=useState('');
  const [tab,setTab]=useState<Filter>('all');
  const [selected,setSelected]=useState<string[]>([]);
+ const [dragging,setDragging]=useState<string|null>(null);
  const [bulkSeries,setBulkSeries]=useState('');
  const [newSeries,setNewSeries]=useState('');
  const [editing,setEditing]=useState<string|null>(null);
@@ -138,6 +139,24 @@ export function LocalLibraryManager({ar}:{ar:boolean}){
   const exchange=order[at];order[at]=order[at+delta];order[at+delta]=exchange;
   await action('/reorder',{ids:order});
  }
+ async function dropBook(targetId:string){
+  const source=books.find(book=>book.id===dragging);
+  const target=books.find(book=>book.id===targetId);
+  setDragging(null);
+  if(!source||!target||source.id===target.id)return;
+  if(source.series_id!==target.series_id){
+   setError(t('لنقل كتاب لسلسلة تانية استخدم اختيار السلسلة؛ السحب لترتيب نفس السلسلة.','Use the series selector to move between series. Drag to reorder within one series.'));
+   return;
+  }
+  const siblings=books.filter(book=>book.series_id===source.series_id)
+   .sort((a,b)=>(a.position-b.position)||
+    (Number(a.issue_number||99999)-Number(b.issue_number||99999))||
+    a.title.localeCompare(b.title,undefined,{numeric:true}));
+  const order=siblings.map(book=>book.id).filter(id=>id!==source.id);
+  const index=order.indexOf(target.id);
+  order.splice(index,0,source.id);
+  await action('/reorder',{ids:order});
+ }
  async function merge(){
   if(!editingSeries||!mergeTarget||editingSeries===mergeTarget)return;
   if(!window.confirm(t('دمج السلسلتين ونقل الأعداد؟','Merge series and move their books?')))return;
@@ -227,7 +246,12 @@ export function LocalLibraryManager({ar}:{ar:boolean}){
     <button type="button" disabled={!selected.length} onClick={()=>setSelected([])}>{t('إلغاء التحديد','Clear')}</button>
    </div>
    <div className="bs-organizer-list">
-    {shown.map(book=><div className="bs-organizer-book" key={book.id}>
+    {shown.map(book=><div className="bs-organizer-book" key={book.id} draggable
+     data-dragging={dragging===book.id} title={t('اسحب لترتيب العدد','Drag to reorder issue')}
+     onDragStart={event=>{setDragging(book.id);event.dataTransfer.effectAllowed='move';}}
+     onDragOver={event=>{if(dragging)event.preventDefault();}}
+     onDrop={event=>{event.preventDefault();void dropBook(book.id);}}
+     onDragEnd={()=>setDragging(null)}>
      <input aria-label={t('تحديد','Select')+' '+book.title} type="checkbox" checked={selected.includes(book.id)}
       onChange={event=>toggle(book.id,event.target.checked)}/>
      <div className="bs-organizer-book-info">
