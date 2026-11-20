@@ -1,6 +1,7 @@
 import {useEffect,useRef,useState} from 'react';
 import {Virtuoso,type VirtuosoHandle} from 'react-virtuoso';
 import {ReadingSound} from './ReadingSound';
+import {loadReadingLocalState,saveReadingLocalState} from '../lib/readingLocalState';
 import type {PDFDocumentProxy} from 'pdfjs-dist';
 import {ArrowRight,Bookmark,Layers} from 'lucide-react';
 
@@ -50,6 +51,7 @@ function PdfPage({pdf,page,width,estimate,ar}:{pdf:PDFDocumentProxy;page:number;
 }
 export default function BookReader({book,ar,onClose}:{book:ReadingEdition;ar:boolean;onClose:()=>void}){
  const [progress,setProgress]=useState(()=>saved(book.id));
+ const [hydrated,setHydrated]=useState(false);
  const [pdf,setPdf]=useState<PDFDocumentProxy>();
  const [text,setText]=useState<string[]>();
  const [error,setError]=useState<'source'|'pdf'|'password'>();
@@ -128,8 +130,20 @@ export default function BookReader({book,ar,onClose}:{book:ReadingEdition;ar:boo
   setProgress(previous=>({...previous,page:next}));
  }
  useEffect(()=>{
-  try{localStorage.setItem('barq-reader:'+book.id,JSON.stringify(progress));}catch{/* The reader stays usable. */}
- },[book.id,progress]);
+  let alive=true;
+  void loadReadingLocalState('barq-reader:'+book.id).then(()=>{
+   if(!alive)return;
+   const previous=saved(book.id);
+   initialPage.current=previous.page;
+   savedPage.current=previous.page;
+   setProgress(previous);
+  }).finally(()=>{if(alive)setHydrated(true);});
+  return()=>{alive=false;};
+ },[book.id]);
+ useEffect(()=>{
+  if(!hydrated)return;
+  saveReadingLocalState('barq-reader:'+book.id,JSON.stringify(progress));
+ },[book.id,progress,hydrated]);
  function save(next:Progress){
   setProgress(next);
   savedPage.current=next.page;
