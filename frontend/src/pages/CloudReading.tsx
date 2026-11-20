@@ -98,11 +98,11 @@ export function CloudReading({ar}:{ar:boolean}){
  const [primaryError,setPrimaryError]=useState(false);
  const [revision,setRevision]=useState(0);
  const label=(a:string,e:string)=>ar?a:e;
- const refresh=useCallback(async()=>{
+ const refresh=useCallback(async(selectedFolder='')=>{
   setBusy(true);
   setError('');
   try{
-   await loadCloudBooks(true,folder);
+   await loadCloudBooks(true,selectedFolder);
    window.dispatchEvent(new Event('barq:library-changed'));
   }catch{
    setError(ar?'تعذّر تحميل مكتبة Drive. راجع صلاحية الفولدر أو أعد الربط.':'Could not load Drive books. Check folder access or reconnect.');
@@ -124,7 +124,7 @@ export function CloudReading({ar}:{ar:boolean}){
      setError(ar?'ربط Google ما اكتملش. راجع إعدادات OAuth وحاول تاني.':'Google connection failed. Check your OAuth setup and retry.');
      setConfig(true);
     }else if(current.connected){
-     setFolder(current.folder);setConfig(false);setUrl('');await refresh();
+     setFolder(current.folder);setConfig(false);setUrl('');await refresh(current.folder);
     }else{setUrl('');}
    }catch{if(!stopped)setError(ar?'ميزة الربط تتطلب نسخة برق المكتبية المحدّثة.':'Cloud linking requires the updated BARQ desktop app.');}
   }
@@ -178,7 +178,7 @@ export function CloudReading({ar}:{ar:boolean}){
   <div className="bs-drive-header">
    <button className="bs-muted-btn" type="button" onClick={()=>setConfig(!config)} aria-expanded={config}><Cloud size={16}/>
     {connection?.connected?label('Google Drive متصل','Google Drive connected'):label('اربط Google Drive','Connect Google Drive')}</button>
-   {connection?.connected&&<button className="bs-muted-btn" type="button" disabled={busy||connection.pending} onClick={()=>void refresh()}>
+   {connection?.connected&&<button className="bs-muted-btn" type="button" disabled={busy||connection.pending} onClick={()=>void refresh(connection?.folder||'')}>
     <RefreshCw size={15}/>{label('حدّث الروايات','Refresh books')}</button>}
   </div>
   {connection?.sync&&<div className="bs-primary-cover">
