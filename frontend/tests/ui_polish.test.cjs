@@ -92,7 +92,17 @@ test('Reading Library opens a published edition in the in-app reader',()=>{
   assert.match(catalogue,/<BookReader /);
   assert.doesNotMatch(catalogue,/streamChat|Create a story with BARQ/);
   assert.match(reader,/\/v1\/reading\/books\//);
-  assert.match(reader,/localStorage\.setItem/);
+  // The reading cache remains local, but pages/bookmarks now also persist
+  // to barq_library.sqlite3. Don't demand the legacy inline localStorage call.
+  assert.match(reader,/loadReadingLocalState\('barq-reader:'\+book\.id\)/);
+  assert.match(reader,/saveReadingLocalState\('barq-reader:'\+book\.id,JSON\.stringify\(progress\)\)/);
+  const persistence=read('lib/readingLocalState.ts');
+  assert.match(persistence,/localStorage\.setItem\(key,value\)/);
+  assert.match(persistence,/method:'PUT'/);
+  assert.match(persistence,/method:'POST'/);
+  assert.match(persistence,/\/v1\/reading\/library\/state/);
+  // A failed backend save must not prevent the reader from caching progress.
+  assert.match(persistence,/catch\(\(\)=>\{\}\)/);
 });
 
 test('wallpaper gallery supports applying and safe removal with confirmation',()=>{
