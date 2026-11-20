@@ -9,6 +9,7 @@ import {publishedBooks,type PublishedBook} from './publishedBooks';
 import {paranormalCollection,paranormalEbooks,paranormalIssues} from './paranormalIssues';
 import {DriveBooks,pickedDriveBooks} from './DriveBooks';
 import {useCloudBooks} from './CloudReading';
+import {OnlineLibraryLink} from './OnlineLibraryLink';
 import './barqStories.css';
 
 const BookReader=lazy(()=>import('./BookReader'));
@@ -135,7 +136,7 @@ export function BarqStories(){
    <header className="bs-header">
     <div className="bs-brand"><span className="bs-brand-mark"><BookOpen size={22}/></span><h1>{label('مكتبة القراءة','Reading Library')}</h1></div>
     <div className="bs-drive-header">
-    <button className="bs-muted-btn" type="button" onClick={()=>pickFile()}><Upload size={16}/>{label('افتح PDF من جهازك','Open local PDF')}</button></div>
+    <button className="bs-muted-btn" type="button" onClick={()=>pickFile()}><Upload size={16}/>{label('افتح PDF من جهازك','Open local PDF')}</button><OnlineLibraryLink ar={ar}/></div>
    </header>
 
    <section className="bs-collection">
