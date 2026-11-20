@@ -42,7 +42,7 @@ export function LocalLibraryManager({ar}:{ar:boolean}){
   }catch{setError(label('تعذّر إنشاء السلسلة.','Could not create series.'));}
   finally{setBusy(false);}
  }
- async function edit(id:string,values:Partial<Book>){
+ async function edit(id:string,values:Partial<Omit<Book,'published'>>&{published?:boolean}){
   setBusy(true);setError('');
   try{
    await requestJSON(base+'/book',{method:'POST',body:JSON.stringify({id,...values})});
