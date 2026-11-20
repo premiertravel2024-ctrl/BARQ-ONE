@@ -314,6 +314,8 @@ def backup_database():
     with LOCK, database() as db:
         from api_routes.reading import _migrate_legacy_covers
         _migrate_legacy_covers(db)
+        # SQLite backup must run against a committed read snapshot.
+        db.commit()
         destination = db_path()
         folder = destination.parent / "backups"
         folder.mkdir(parents=True, exist_ok=True)
