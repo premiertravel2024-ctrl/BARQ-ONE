@@ -171,6 +171,8 @@ def edit_book(info: EditBook):
                 raise HTTPException(422, 'Empty title')
             updates['title'] = info.title.strip()
         if 'published' in fields:
+            if info.published is None:
+                raise HTTPException(422, 'Publication must be true or false')
             updates['published'] = int(info.published)
         if 'series_id' in fields:
             updates['series_id'] = info.series_id
