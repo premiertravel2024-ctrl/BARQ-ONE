@@ -353,9 +353,9 @@ export default {
       const path=url.pathname;
       const user=await session(request,env);
       if(request.method==='POST'&&request.headers.get('Origin')!==base)return problem(403,'Invalid request origin');
-      if(path==='/auth/login'&&request.method==='GET')return oauthStart(request,env,base,'login',user);
-      if(path==='/auth/drive'&&request.method==='GET')return oauthStart(request,env,base,'drive',user);
-      if(path==='/auth/callback'&&request.method==='GET')return oauthCallback(request,env,base,user);
+      if(path==='/auth/login'&&request.method==='GET')return await oauthStart(request,env,base,'login',user);
+      if(path==='/auth/drive'&&request.method==='GET')return await oauthStart(request,env,base,'drive',user);
+      if(path==='/auth/callback'&&request.method==='GET')return await oauthCallback(request,env,base,user);
       if(path==='/auth/logout'&&request.method==='GET'){
         const response=redirect(base+'/',302);
         return setCookie(response,SESSION_COOKIE,'',0);
@@ -366,10 +366,10 @@ export default {
         requireUser(user);
         return json(await currentBooks(env,user,url.searchParams.get('all')==='1'));
       }
-      if(path==='/api/progress')return progress(request,env,user);
-      if(path.startsWith('/api/admin/'))return admin(request,env,user,path);
+      if(path==='/api/progress')return await progress(request,env,user);
+      if(path.startsWith('/api/admin/'))return await admin(request,env,user,path);
       let match=path.match(/^\/api\/books\/([a-zA-Z0-9_-]{10,160})\/(file|cover)$/);
-      if(match&&request.method==='GET')return media(request,env,user,match[1],match[2]==='cover');
+      if(match&&request.method==='GET')return await media(request,env,user,match[1],match[2]==='cover');
       if(path==='/'&&request.method==='GET')return new Response(page,{headers:{...headers,
         'Content-Type':'text/html; charset=utf-8',
         'Content-Security-Policy':"default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data:; frame-src 'self'; connect-src 'self'; form-action 'self'; base-uri 'none'; frame-ancestors 'none'" }});
