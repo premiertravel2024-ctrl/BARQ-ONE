@@ -287,6 +287,8 @@ def items():
 @router.get("/status")
 def status():
     with LOCK, database() as db:
+        from api_routes.reading import _migrate_legacy_covers
+        _migrate_legacy_covers(db)
         active = db.execute("SELECT COUNT(*) FROM books WHERE active=1").fetchone()[0]
         grouped = db.execute(
             "SELECT COUNT(*) FROM books WHERE active=1 AND series_id IS NOT NULL").fetchone()[0]
@@ -310,6 +312,8 @@ def status():
 def backup_database():
     """Owner-requested consistent on-disk snapshot including all covers/read state."""
     with LOCK, database() as db:
+        from api_routes.reading import _migrate_legacy_covers
+        _migrate_legacy_covers(db)
         destination = db_path()
         folder = destination.parent / "backups"
         folder.mkdir(parents=True, exist_ok=True)
