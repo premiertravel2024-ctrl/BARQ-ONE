@@ -2,12 +2,13 @@
 from __future__ import annotations
 
 import base64
+import sqlite3
 from hashlib import sha256
 
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
-from api_routes import reading
+from api_routes import reading, reading_local_library
 
 
 IMAGE = b'\xff\xd8\xffowner-jpeg\xff\xd9'
@@ -16,6 +17,7 @@ REMOTE_IMAGE = b'\xff\xd8\xffother-device-jpeg\xff\xd9'
 
 def client(tmp_path, monkeypatch):
     monkeypatch.setattr(reading, "data_dir", lambda: tmp_path)
+    monkeypatch.setattr(reading_local_library, "db_path", lambda: tmp_path / "barq_library.sqlite3")
     app = FastAPI()
     app.include_router(reading.router)
     return TestClient(app)
@@ -85,3 +87,43 @@ def test_in_flight_sync_does_not_undo_a_newer_upload(tmp_path, monkeypatch):
     assert api.put(image, content=IMAGE, headers={"Content-Type": "image/jpeg"}).status_code == 200
     assert reading.apply_cover_sync({slot(book): remote_entry()}, expected=old_snapshot, authoritative=True) is False
     assert api.get(image).content == IMAGE
+
+
+
+def test_cover_is_a_durable_sqlite_blob_not_a_disappearing_temp_file(tmp_path, monkeypatch):
+    api = client(tmp_path, monkeypatch)
+    name = 'library-series:all-your-books'
+    url = '/v1/reading/covers/image/' + name
+    assert api.put(url, content=IMAGE, headers={'Content-Type':'image/jpeg'}).status_code == 200
+    dbpath = tmp_path / 'barq_library.sqlite3'
+    assert dbpath.is_file()
+    with sqlite3.connect(dbpath) as connection:
+        stored = connection.execute('SELECT image FROM cover_overrides WHERE id=?',
+                                    (slot(name)[6:],)).fetchone()
+        assert stored is not None and bytes(stored[0]) == IMAGE
+        assert connection.execute('PRAGMA quick_check(1)').fetchone()[0] == 'ok'
+    assert not reading.cover_path(name).exists()
+    # A new client and database connection must return the same image.
+    fresh = client(tmp_path, monkeypatch)
+    assert fresh.get(url).content == IMAGE
+    stats = fresh.get('/v1/reading/library/status').json()
+    assert stats['persistent'] and stats['custom_covers'] == 1
+    assert stats['journal_mode'] == 'wal'
+
+
+def test_old_appdata_cover_is_migrated_once_and_never_overwrites_new_sqlite(tmp_path, monkeypatch):
+    api = client(tmp_path, monkeypatch)
+    name = 'library-series:old-book'
+    oldfile = reading.cover_path(name)
+    oldfile.parent.mkdir(parents=True)
+    oldfile.write_bytes(IMAGE)
+    url = '/v1/reading/covers/image/' + name
+    assert api.get(url).content == IMAGE
+    with sqlite3.connect(tmp_path / 'barq_library.sqlite3') as connection:
+        assert bytes(connection.execute('SELECT image FROM cover_overrides WHERE id=?',
+                                        (slot(name)[6:],)).fetchone()[0]) == IMAGE
+    assert api.put(url, content=REMOTE_IMAGE, headers={'Content-Type':'image/jpeg'}).status_code == 200
+    # Even with the old file present, the DB row is authoritative.
+    assert api.get(url).content == REMOTE_IMAGE
+    oldfile.unlink()
+    assert client(tmp_path, monkeypatch).get(url).content == REMOTE_IMAGE
