@@ -115,7 +115,7 @@ export function DriveBooks({books,ar,onOpen,heading=true,collectionLabel}:{
   (a.issueNumber??Infinity)-(b.issueNumber??Infinity)||
   a.edition.title.localeCompare(b.edition.title,undefined,{numeric:true});
  for(const book of books){
-  const key=book.seriesId||(book.manualSeries?'':book.group);
+  const key=book.seriesId||(book.manualSeries===undefined?book.group:'');
   if(key)groups.set(key,[...(groups.get(key)||[]),book]);
   else singles.push(book);
  }
