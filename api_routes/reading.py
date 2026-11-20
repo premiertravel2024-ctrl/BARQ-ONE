@@ -120,6 +120,9 @@ from api_routes.reading_drive import router as drive_router
 
 router.include_router(drive_router)
 
+from api_routes.reading_local_library import router as library_router
+router.include_router(library_router)
+
 
 MAX_COVER = 2 * 1024 * 1024
 COVER_ORIGINAL = b'\x00'

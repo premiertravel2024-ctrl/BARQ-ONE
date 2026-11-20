@@ -3,6 +3,8 @@ import {Cloud,RefreshCw} from 'lucide-react';
 import {APIError,requestJSON} from '../lib/backend';
 import {Switch} from '../components/ui/Switch';
 import {driveSyncDevice} from '../lib/driveSync';
+import {LocalLibraryManager} from './LocalLibraryManager';
+import {OnlineLibrarySettings} from './OnlineLibraryLink';
 import type {DriveBook} from './DriveBooks';
 
 type Connection={connected:boolean;pending:boolean;failed:boolean;folder:string;sync?:boolean};
@@ -11,10 +13,22 @@ const root='/v1/reading/drive';
 
 export async function loadCloudBooks(){
  const result=await requestJSON<{books:Item[]}>(root+'/catalogue');
- return result.books.map<DriveBook>(item=>({
-  edition:{id:'google:'+item.id,title:item.title,format:'pdf',driveId:item.id},
-  group:item.group,coverId:item.cover||undefined,
- })).sort((a,b)=>a.edition.title.localeCompare(b.edition.title,undefined,{numeric:true}));
+ type LocalBook={id:string;title:string;active:number;series_id:string|null;issue_number:number|null;position:number};
+ type LocalSeries={id:string;title:string};
+ const metadata=await requestJSON<{books:LocalBook[];series:LocalSeries[]}>('/v1/reading/library/items').catch(()=>undefined);
+ const byId=new Map((metadata?.books||[]).filter(book=>book.active===1).map(book=>[book.id,book]));
+ const seriesById=new Map((metadata?.series||[]).map(series=>[series.id,series.title]));
+ return result.books.map<DriveBook>(item=>{
+  const saved=byId.get(item.id);
+  const series=saved?.series_id?seriesById.get(saved.series_id):undefined;
+  return {
+   edition:{id:'google:'+item.id,title:saved?.title||item.title,format:'pdf',driveId:item.id},
+   group:series||item.group,coverId:item.cover||undefined,
+   issueNumber:saved?.issue_number||undefined,sortPosition:saved?.position||0,
+  };
+ }).sort((a,b)=>(a.sortPosition||0)-(b.sortPosition||0)||
+  (a.issueNumber??Infinity)-(b.issueNumber??Infinity)||
+  a.edition.title.localeCompare(b.edition.title,undefined,{numeric:true}));
 }
 
 export function useCloudBooks(){
@@ -22,6 +36,11 @@ export function useCloudBooks(){
  const [loading,setLoading]=useState(true);
  const [failed,setFailed]=useState(false);
  const [attempt,setAttempt]=useState(0);
+ useEffect(()=>{
+  const changed=()=>setAttempt(value=>value+1);
+  window.addEventListener('barq:library-changed',changed);
+  return()=>window.removeEventListener('barq:library-changed',changed);
+ },[]);
  useEffect(()=>{
   let live=true;
   setLoading(true);setFailed(false);
@@ -156,5 +175,6 @@ export function CloudReading({ar}:{ar:boolean}){
   {connection?.pending&&<p role="status">{label('كمّل موافقة Google في المتصفح وارجع لبرق.','Complete Google consent in your browser and return to BARQ.')}</p>}
   {url&&<a href={url} target="_blank" rel="noreferrer">{label('افتح موافقة Google','Open Google consent')}</a>}
   {error&&<p className="bs-alert" role="alert">{error}</p>}
+  {connection?.connected&&<><LocalLibraryManager ar={ar}/><OnlineLibrarySettings ar={ar}/></>}
  </div>;
 }
