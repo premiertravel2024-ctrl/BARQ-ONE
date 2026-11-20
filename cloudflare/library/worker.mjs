@@ -28,6 +28,7 @@ function json(data, status = 200) {
   return new Response(JSON.stringify(data), {status, headers:{...headers,'Content-Type':'application/json; charset=utf-8'}});
 }
 function problem(status, message) { return json({error:message}, status); }
+function redirect(url){return new Response(null,{status:302,headers:{...headers,Location:url}});}
 function bytes(value) { return encoder.encode(value); }
 function b64(data) {
   const raw = typeof data === 'string' ? bytes(data) : data;
@@ -138,7 +139,7 @@ function newNonce() {
 async function oauthStart(request,env,base,flow,user) {
   if(flow==='drive')requireOwner(user,env);
   const state=newNonce();
-  const response=Response.redirect(GOOGLE_AUTH+'?'+new URLSearchParams({
+  const response=redirect(GOOGLE_AUTH+'?'+new URLSearchParams({
     client_id:env.GOOGLE_CLIENT_ID,
     redirect_uri:base+'/auth/callback',
     response_type:'code',
@@ -180,7 +181,7 @@ async function oauthCallback(request,env,base,user) {
       'ON CONFLICT(singleton) DO UPDATE SET owner_sub=excluded.owner_sub,refresh_cipher=excluded.refresh_cipher,updated_at=CURRENT_TIMESTAMP')
       .bind(user.sub,encrypted).run();
   }
-  const next=Response.redirect(base+'/',302);
+  const next=redirect(base+'/',302);
   setCookie(next,STATE_COOKIE,'',0);
   if(saved.flow!=='drive')setCookie(next,SESSION_COOKIE,
     await seal({sub:profile.sub,email:profile.email,exp:Date.now()+7*86400000},env),7*86400);
@@ -352,7 +353,7 @@ export default {
       if(path==='/auth/drive'&&request.method==='GET')return oauthStart(request,env,base,'drive',user);
       if(path==='/auth/callback'&&request.method==='GET')return oauthCallback(request,env,base,user);
       if(path==='/auth/logout'&&request.method==='GET'){
-        const response=Response.redirect(base+'/',302);
+        const response=redirect(base+'/',302);
         return setCookie(response,SESSION_COOKIE,'',0);
       }
       if(path==='/healthz')return json({status:'ok'});
