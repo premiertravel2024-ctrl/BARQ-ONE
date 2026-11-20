@@ -95,3 +95,45 @@ def test_github_release_redirects_remain_on_trusted_hosts(monkeypatch, tmp_path)
     asset_host = 'untrusted.example'
     with pytest.raises(ValueError, match='Untrusted update redirect'):
         app_updates.check_release(channel)
+
+
+
+def test_signed_source_commit_is_optional_but_validated():
+    key = Ed25519PrivateKey.generate()
+    pinned = key.public_key().public_bytes_raw()
+    original = release_fields(b'MZinstaller')
+    assert app_updates.Release.verify(manifest(key, original), pinned).source_sha is None
+    source = 'a' * 40
+    assert app_updates.Release.verify(manifest(key, dict(original, source_sha=source)), pinned).source_sha == source
+    with pytest.raises(ValueError, match='Invalid release source commit'):
+        app_updates.Release.verify(manifest(key, dict(original, source_sha='not-a-commit')), pinned)
+
+
+def test_publisher_does_not_silently_skip_changed_source(monkeypatch):
+    from scripts import publish_update
+    channel = app_updates.Channel('https://updates.example', b'0' * 32)
+    monkeypatch.setattr(publish_update, 'configured_channel', lambda: channel)
+    monkeypatch.setattr(publish_update, 'VERSION', '2.41.20')
+    monkeypatch.setattr(publish_update, 'check_release', lambda _: app_updates.Release(
+        '2.41.20', 50, 'a'*64, 'published', 'b'*40,
+    ))
+    monkeypatch.setenv('GITHUB_SHA', 'b'*40)
+    assert publish_update.should_publish() is False
+    monkeypatch.setenv('GITHUB_SHA', 'c'*40)
+    with pytest.raises(SystemExit, match='Increase the release version'):
+        publish_update.should_publish()
+
+
+def test_publisher_detects_a_stale_public_update_channel(monkeypatch):
+    from scripts import publish_update
+    channel = app_updates.Channel('https://updates.example', b'0' * 32)
+    monkeypatch.setattr(publish_update, 'configured_channel', lambda: channel)
+    monkeypatch.setattr(publish_update, 'VERSION', '2.41.20')
+    monkeypatch.setattr(publish_update, 'check_release', lambda _: app_updates.Release(
+        '2.41.19', 50, 'a'*64, 'previous release'))
+    assert publish_update.should_publish() is True
+    with pytest.raises(SystemExit, match='Public BARQ feed is stale'):
+        publish_update.verify_live()
+    monkeypatch.setattr(publish_update, 'check_release', lambda _: app_updates.Release(
+        '2.41.20', 50, 'a'*64, 'current release'))
+    publish_update.verify_live()
