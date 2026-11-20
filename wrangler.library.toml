@@ -1,0 +1,22 @@
+# Separate from the existing cinema/music Worker: only reading routes are public.
+# Replace the placeholders with your own values BEFORE deploying.
+name = "barq-one-library"
+main = "cloudflare/library/worker.mjs"
+compatibility_date = "2026-11-20"
+workers_dev = true
+
+[vars]
+BASE_URL = "https://barq-one-library.YOUR-SUBDOMAIN.workers.dev"
+GOOGLE_CLIENT_ID = "YOUR_WEB_OAUTH_CLIENT_ID.apps.googleusercontent.com"
+OWNER_GOOGLE_EMAIL = "YOUR_OWNER_GOOGLE_EMAIL"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "barq-one-reading"
+database_id = "REPLACE_WITH_YOUR_D1_DATABASE_ID"
+
+# Secrets, NEVER in this file or GitHub:
+# GOOGLE_CLIENT_SECRET
+# SESSION_SECRET (long random)
+# TOKEN_KEY_B64 (base64url encoded 32 random bytes)
+# Optional: OWNER_GOOGLE_SUB
