@@ -54,3 +54,27 @@ test('Browser assets only come from the dedicated gateway',async()=>{
   assert.ok((await response.text()).length>100);
  }
 });
+
+async function signedSession(email,sub='google-user-sub'){
+ const payload=Buffer.from(JSON.stringify({sub,email,exp:Date.now()+60000})).toString('base64url');
+ const key=await crypto.subtle.importKey('raw',new TextEncoder().encode(env.SESSION_SECRET),
+  {name:'HMAC',hash:'SHA-256'},false,['sign']);
+ const signature=await crypto.subtle.sign('HMAC',key,new TextEncoder().encode(payload));
+ return '__Host-barq_reader='+payload+'.'+Buffer.from(signature).toString('base64url');
+}
+test('Signed regular readers are never treated as owners',async()=>{
+ const cookie=await signedSession('reader@example.com');
+ const me=await library.fetch(make('/api/me',{headers:{Cookie:cookie}}),env);
+ assert.equal(me.status,200);
+ assert.deepEqual(await me.json(),{authenticated:true,owner:false,email:'reader@example.com'});
+ const forbidden=await library.fetch(make('/api/admin/status',{headers:{Cookie:cookie}}),env);
+ assert.equal(forbidden.status,403);
+});
+test('Only exact configured verified owner account can get owner privileges',async()=>{
+ const cookie=await signedSession('owner@example.com');
+ const me=await library.fetch(make('/api/me',{headers:{Cookie:cookie}}),env);
+ assert.equal((await me.json()).owner,true);
+ const moreStrict={...env,OWNER_GOOGLE_SUB:'different-sub'};
+ const rejected=await library.fetch(make('/api/me',{headers:{Cookie:cookie}}),moreStrict);
+ assert.equal((await rejected.json()).owner,false);
+});
