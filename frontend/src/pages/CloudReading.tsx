@@ -31,6 +31,8 @@ export async function loadCloudBooks(force=false,folder=''){
     // PDF media will still require Google unless the file itself is available locally.
    }
   }
+  // Resume private PDF mirroring only when the owner had previously enabled it.
+  void requestJSON('/v1/reading/library/archive/resume',{method:'POST'}).catch(()=>{});
   const metadata=await requestJSON<{books:LocalBook[];series:LocalSeries[]}>('/v1/reading/library/items');
   const bySeries=new Map(metadata.series.map(group=>[group.id,group]));
   return metadata.books.filter(item=>item.active===1&&!item.hidden).map<DriveBook>(item=>{
