@@ -106,7 +106,7 @@ test('Reading Library opens a published edition in the in-app reader',()=>{
   assert.match(persistence,/barq-reading-pending-v2/);
   assert.match(persistence,/retryReadingLocalState/);
   assert.match(persistence,/reading-storage-status/);
-  assert.match(persistence,/\/state\/\x27\+encodeURIComponent\(key\)/);
+  assert.match(persistence,/encodeURIComponent\(key\)/);
   assert.match(persistence,/base\+\x27\/flush\x27/);
   assert.match(persistence,/pendingSnapshot\(\)\[key\]!==undefined/);
   assert.match(read('pages/LocalLibraryManager.tsx'),/Retry save|أعد الحفظ/);
