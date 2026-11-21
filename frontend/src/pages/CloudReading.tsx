@@ -13,16 +13,16 @@ let lastScanAt=0;
 let lastScanFolder='';
 let pendingScan:Promise<void>|undefined;
 
-export async function loadCloudBooks(force=false,folder=''){
+export async function loadCloudBooks(force=false,folder='',offlineOnly=false){
  type LocalBook={
   id:string;title:string;active:number;hidden:number;folder_name:string;cover_id:string|null;
-  series_id:string|null;issue_number:number|null;position:number;manual_series:number;review_reason:string;
+  series_id:string|null;issue_number:number|null;position:number;manual_series:number;review_reason:string;archived:number;
  };
  type LocalSeries={id:string;title:string;position:number};
  try{
   // One Drive read updates the media allowlist and local metadata in one transaction.
   // Indexing is automatic on opening the connected library; owner edits are preserved.
-  if(force||!lastScanAt||lastScanFolder!==folder||Date.now()-lastScanAt>=15*60*1000){
+  if(!offlineOnly&&(force||!lastScanAt||lastScanFolder!==folder||Date.now()-lastScanAt>=15*60*1000)){
    if(!pendingScan)pendingScan=requestJSON('/v1/reading/library/refresh',{method:'POST'})
     .then(()=>{lastScanAt=Date.now();lastScanFolder=folder;})
     .finally(()=>{pendingScan=undefined;});
@@ -31,6 +31,8 @@ export async function loadCloudBooks(force=false,folder=''){
     // PDF media will still require Google unless the file itself is available locally.
    }
   }
+  // Resume private PDF mirroring only when the owner had previously enabled it.
+  if(!offlineOnly)void requestJSON('/v1/reading/library/archive/resume',{method:'POST'}).catch(()=>{});
   const metadata=await requestJSON<{books:LocalBook[];series:LocalSeries[]}>('/v1/reading/library/items');
   const bySeries=new Map(metadata.series.map(group=>[group.id,group]));
   return metadata.books.filter(item=>item.active===1&&!item.hidden).map<DriveBook>(item=>{
@@ -40,12 +42,15 @@ export async function loadCloudBooks(force=false,folder=''){
     group:series?.title||item.folder_name,
     coverId:item.cover_id||undefined,seriesId:series?.id,
     issueNumber:item.issue_number||undefined,sortPosition:item.position||0,
-    manualSeries:!!item.manual_series,reviewReason:item.review_reason,
+    manualSeries:!!item.manual_series,reviewReason:item.review_reason,offline:!!item.archived,
    };
   }).sort((a,b)=>(a.sortPosition||0)-(b.sortPosition||0)||
    (a.issueNumber??Infinity)-(b.issueNumber??Infinity)||
    a.edition.title.localeCompare(b.edition.title,undefined,{numeric:true}));
  }catch{
+  // Offline with no cached index is an empty local shelf, not a failed online
+  // scan. Treating it as an error hides the publisher's regular series list.
+  if(offlineOnly)return [];
   // A damaged/unavailable local index must not prevent an otherwise working reader.
   const result=await requestJSON<{books:Item[]}>(root+'/catalogue');
   return result.books.map<DriveBook>(item=>({
@@ -76,7 +81,7 @@ export function useCloudBooks(){
   setLoading(true);setFailed(false);
   void requestJSON<Connection>(root+'/status')
    .then(status=>{
-    if(!status.connected){lastScanAt=0;lastScanFolder='';return undefined;}
+    if(!status.connected){lastScanAt=0;lastScanFolder='';return loadCloudBooks(false,'',true);}
     return loadCloudBooks(false,status.folder);
    })
    .then(items=>{if(live)setBooks(items);})

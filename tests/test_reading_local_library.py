@@ -253,3 +253,58 @@ def test_old_appdata_catalogue_migrates_to_selected_g_drive_without_data_loss(tm
     assert api.get('/library/state/barq-reader:old').json()['value'] == '{"page":23,"marks":[]}'
     assert old_db.exists() and new_db.exists()
     assert api.get('/library/status').json()['persistent']
+
+
+
+def test_dirty_reading_progress_replays_over_stale_database_after_restart(tmp_path, monkeypatch):
+    api, destination = client(tmp_path, monkeypatch)
+    key = "barq-reader:google:long-book"
+    earlier = '{"page":4,"marks":[2]}'
+    newest = '{"page":87,"marks":[2,87]}'
+    assert api.put('/library/state/'+key, json={"value":earlier}).json() == {"saved": True}
+    # Normal initial synchronization should never replace existing stored records.
+    assert api.post('/library/state/sync', json={"records":{key:newest}}).json()["records"][key] == earlier
+    # Durable outbox replay is an explicit owner edit and must overwrite stale state.
+    done = api.post('/library/state/flush', json={"records":{key:newest}})
+    assert done.status_code == 200, done.text
+    assert done.json() == {"saved":1}
+    reopened, _ = client(tmp_path, monkeypatch)
+    assert reopened.get('/library/state/'+key).json()["value"] == newest
+    assert reopened.get('/library/status').json()["persistent"]
+    with sqlite3.connect(destination) as database:
+        assert database.execute("PRAGMA quick_check(1)").fetchone()[0] == "ok"
+
+
+def test_recovery_batch_validates_every_record_before_any_write(tmp_path, monkeypatch):
+    api, _ = client(tmp_path, monkeypatch)
+    key = "barq-reader:google:novel"
+    invalid = api.post('/library/state/flush', json={"records":{
+        key:'{"page":25,"marks":[]}',
+        "invalid-key":'{"page":1}',
+    }})
+    assert invalid.status_code == 422
+    assert api.get('/library/state/'+key).json()["value"] is None
+    invalid_json = api.post('/library/state/flush', json={"records":{key:"broken-json"}})
+    assert invalid_json.status_code == 422
+    assert api.get('/library/state/'+key).json()["value"] is None
+    good = api.post('/library/state/flush', json={"records":{key:'{"page":25,"marks":[]}'}})
+    assert good.status_code == 200 and good.json()["saved"] == 1
+    assert api.get('/library/state/'+key).json()["value"] == '{"page":25,"marks":[]}'
+
+
+
+def test_selected_g_drive_never_falls_back_to_empty_appdata_database(tmp_path,monkeypatch):
+    import pytest
+    monkeypatch.delenv("BARQ_READING_DB_DIR",raising=False)
+    monkeypatch.setattr(reading_local_library,"data_dir",lambda:tmp_path)
+    monkeypatch.setattr(reading_local_library,"_PINNED_DB_PATH",None)
+    chosen=tmp_path/"reading"/".g_drive_database_selected"
+    chosen.parent.mkdir(parents=True)
+    chosen.write_text("G:/BARQ DATABASE",encoding="utf-8")
+    path=reading_local_library.db_path()
+    assert path.as_posix()=="G:/BARQ DATABASE/barq_library.sqlite3"
+    with pytest.raises(FileNotFoundError,match="G:"):
+        with reading_local_library.LOCK, reading_local_library.database():
+            pass
+    # Never tell the owner a second, empty catalogue is their actual library.
+    assert not (tmp_path/"reading"/"barq_library.sqlite3").exists()

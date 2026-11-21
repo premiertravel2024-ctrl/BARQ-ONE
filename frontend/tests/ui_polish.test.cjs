@@ -101,8 +101,15 @@ test('Reading Library opens a published edition in the in-app reader',()=>{
   assert.match(persistence,/method:'PUT'/);
   assert.match(persistence,/method:'POST'/);
   assert.match(persistence,/\/v1\/reading\/library\/state/);
-  // A failed backend save must not prevent the reader from caching progress.
-  assert.match(persistence,/catch\(\(\)=>\{\}\)/);
+  // New SQLite saves keep an offline outbox and expose retries; do not
+  // silence a failed durable write or hydrate stale pages over pending edits.
+  assert.match(persistence,/barq-reading-pending-v2/);
+  assert.match(persistence,/retryReadingLocalState/);
+  assert.match(persistence,/reading-storage-status/);
+  assert.match(persistence,/encodeURIComponent\(key\)/);
+  assert.match(persistence,/base\+\x27\/flush\x27/);
+  assert.match(persistence,/pendingSnapshot\(\)\[key\]!==undefined/);
+  assert.match(read('pages/LocalLibraryManager.tsx'),/Retry save|أعد الحفظ/);
 });
 
 test('wallpaper gallery supports applying and safe removal with confirmation',()=>{

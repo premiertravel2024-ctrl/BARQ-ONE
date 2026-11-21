@@ -71,7 +71,7 @@ jobs:
         working-directory: .
         run: |
           python3 -m pip install pytest fastapi httpx mutagen "cryptography>=42,<51"
-          python3 -m pytest -q tests/test_cinema_music_rebuild.py tests/test_room_player_fullscreen.py tests/test_ui_upgrade_v22.py tests/test_app_context.py tests/test_reading_editions.py tests/test_reading_cover_persistence.py tests/test_reading_local_library.py tests/test_app_updates.py
+          python3 -m pytest -q tests/test_cinema_music_rebuild.py tests/test_room_player_fullscreen.py tests/test_ui_upgrade_v22.py tests/test_app_context.py tests/test_reading_editions.py tests/test_reading_cover_persistence.py tests/test_reading_book_archive.py tests/test_reading_full_backup.py tests/test_reading_local_library.py tests/test_app_updates.py
       - name: Verify media UI behavior on desktop and mobile
         run: |
           npx playwright install chromium
@@ -205,7 +205,7 @@ jobs:
       - name: Verify EXACT outputs from THIS run
         shell: pwsh
         run: |
-          $releaseVersion = '2.41.22'
+          $releaseVersion = '2.41.23'
           $prefix = "release/BARQ_Setup_$releaseVersion.exe"
           if (!(Test-Path $prefix)) { throw 'Missing freshly built installer' }
           if (!(Test-Path "release/BARQ_Portable_$releaseVersion.zip")) { throw 'Missing portable ZIP' }
@@ -230,7 +230,7 @@ jobs:
           # in the checkout and removes the temporary PyInstaller staging tree.
           # Restore the EXACT tested BARQ.exe from this run's portable ZIP, not a stale
           # or unrelated dist/ file. Verify both ZIP and executable SHA-256 first.
-          py -3.11 scripts/restore_verified_core.py --with-ui --version 2.41.22
+          py -3.11 scripts/restore_verified_core.py --with-ui --version 2.41.23
           if ($LASTEXITCODE -ne 0) { throw 'Unable to restore verified Core+UI from this run portable archive' }
           if (!(Test-Path 'dist/BARQ/BARQ.exe')) { throw 'Verified BARQ.exe missing after recovery' }
           if (!(Test-Path 'web/react/index.html')) { throw 'Verified React UI missing after recovery' }
@@ -238,27 +238,27 @@ jobs:
           if (!(Get-ChildItem 'web/react/assets' -Filter '*.js' -ErrorAction Stop)) { throw 'Verified React JS assets missing after recovery' }
           & $compiler ./scripts/installer_core_ui_update.iss
           if ($LASTEXITCODE -ne 0) { throw 'Core/React update compilation failed' }
-          $patch = 'release/BARQ_Core_UI_Update_2.41.22.exe'
+          $patch = 'release/BARQ_Core_UI_Update_2.41.23.exe'
           if (!(Test-Path $patch)) { throw 'Missing Core+UI patch installer' }
           $size = (Get-Item $patch).Length
           if ($size -gt 180MB) { throw "Unexpectedly large update: $size bytes" }
           $checksum = (Get-FileHash $patch -Algorithm SHA256).Hash.ToLowerInvariant()
-          "$checksum  BARQ_Core_UI_Update_2.41.22.exe" | Set-Content release/BARQ_Core_UI_Update_2.41.22.sha256 -Encoding ascii
+          "$checksum  BARQ_Core_UI_Update_2.41.23.exe" | Set-Content release/BARQ_Core_UI_Update_2.41.23.sha256 -Encoding ascii
           Write-Host "Core+UI patch built, $size bytes, SHA256 $checksum"
       - name: Upload verified incremental Core+UI update
         uses: actions/upload-artifact@v4
         with:
-          name: BARQ-v2.41.22-Core-and-UI-update
+          name: BARQ-v2.41.23-Core-and-UI-update
           path: |
-            release/BARQ_Core_UI_Update_2.41.22.exe
-            release/BARQ_Core_UI_Update_2.41.22.sha256
+            release/BARQ_Core_UI_Update_2.41.23.exe
+            release/BARQ_Core_UI_Update_2.41.23.sha256
           if-no-files-found: error
           retention-days: 30
       - name: Upload build diagnostics even on failure
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: BARQ-v2.41.22-Windows-diagnostics
+          name: BARQ-v2.41.23-Windows-diagnostics
           path: |
             release/*.log
             release/*.xml
@@ -271,14 +271,14 @@ jobs:
         id: upload-windows
         uses: actions/upload-artifact@v4
         with:
-          name: BARQ-v2.41.22-verified-Windows-x64
+          name: BARQ-v2.41.23-verified-Windows-x64
           path: |
-            release/BARQ_Setup_2.41.22.exe
-            release/BARQ_Portable_2.41.22.zip
+            release/BARQ_Setup_2.41.23.exe
+            release/BARQ_Portable_2.41.23.zip
             release/self-test.json
             release/installed-self-test.json
             release/release-evidence.json
-            release/build-ok-v2.41.22.marker
+            release/build-ok-v2.41.23.marker
             release/UI_BUILD_MODE.txt
           if-no-files-found: error
           retention-days: 30
@@ -287,7 +287,7 @@ jobs:
         continue-on-error: true
         uses: actions/download-artifact@v4
         with:
-          name: BARQ-v2.41.22-verified-Windows-x64
+          name: BARQ-v2.41.23-verified-Windows-x64
           path: ${{ runner.temp }}/barq-published-artifact
       - name: Allow newly uploaded artifacts to propagate
         if: steps.download-windows.outcome == 'failure'
@@ -297,7 +297,7 @@ jobs:
         if: steps.download-windows.outcome == 'failure'
         uses: actions/download-artifact@v4
         with:
-          name: BARQ-v2.41.22-verified-Windows-x64
+          name: BARQ-v2.41.23-verified-Windows-x64
           path: ${{ runner.temp }}/barq-published-artifact
       - name: Verify the installer in the published artifact
         shell: pwsh
@@ -305,7 +305,7 @@ jobs:
           ARTIFACT_URL: ${{ steps.upload-windows.outputs.artifact-url }}
         run: |
           $folder = Join-Path $env:RUNNER_TEMP 'barq-published-artifact'
-          $filename = 'BARQ_Setup_2.41.22.exe'
+          $filename = 'BARQ_Setup_2.41.23.exe'
           $installer = Get-Item -LiteralPath (Join-Path $folder $filename)
           $evidence = Get-Content -LiteralPath (Join-Path $folder 'release-evidence.json') -Raw | ConvertFrom-Json
           $hash = (Get-FileHash -LiteralPath $installer.FullName -Algorithm SHA256).Hash.ToLowerInvariant()

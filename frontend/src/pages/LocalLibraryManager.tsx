@@ -2,6 +2,7 @@ import {useEffect,useMemo,useState,type FormEvent} from 'react';
 import {BookOpen,Database,RefreshCw,Settings2,Sparkles,Search,Layers,ArrowUp,ArrowDown,EyeOff,CheckSquare} from 'lucide-react';
 import {requestJSON} from '../lib/backend';
 import {EditableCover} from './EditableCover';
+import {getReadingStorageStatus,retryReadingLocalState} from '../lib/readingLocalState';
 
 type Book={
  id:string;title:string;source_title:string;folder_name:string;cover_id:string|null;
@@ -12,6 +13,9 @@ type Series={id:string;title:string;description:string;genre:string;position:num
 type Snapshot={books:Book[];series:Series[]};
 type Stats={count:number;grouped:number;review:number;series:number;database:string;automatic:boolean;persistent:boolean;db_bytes:number;custom_covers:number;reading_records:number;last_saved_at:string|null;journal_mode:string};
 type Report={books:number;series:number;assigned:number;numbered:number;review:number;new_series:number;preview:boolean};
+type ArchiveStatus={enabled:boolean;running:boolean;total:number;archived:number;bytes:number;
+ directory:string;processed:number;downloaded:number;failed:number;error:string};
+type FullBackupStatus={running:boolean;copied:number;total:number;file:string;bytes:number;error:string};
 type Filter='all'|'review'|'ungrouped'|'hidden'|'series';
 const base='/v1/reading/library';
 
@@ -23,6 +27,12 @@ export function LocalLibraryManager({ar}:{ar:boolean}){
  const [error,setError]=useState('');
  const [notice,setNotice]=useState('');
  const [report,setReport]=useState<Report>();
+ const [archive,setArchive]=useState<ArchiveStatus>();
+ const [archiveBusy,setArchiveBusy]=useState(false);
+ const [fullBackup,setFullBackup]=useState<FullBackupStatus>();
+ const [fullBackupBusy,setFullBackupBusy]=useState(false);
+ const [readingSave,setReadingSave]=useState(getReadingStorageStatus);
+ const [retryingSave,setRetryingSave]=useState(false);
  const [query,setQuery]=useState('');
  const [tab,setTab]=useState<Filter>('all');
  const [selected,setSelected]=useState<string[]>([]);
@@ -53,6 +63,22 @@ export function LocalLibraryManager({ar}:{ar:boolean}){
   setData(items);setStats(status);
  }
  useEffect(()=>{
+  let mounted=true;
+  async function pollArchive(){
+   try{
+    const response=await requestJSON<ArchiveStatus>(base+'/archive/status');
+    if(mounted)setArchive(response);
+    try{
+     const snapshot=await requestJSON<FullBackupStatus>(base+'/backup/full/status');
+     if(mounted)setFullBackup(snapshot);
+    }catch{/* Older installers have no full-library backup endpoint. */}
+   }catch{/* Older installed backends may not expose the archive yet. */}
+  }
+  void pollArchive();
+  const timer=window.setInterval(()=>void pollArchive(),5000);
+  return()=>{mounted=false;window.clearInterval(timer);};
+ },[]);
+ useEffect(()=>{
   void reload().catch(()=>setError(t('تعذّر فتح فهرس المكتبة المحلية','Could not load local catalogue')));
   const manage=(event:Event)=>{
    setOpen(true);
@@ -61,11 +87,15 @@ export function LocalLibraryManager({ar}:{ar:boolean}){
    if(group)beginSeries(group);
   };
   const storageChanged=()=>{void requestJSON<Stats>(base+'/status').then(setStats).catch(()=>{});};
+  const pendingChanged=()=>setReadingSave(getReadingStorageStatus());
   window.addEventListener('barq:library-manage',manage);
   window.addEventListener('barq:library-storage-changed',storageChanged);
+  window.addEventListener('barq:reading-storage-status',pendingChanged);
+  pendingChanged();
   return()=>{
    window.removeEventListener('barq:library-manage',manage);
    window.removeEventListener('barq:library-storage-changed',storageChanged);
+   window.removeEventListener('barq:reading-storage-status',pendingChanged);
   };
  },[ar,data.series]);
  async function action(url:string,body?:object,method='POST'){
@@ -81,6 +111,34 @@ export function LocalLibraryManager({ar}:{ar:boolean}){
    setError(t('التعديل ما اتحفظش. تأكد من اتصال Drive ثم جرّب تاني.','Could not save. Check Drive connection and retry.'));
    return undefined;
   }finally{setBusy(false);}
+ }
+ async function retryReadingSaves(){
+  setRetryingSave(true);
+  try{
+   const ok=await retryReadingLocalState();
+   setReadingSave(getReadingStorageStatus());
+   if(ok)await reload();
+  }finally{setRetryingSave(false);}
+ }
+ async function archiveBooks(stop=false){
+  setArchiveBusy(true);setError('');setNotice('');
+  try{
+   const result=await requestJSON<ArchiveStatus>(base+'/archive/'+(stop?'stop':'start'),{method:'POST'});
+   setArchive(result);
+   setNotice(stop?t('تم إيقاف النسخ التلقائي بعد الملف الحالي، والنسخ المحفوظة مش هتتمسح.','Archive pauses after the current PDF; saved books remain.'):
+    t('بدأ حفظ النسخ المحلية. تقدر تستخدم المكتبة أثناء النسخ.','Offline books are being copied while you use the library.'));
+  }catch{setError(t('تعذّر بدء النسخ. راجع اتصال Drive ومساحة قرص المكتبة.','Could not start archive. Check Drive access and disk space.'));}
+  finally{setArchiveBusy(false);}
+ }
+ async function backupEverything(){
+  setFullBackupBusy(true);setError('');setNotice('');
+  try{
+   const response=await requestJSON<FullBackupStatus>(base+'/backup/full',{method:'POST'});
+   setFullBackup(response);
+   setNotice(t('بدأ تجهيز نسخة شاملة من البيانات والكتب. تابع حالتها هنا.','Complete backup started. Track its status here.'));
+  }catch{
+   setError(t('تعذّر بدء النسخة الكاملة. راجع مساحة القرص وسلامة ملفات PDF المحفوظة.','Could not start full backup. Check space and local PDF integrity.'));
+  }finally{setFullBackupBusy(false);}
  }
  async function backup(){
   setBusy(true);setError('');setNotice('');
@@ -200,6 +258,17 @@ export function LocalLibraryManager({ar}:{ar:boolean}){
    </div>}
   </div>
   {(notice||error)&&<p role="status" className={error?'bs-alert':'bs-organizer-ok'}>{error||notice}</p>}
+  {(readingSave.pending>0||readingSave.error)&&<div className="bs-reading-save-warning" role="status">
+   <span>{readingSave.error?
+    t('فيه مشكلة في حفظ بيانات القراءة.','A reading save needs attention.'):
+    t('فيه تغييرات قراءة لسه ما اتأكدش حفظها على G:','Some reading changes have not been confirmed on disk')}
+    {' · '}{readingSave.pending} {t('تعديل معلّق','pending changes')}
+   </span>
+   <button type="button" className="bs-muted-btn" disabled={retryingSave} onClick={()=>void retryReadingSaves()}>
+    <RefreshCw size={14}/>{retryingSave?t('جاري إعادة المحاولة','Retrying'):t('أعد الحفظ','Retry save')}
+   </button>
+  </div>}
+
   {!!report&&<p className="bs-organizer-report" role="status">
    {report.preview?t('معاينة بدون تغيير:','Preview only:'):t('تم التنظيم:','Organized:')}
    {' '}{report.books} {t('كتاب','books')} · {report.assigned} {t('داخل سلاسل','grouped')} · {report.numbered} {t('رقم عدد','numbered')} · {report.review} {t('يحتاج مراجعة','need review')}
@@ -218,10 +287,44 @@ export function LocalLibraryManager({ar}:{ar:boolean}){
      <span>{t('الحجم','Size')}: {(stats.db_bytes/1024).toFixed(0)} KB</span>
      <span>{t('ملفات WAL و SHM مؤقتة ومن الطبيعي اختفاؤها بعد إغلاق الاتصال.','WAL and SHM are temporary SQLite files and may disappear when connections close.')}</span>
      <button type="button" className="bs-muted-btn" disabled={busy} onClick={()=>void backup()}>
-      {t('حفظ نسخة احتياطية على القرص','Create local database backup')}
+      {t('نسخة احتياطية من بيانات المكتبة (بدون ملفات PDF)','Backup library metadata (PDF files excluded)')}
      </button>
+     <button type="button" className="bs-muted-btn" disabled={fullBackupBusy||!!fullBackup?.running}
+      onClick={()=>void backupEverything()}>
+      {t('نسخة احتياطية كاملة تشمل الكتب والبيانات','Full backup of books and database')}
+     </button>
+     {fullBackup?.running&&<span role="status">
+      {t('جاري تجهيز النسخة الكاملة','Creating complete backup')} · {fullBackup.copied}/{fullBackup.total}
+     </span>}
+     {!!fullBackup?.file&&<span role="status">
+      {t('آخر نسخة كاملة محفوظة','Last complete backup')} <code dir="ltr">{fullBackup.file}</code>
+     </span>}
+     {!!fullBackup?.error&&<span className="bs-backup-error" role="alert">
+      {t('النسخة الكاملة لم تكتمل. أصلح الملف الناقص أو التالف ثم أعد المحاولة.','Backup failed. Repair missing or damaged PDFs and retry.')}
+     </span>}
     </div>
    </details>}
+   <section className="bs-book-archive" aria-label={t('نسخة الكتب المحلية','Offline book copies')}>
+    <div>
+     <strong><Database size={15}/>{t('نسخة الكتب على الجهاز','Offline book copies')}</strong>
+     <span>{archive?
+      `${archive.archived} / ${archive.total} ${t('كتاب محفوظ','books copied')} · ${(archive.bytes/1048576).toFixed(1)} MB`:
+      t('جاري قراءة حالة النسخ','Checking offline archive')}</span>
+     {!!archive&&archive.total>0&&<progress className="bs-book-archive-progress"
+       max={archive.total} value={Math.min(archive.archived,archive.total)}
+       aria-label={t('نسبة الكتب المحفوظة على الجهاز','Offline books saved')}/>}
+     {archive?.running&&<span role="status">{t('جاري نسخ الكتب بالتدريج','Copying books one by one')} · {archive.processed} {t('تم فحصه','checked')}</span>}
+     {!!archive?.error&&<small role="status">{t('فيه كتب ما اتحفظتش، جرّب تاني بعد التحقق من الاتصال.','Some books were not copied; retry when connected.')}</small>}
+     {!!archive&&<code dir="ltr">{archive.directory}</code>}
+    </div>
+    <div className="bs-book-archive-actions">
+     <button className="bs-muted-btn" type="button" disabled={archiveBusy||!!archive?.running}
+      onClick={()=>void archiveBooks(false)}><BookOpen size={15}/>{archive?.enabled?t('تحقق من النسخ الناقصة','Check missing copies'):t('حفظ نسخة من كل الكتب','Save all books offline')}</button>
+     {!!archive?.enabled&&<button className="bs-muted-btn" type="button" disabled={archiveBusy}
+      onClick={()=>void archiveBooks(true)}>{t('إيقاف النسخ التلقائي','Pause automatic copying')}</button>}
+    </div>
+    <small>{t('PDFs المحفوظة تفتح بدون إنترنت، والملفات الأصلية تفضل في Drive من غير مشاركة مع أي حساب تاني.','Saved PDFs open offline; originals stay private in Drive.')}</small>
+   </section>
    <div className="bs-organizer-summary">
     <span><Layers size={15}/>{stats?.grouped||0} {t('كتاب ضمن سلاسل','books grouped')}</span>
     <span><Search size={15}/>{stats?.review||0} {t('يحتاج مراجعة','need review')}</span>

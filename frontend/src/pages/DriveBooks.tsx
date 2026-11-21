@@ -5,7 +5,7 @@ import type {ReadingEdition} from './BookReader';
 import {Modal} from '../components/ui/Modal';
 import {ArrowLeft,Settings2,Layers,Play} from 'lucide-react';
 
-export type DriveBook={edition:ReadingEdition;cover?:File;coverId?:string;group:string;issueNumber?:number;sortPosition?:number;seriesId?:string;manualSeries?:boolean;reviewReason?:string};
+export type DriveBook={edition:ReadingEdition;cover?:File;coverId?:string;group:string;issueNumber?:number;sortPosition?:number;seriesId?:string;manualSeries?:boolean;reviewReason?:string;offline?:boolean};
 let pickedBooks:DriveBook[]|undefined;
 export function pickedDriveBooks(){return pickedBooks;}
 
@@ -130,6 +130,7 @@ export function DriveBooks({books,ar,onOpen,heading=true,collectionLabel}:{
    <EditableCover id={item.edition.id} title={item.edition.title} ar={ar}><DriveCover book={item}/></EditableCover>
    <div className="bs-real-copy">
     {item.issueNumber&&<span>{ar?'العدد':'Issue'} {item.issueNumber}</span>}
+    {item.offline&&<span className="bs-offline-copy">{ar?'محفوظ على الجهاز':'Available offline'}</span>}
     <h3 dir="auto">{item.edition.title}</h3>
     <button className="bs-series-open" type="button" onClick={()=>onOpen(item.edition)}>
      {ar?'اقرأ':'Read'} <ArrowLeft size={14}/>
@@ -140,7 +141,7 @@ export function DriveBooks({books,ar,onOpen,heading=true,collectionLabel}:{
  function manage(seriesId?:string) {
   window.dispatchEvent(new CustomEvent('barq:library-manage',{detail:seriesId||null}));
  }
- return <section className="bs-drive-section" aria-label={collectionLabel||(ar?'الروايات':'Books')}>
+ return <section className="bs-drive-section" data-inline={!heading} aria-label={collectionLabel||(ar?'الروايات':'Books')}>
   {heading&&<h2>{collectionLabel||(ar?'رواياتي':'My books')}</h2>}
   {books.length===0?<p role="status">{ar?'مفيش روايات في الفولدر.':'No books in this folder.'}</p>:<>
    {collected.map(group=><article className="bs-real-card bs-published-card bs-series-grid-card" key={group.key}>

@@ -38,9 +38,27 @@ def db_path() -> Path:
         return Path(configured).expanduser() / "barq_library.sqlite3"
     global _PINNED_DB_PATH
     if _PINNED_DB_PATH is None:
+        # A previous owner choice of G: is durable across restarts. If G: is
+        # disconnected, opening must fail visibly; never create an empty second
+        # catalogue in AppData and make the owner think the books vanished.
         preferred = Path("G:/BARQ DATABASE")
-        parent = preferred if os.name == "nt" and preferred.is_dir() else data_dir() / "reading"
-        _PINNED_DB_PATH = parent / "barq_library.sqlite3"
+        marker = data_dir() / "reading" / ".g_drive_database_selected"
+        selected_g = marker.is_file() or (os.name == "nt" and preferred.is_dir())
+        if selected_g:
+            _PINNED_DB_PATH = preferred / "barq_library.sqlite3"
+            if not marker.is_file():
+                marker.parent.mkdir(parents=True, exist_ok=True)
+                with NamedTemporaryFile(dir=marker.parent, prefix=".barq-db-", delete=False) as file:
+                    staged = Path(file.name)
+                    file.write(b"G:/BARQ DATABASE")
+                    file.flush()
+                    os.fsync(file.fileno())
+                try:
+                    staged.replace(marker)
+                finally:
+                    staged.unlink(missing_ok=True)
+        else:
+            _PINNED_DB_PATH = data_dir() / "reading" / "barq_library.sqlite3"
     return _PINNED_DB_PATH
 
 
@@ -131,11 +149,27 @@ def schema(db):
         key TEXT PRIMARY KEY,
         value TEXT NOT NULL
     )""")
+    # PDF bytes live in <BARQ DATABASE>/books. SQLite keeps only the manifest,
+    # preventing multi-gigabyte databases and enabling content deduplication.
+    db.execute("""CREATE TABLE IF NOT EXISTS book_archives (
+        file_id TEXT PRIMARY KEY,
+        digest TEXT NOT NULL,
+        size INTEGER NOT NULL,
+        source_md5 TEXT,
+        stored_at TEXT NOT NULL
+    )""")
+    if "source_md5" not in columns:
+        db.execute("ALTER TABLE books ADD COLUMN source_md5 TEXT")
+
 
 
 @contextmanager
 def database():
     destination = db_path()
+    # Never recreate an intentionally selected G: library folder silently.
+    marker = data_dir() / "reading" / ".g_drive_database_selected"
+    if marker.is_file() and destination.as_posix().startswith("G:/") and not destination.parent.is_dir():
+        raise FileNotFoundError("BARQ library drive G: is unavailable; reconnect it before opening the database")
     destination.parent.mkdir(parents=True, exist_ok=True)
     migrate_previous_database(destination)
     with closing(sqlite3.connect(str(destination), timeout=15)) as db:
@@ -174,7 +208,9 @@ def snapshot(db):
     books = [dict(row) for row in db.execute(
         "SELECT id,title,source_title,folder_name,cover_id,active,published,hidden,"
         "series_id,issue_number,position,review_reason,manual_series,manual_issue,"
-        "manual_title,manual_position FROM books ORDER BY position,issue_number,title")]
+        "manual_title,manual_position,"
+        "EXISTS(SELECT 1 FROM book_archives a WHERE a.file_id=books.id) AS archived "
+        "FROM books ORDER BY position,issue_number,title")]
     series = [dict(row) for row in db.execute(
         "SELECT id,title,description,genre,position,source_key FROM series ORDER BY position,title")]
     return {"books": books, "series": series}
@@ -260,6 +296,23 @@ def sync_local_reading_state(info: StateSync):
         return {"records": {row["key"]: row["value"] for row in rows}}
 
 
+@router.post("/state/flush")
+def flush_pending_reading_state(info: StateSync):
+    """Atomically replay a browser's pending saves after a disconnected session.
+
+    Unlike /state/sync (initial import, insert-only), this endpoint deliberately
+    updates existing records with the owner's latest queued edit.
+    """
+    if len(info.records) > 250 or sum(len(value.encode("utf-8")) for value in info.records.values()) > 2_097_152:
+        raise HTTPException(413, "Pending reading changes exceed safe limits")
+    validated = [(state_key(key), state_value(value)) for key, value in info.records.items()]
+    with LOCK, database() as db:
+        for key, value in validated:
+            db.execute("""INSERT INTO reader_state(key,value) VALUES(?,?)
+                ON CONFLICT(key) DO UPDATE SET value=excluded.value""", (key,value))
+    return {"saved": len(validated)}
+
+
 @router.put("/state/{key:path}")
 def store_reading_state(key: str, info: StateValue):
     identifier = state_key(key)
@@ -276,6 +329,30 @@ def load_reading_state(key: str):
     with LOCK, database() as db:
         row = db.execute("SELECT value FROM reader_state WHERE key=?", (identifier,)).fetchone()
         return {"value": row["value"] if row else None}
+
+
+@router.get("/archive/status")
+def archived_books_status():
+    from services.reading_book_archive import archive_status
+    return archive_status()
+
+
+@router.post("/archive/start")
+def archive_books():
+    from services.reading_book_archive import start_archive
+    return start_archive(enabled=True)
+
+
+@router.post("/archive/resume")
+def resume_book_archive():
+    from services.reading_book_archive import start_archive
+    return start_archive()
+
+
+@router.post("/archive/stop")
+def stop_automatic_archive():
+    from services.reading_book_archive import disable_archive
+    return disable_archive()
 
 
 @router.get("/items")
@@ -306,6 +383,18 @@ def status():
                 "custom_covers": covers, "reading_records": reading_records,
                 "last_saved_at": record[0] if record else None,
                 "journal_mode": db.execute("PRAGMA journal_mode").fetchone()[0]}
+
+
+@router.post("/backup/full")
+def begin_full_library_backup():
+    from services.reading_full_backup import start_full_backup
+    return start_full_backup()
+
+
+@router.get("/backup/full/status")
+def full_library_backup_status():
+    from services.reading_full_backup import status
+    return status()
 
 
 @router.post("/backup")
@@ -361,22 +450,32 @@ def refresh():
         cover_id = item.get("cover")
         if cover_id is not None:
             identifier(str(cover_id))
-        books.append((file_id, str(item["title"])[:250], str(item.get("group") or "")[:300], cover_id))
+        md5 = item.get("md5")
+        md5 = md5.lower() if isinstance(md5, str) and re.fullmatch(r"[0-9a-fA-F]{32}", md5) else None
+        books.append((file_id, str(item["title"])[:250], str(item.get("group") or "")[:300], cover_id, md5))
     with LOCK, database() as db:
         db.execute("UPDATE books SET active=0")
-        for file_id, title, folder, cover in books:
+        for file_id, title, folder, cover, md5 in books:
             db.execute("""
-                INSERT INTO books(id,title,source_title,folder_name,cover_id,active)
-                VALUES(?,?,?,?,?,1)
+                INSERT INTO books(id,title,source_title,folder_name,cover_id,source_md5,active)
+                VALUES(?,?,?,?,?,?,1)
                 ON CONFLICT(id) DO UPDATE SET
                     title=CASE WHEN books.manual_title=1 THEN books.title ELSE excluded.title END,
                     source_title=excluded.source_title,
                     folder_name=excluded.folder_name,
                     cover_id=excluded.cover_id,
+                    source_md5=COALESCE(excluded.source_md5,books.source_md5),
                     active=1
-            """, (file_id, title, title, folder, cover))
+            """, (file_id, title, title, folder, cover, md5))
         report = organize(db)
-        return {"synced": len(books), "database": str(db_path()), **report}
+        response = {"synced": len(books), "database": str(db_path()), **report}
+    # The owner opted in once; refreshes keep the PDFs up to date in the background.
+    from services.reading_book_archive import start_archive
+    try:
+        start_archive()
+    except (OSError, RuntimeError):
+        pass
+    return response
 
 
 @router.post("/series")
