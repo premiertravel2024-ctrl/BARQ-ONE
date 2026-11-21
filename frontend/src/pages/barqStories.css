@@ -656,6 +656,25 @@
 .bs-book-archive-actions{display:flex;flex-wrap:wrap;align-items:center;gap:7px}
 .bs-book-archive-actions .bs-muted-btn{min-height:37px;white-space:normal}
 .bs-book-archive>small{flex:0 0 100%;color:#97adb8}
+.bs-book-archive-progress{
+ display:block;width:min(100%,440px);height:7px;accent-color:#bd678b;
+ border:0;border-radius:99px;overflow:hidden;
+ background:#111920;margin-block:5px;
+}
+.bs-book-archive-progress::-webkit-progress-bar{background:#101820;border-radius:99px}
+.bs-book-archive-progress::-webkit-progress-value{
+ background:linear-gradient(90deg,#b34470,#d887a9);border-radius:99px
+}
+.bs-book-archive-progress::-moz-progress-bar{
+ background:linear-gradient(90deg,#b34470,#d887a9);border-radius:99px
+}
+.bs-hub .bs-organizer-storage button{min-height:36px}
+.bs-hub .bs-organizer-book,.bs-hub .bs-organizer-series-item{
+ min-width:0;border-radius:11px;gap:10px
+}
+.bs-hub .bs-organizer-book-info{min-width:0}
+.bs-hub .bs-organizer-book-info strong{overflow-wrap:anywhere}
+
 @media(max-width:680px){
  .bs-book-archive-actions,.bs-book-archive-actions .bs-muted-btn{width:100%}
 }
