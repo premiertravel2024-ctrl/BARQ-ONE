@@ -8,8 +8,9 @@ from __future__ import annotations
 
 from contextlib import closing
 from datetime import datetime, timezone
-from hashlib import sha256
+from hashlib import sha256, md5
 from pathlib import Path
+from functools import lru_cache
 from tempfile import NamedTemporaryFile
 from threading import RLock, Thread
 import os
@@ -39,18 +40,26 @@ def archive_path(digest: str) -> Path:
     return archive_dir() / (digest + ".pdf")
 
 
-def _validate_file(path: Path, digest: str, size: int) -> bool:
+@lru_cache(maxsize=2048)
+def _verify_content(filename: str, digest: str, size: int, modified_ns: int) -> bool:
+    # Include mtime in the cache key so a changed or corrupted file is rehashed.
     try:
-        if not path.is_file() or path.stat().st_size != size:
-            return False
         hasher = sha256()
-        with path.open("rb") as source:
-            if not source.read(5) == b"%PDF-":
+        with Path(filename).open("rb") as source:
+            if source.read(5) != b"%PDF-":
                 return False
             source.seek(0)
             for chunk in iter(lambda: source.read(1024 * 1024), b""):
                 hasher.update(chunk)
         return hasher.hexdigest() == digest
+    except OSError:
+        return False
+
+
+def _validate_file(path: Path, digest: str, size: int) -> bool:
+    try:
+        stat = path.stat()
+        return stat.st_size == size and _verify_content(str(path), digest, size, stat.st_mtime_ns)
     except OSError:
         return False
 
@@ -109,6 +118,7 @@ def _download_pdf(file_id: str, expected_md5: str | None = None):
             with NamedTemporaryFile(dir=folder, prefix=".barq-download-", suffix=".part", delete=False) as handle:
                 temporary = Path(handle.name)
                 digest = sha256()
+                source_md5 = md5()
                 count = 0
                 first = True
                 for chunk in response.iter_bytes(chunk_size=65536):
@@ -122,6 +132,9 @@ def _download_pdf(file_id: str, expected_md5: str | None = None):
                         raise ValueError("PDF exceeds the 64 MB archive limit")
                     handle.write(chunk)
                     digest.update(chunk)
+                    source_md5.update(chunk)
+                if expected_md5 and re.fullmatch(r"[a-fA-F0-9]{32}", expected_md5) and source_md5.hexdigest() != expected_md5.lower():
+                    raise ValueError("Drive PDF contents differ from its version metadata")
                 if count < 5 or (length and length.isdecimal() and count != int(length)):
                     raise ValueError("Incomplete PDF download")
                 handle.flush()
@@ -155,6 +168,10 @@ def _process_archive():
                 "WHERE b.active=1 ORDER BY b.position,b.title"
             ) if row["id"] in allowed]
         for row in pending:
+            with DB_LOCK, database() as db:
+                enabled = db.execute("SELECT value FROM library_meta WHERE key='archive_enabled'").fetchone()
+            if not enabled or enabled["value"] != "1":
+                break
             from api_routes.reading_local_library import db_path
             if not db_path().parent.is_dir():
                 raise OSError("The configured BARQ database drive is unavailable")
@@ -213,6 +230,15 @@ def start_archive(*, enabled: bool = False) -> dict:
         if _worker is None or not _worker.is_alive():
             _worker = Thread(target=_process_archive, name="barq-book-archive", daemon=True)
             _worker.start()
+    return archive_status()
+
+
+def disable_archive() -> dict:
+    """Stop after the current PDF without deleting any previously saved book."""
+    from api_routes.reading_local_library import LOCK as DB_LOCK, database
+    with DB_LOCK, database() as db:
+        db.execute("INSERT INTO library_meta(key,value) VALUES('archive_enabled','0') "
+                   "ON CONFLICT(key) DO UPDATE SET value='0'")
     return archive_status()
 
 
