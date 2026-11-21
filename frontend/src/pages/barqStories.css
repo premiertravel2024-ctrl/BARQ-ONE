@@ -537,3 +537,22 @@
 .bs-reading-save-warning .bs-muted-btn{min-height:34px;background:#362823;border-color:#9b765d;color:#ffdfbf}
 .bs-reading-save-warning .bs-muted-btn:focus-visible{outline:2px solid #e2a270;outline-offset:2px}
 @media(max-width:600px){.bs-reading-save-warning .bs-muted-btn{width:100%;justify-content:center}}
+
+
+/* The owner's offline-PDF archive is a simple panel, not another crowded toolbar. */
+.bs-book-archive{
+ display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;
+ gap:12px;padding:13px 15px;border:1px solid #3e4b54;
+ border-radius:13px;background:linear-gradient(115deg,#18252b,#1b2028);
+}
+.bs-book-archive>div:first-child{display:flex;flex-direction:column;min-width:0;gap:4px;flex:1 1 220px}
+.bs-book-archive strong{display:inline-flex;align-items:center;gap:7px;color:#e8f4f3}
+.bs-book-archive span{color:#b8c8d0;font-size:.76rem;font-variant-numeric:tabular-nums}
+.bs-book-archive small{font-size:.7rem;color:#9fbbc0;line-height:1.5}
+.bs-book-archive code{font-size:.68rem;color:#a8d4cf;word-break:break-all}
+.bs-book-archive-actions{display:flex;flex-wrap:wrap;align-items:center;gap:7px}
+.bs-book-archive-actions .bs-muted-btn{min-height:37px;white-space:normal}
+.bs-book-archive>small{flex:0 0 100%;color:#97adb8}
+@media(max-width:680px){
+ .bs-book-archive-actions,.bs-book-archive-actions .bs-muted-btn{width:100%}
+}
