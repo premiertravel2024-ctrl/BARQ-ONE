@@ -15,6 +15,7 @@ type Stats={count:number;grouped:number;review:number;series:number;database:str
 type Report={books:number;series:number;assigned:number;numbered:number;review:number;new_series:number;preview:boolean};
 type ArchiveStatus={enabled:boolean;running:boolean;total:number;archived:number;bytes:number;
  directory:string;processed:number;downloaded:number;failed:number;error:string};
+type FullBackupStatus={running:boolean;copied:number;total:number;file:string;bytes:number;error:string};
 type Filter='all'|'review'|'ungrouped'|'hidden'|'series';
 const base='/v1/reading/library';
 
@@ -28,6 +29,8 @@ export function LocalLibraryManager({ar}:{ar:boolean}){
  const [report,setReport]=useState<Report>();
  const [archive,setArchive]=useState<ArchiveStatus>();
  const [archiveBusy,setArchiveBusy]=useState(false);
+ const [fullBackup,setFullBackup]=useState<FullBackupStatus>();
+ const [fullBackupBusy,setFullBackupBusy]=useState(false);
  const [readingSave,setReadingSave]=useState(getReadingStorageStatus);
  const [retryingSave,setRetryingSave]=useState(false);
  const [query,setQuery]=useState('');
@@ -65,6 +68,10 @@ export function LocalLibraryManager({ar}:{ar:boolean}){
    try{
     const response=await requestJSON<ArchiveStatus>(base+'/archive/status');
     if(mounted)setArchive(response);
+    try{
+     const snapshot=await requestJSON<FullBackupStatus>(base+'/backup/full/status');
+     if(mounted)setFullBackup(snapshot);
+    }catch{/* Older installers have no full-library backup endpoint. */}
    }catch{/* Older installed backends may not expose the archive yet. */}
   }
   void pollArchive();
@@ -122,6 +129,16 @@ export function LocalLibraryManager({ar}:{ar:boolean}){
     t('بدأ حفظ النسخ المحلية. تقدر تستخدم المكتبة أثناء النسخ.','Offline books are being copied while you use the library.'));
   }catch{setError(t('تعذّر بدء النسخ. راجع اتصال Drive ومساحة قرص المكتبة.','Could not start archive. Check Drive access and disk space.'));}
   finally{setArchiveBusy(false);}
+ }
+ async function backupEverything(){
+  setFullBackupBusy(true);setError('');setNotice('');
+  try{
+   const response=await requestJSON<FullBackupStatus>(base+'/backup/full',{method:'POST'});
+   setFullBackup(response);
+   setNotice(t('بدأ تجهيز نسخة شاملة من البيانات والكتب. تابع حالتها هنا.','Complete backup started. Track its status here.'));
+  }catch{
+   setError(t('تعذّر بدء النسخة الكاملة. راجع مساحة القرص وسلامة ملفات PDF المحفوظة.','Could not start full backup. Check space and local PDF integrity.'));
+  }finally{setFullBackupBusy(false);}
  }
  async function backup(){
   setBusy(true);setError('');setNotice('');
@@ -272,6 +289,19 @@ export function LocalLibraryManager({ar}:{ar:boolean}){
      <button type="button" className="bs-muted-btn" disabled={busy} onClick={()=>void backup()}>
       {t('نسخة احتياطية من بيانات المكتبة (بدون ملفات PDF)','Backup library metadata (PDF files excluded)')}
      </button>
+     <button type="button" className="bs-muted-btn" disabled={fullBackupBusy||!!fullBackup?.running}
+      onClick={()=>void backupEverything()}>
+      {t('نسخة احتياطية كاملة تشمل الكتب والبيانات','Full backup of books and database')}
+     </button>
+     {fullBackup?.running&&<span role="status">
+      {t('جاري تجهيز النسخة الكاملة','Creating complete backup')} · {fullBackup.copied}/{fullBackup.total}
+     </span>}
+     {!!fullBackup?.file&&<span role="status">
+      {t('آخر نسخة كاملة محفوظة','Last complete backup')} <code dir="ltr">{fullBackup.file}</code>
+     </span>}
+     {!!fullBackup?.error&&<span className="bs-backup-error" role="alert">
+      {t('النسخة الكاملة لم تكتمل. أصلح الملف الناقص أو التالف ثم أعد المحاولة.','Backup failed. Repair missing or damaged PDFs and retry.')}
+     </span>}
     </div>
    </details>}
    <section className="bs-book-archive" aria-label={t('نسخة الكتب المحلية','Offline book copies')}>
