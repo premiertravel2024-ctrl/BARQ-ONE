@@ -48,6 +48,9 @@ export async function loadCloudBooks(force=false,folder='',offlineOnly=false){
    (a.issueNumber??Infinity)-(b.issueNumber??Infinity)||
    a.edition.title.localeCompare(b.edition.title,undefined,{numeric:true}));
  }catch{
+  // Offline with no cached index is an empty local shelf, not a failed online
+  // scan. Treating it as an error hides the publisher's regular series list.
+  if(offlineOnly)return [];
   // A damaged/unavailable local index must not prevent an otherwise working reader.
   const result=await requestJSON<{books:Item[]}>(root+'/catalogue');
   return result.books.map<DriveBook>(item=>({
