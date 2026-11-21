@@ -141,7 +141,7 @@ export function DriveBooks({books,ar,onOpen,heading=true,collectionLabel}:{
  function manage(seriesId?:string) {
   window.dispatchEvent(new CustomEvent('barq:library-manage',{detail:seriesId||null}));
  }
- return <section className="bs-drive-section" aria-label={collectionLabel||(ar?'الروايات':'Books')}>
+ return <section className="bs-drive-section" data-inline={!heading} aria-label={collectionLabel||(ar?'الروايات':'Books')}>
   {heading&&<h2>{collectionLabel||(ar?'رواياتي':'My books')}</h2>}
   {books.length===0?<p role="status">{ar?'مفيش روايات في الفولدر.':'No books in this folder.'}</p>:<>
    {collected.map(group=><article className="bs-real-card bs-published-card bs-series-grid-card" key={group.key}>
