@@ -131,6 +131,18 @@ def schema(db):
         key TEXT PRIMARY KEY,
         value TEXT NOT NULL
     )""")
+    # PDF bytes live in <BARQ DATABASE>/books. SQLite keeps only the manifest,
+    # preventing multi-gigabyte databases and enabling content deduplication.
+    db.execute("""CREATE TABLE IF NOT EXISTS book_archives (
+        file_id TEXT PRIMARY KEY,
+        digest TEXT NOT NULL,
+        size INTEGER NOT NULL,
+        source_md5 TEXT,
+        stored_at TEXT NOT NULL
+    )""")
+    if "source_md5" not in columns:
+        db.execute("ALTER TABLE books ADD COLUMN source_md5 TEXT")
+
 
 
 @contextmanager
@@ -295,6 +307,30 @@ def load_reading_state(key: str):
         return {"value": row["value"] if row else None}
 
 
+@router.get("/archive/status")
+def archived_books_status():
+    from services.reading_book_archive import archive_status
+    return archive_status()
+
+
+@router.post("/archive/start")
+def archive_books():
+    from services.reading_book_archive import start_archive
+    return start_archive(enabled=True)
+
+
+@router.post("/archive/resume")
+def resume_book_archive():
+    from services.reading_book_archive import start_archive
+    return start_archive()
+
+
+@router.post("/archive/stop")
+def stop_automatic_archive():
+    from services.reading_book_archive import disable_archive
+    return disable_archive()
+
+
 @router.get("/items")
 def items():
     with LOCK, database() as db:
@@ -378,22 +414,32 @@ def refresh():
         cover_id = item.get("cover")
         if cover_id is not None:
             identifier(str(cover_id))
-        books.append((file_id, str(item["title"])[:250], str(item.get("group") or "")[:300], cover_id))
+        md5 = item.get("md5")
+        md5 = md5.lower() if isinstance(md5, str) and re.fullmatch(r"[0-9a-fA-F]{32}", md5) else None
+        books.append((file_id, str(item["title"])[:250], str(item.get("group") or "")[:300], cover_id, md5))
     with LOCK, database() as db:
         db.execute("UPDATE books SET active=0")
-        for file_id, title, folder, cover in books:
+        for file_id, title, folder, cover, md5 in books:
             db.execute("""
-                INSERT INTO books(id,title,source_title,folder_name,cover_id,active)
-                VALUES(?,?,?,?,?,1)
+                INSERT INTO books(id,title,source_title,folder_name,cover_id,source_md5,active)
+                VALUES(?,?,?,?,?,?,1)
                 ON CONFLICT(id) DO UPDATE SET
                     title=CASE WHEN books.manual_title=1 THEN books.title ELSE excluded.title END,
                     source_title=excluded.source_title,
                     folder_name=excluded.folder_name,
                     cover_id=excluded.cover_id,
+                    source_md5=COALESCE(excluded.source_md5,books.source_md5),
                     active=1
-            """, (file_id, title, title, folder, cover))
+            """, (file_id, title, title, folder, cover, md5))
         report = organize(db)
-        return {"synced": len(books), "database": str(db_path()), **report}
+        response = {"synced": len(books), "database": str(db_path()), **report}
+    # The owner opted in once; refreshes keep the PDFs up to date in the background.
+    from services.reading_book_archive import start_archive
+    try:
+        start_archive()
+    except (OSError, RuntimeError):
+        pass
+    return response
 
 
 @router.post("/series")
