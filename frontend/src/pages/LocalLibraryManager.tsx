@@ -13,6 +13,8 @@ type Series={id:string;title:string;description:string;genre:string;position:num
 type Snapshot={books:Book[];series:Series[]};
 type Stats={count:number;grouped:number;review:number;series:number;database:string;automatic:boolean;persistent:boolean;db_bytes:number;custom_covers:number;reading_records:number;last_saved_at:string|null;journal_mode:string};
 type Report={books:number;series:number;assigned:number;numbered:number;review:number;new_series:number;preview:boolean};
+type ArchiveStatus={enabled:boolean;running:boolean;total:number;archived:number;bytes:number;
+ directory:string;processed:number;downloaded:number;failed:number;error:string};
 type Filter='all'|'review'|'ungrouped'|'hidden'|'series';
 const base='/v1/reading/library';
 
@@ -24,6 +26,8 @@ export function LocalLibraryManager({ar}:{ar:boolean}){
  const [error,setError]=useState('');
  const [notice,setNotice]=useState('');
  const [report,setReport]=useState<Report>();
+ const [archive,setArchive]=useState<ArchiveStatus>();
+ const [archiveBusy,setArchiveBusy]=useState(false);
  const [readingSave,setReadingSave]=useState(getReadingStorageStatus);
  const [retryingSave,setRetryingSave]=useState(false);
  const [query,setQuery]=useState('');
@@ -55,6 +59,18 @@ export function LocalLibraryManager({ar}:{ar:boolean}){
    requestJSON<Snapshot>(base+'/items'),requestJSON<Stats>(base+'/status')]);
   setData(items);setStats(status);
  }
+ useEffect(()=>{
+  let mounted=true;
+  async function pollArchive(){
+   try{
+    const response=await requestJSON<ArchiveStatus>(base+'/archive/status');
+    if(mounted)setArchive(response);
+   }catch{/* Older installed backends may not expose the archive yet. */}
+  }
+  void pollArchive();
+  const timer=window.setInterval(()=>void pollArchive(),5000);
+  return()=>{mounted=false;window.clearInterval(timer);};
+ },[]);
  useEffect(()=>{
   void reload().catch(()=>setError(t('تعذّر فتح فهرس المكتبة المحلية','Could not load local catalogue')));
   const manage=(event:Event)=>{
@@ -96,6 +112,16 @@ export function LocalLibraryManager({ar}:{ar:boolean}){
    setReadingSave(getReadingStorageStatus());
    if(ok)await reload();
   }finally{setRetryingSave(false);}
+ }
+ async function archiveBooks(stop=false){
+  setArchiveBusy(true);setError('');setNotice('');
+  try{
+   const result=await requestJSON<ArchiveStatus>(base+'/archive/'+(stop?'stop':'start'),{method:'POST'});
+   setArchive(result);
+   setNotice(stop?t('تم إيقاف النسخ التلقائي بعد الملف الحالي، والنسخ المحفوظة مش هتتمسح.','Archive pauses after the current PDF; saved books remain.'):
+    t('بدأ حفظ النسخ المحلية. تقدر تستخدم المكتبة أثناء النسخ.','Offline books are being copied while you use the library.'));
+  }catch{setError(t('تعذّر بدء النسخ. راجع اتصال Drive ومساحة قرص المكتبة.','Could not start archive. Check Drive access and disk space.'));}
+  finally{setArchiveBusy(false);}
  }
  async function backup(){
   setBusy(true);setError('');setNotice('');
@@ -248,6 +274,24 @@ export function LocalLibraryManager({ar}:{ar:boolean}){
      </button>
     </div>
    </details>}
+   <section className="bs-book-archive" aria-label={t('نسخة الكتب المحلية','Offline book copies')}>
+    <div>
+     <strong><Database size={15}/>{t('نسخة الكتب على الجهاز','Offline book copies')}</strong>
+     <span>{archive?
+      `${archive.archived} / ${archive.total} ${t('كتاب محفوظ','books copied')} · ${(archive.bytes/1048576).toFixed(1)} MB`:
+      t('جاري قراءة حالة النسخ','Checking offline archive')}</span>
+     {archive?.running&&<span role="status">{t('جاري النسخ','Copying books')} · {archive.processed} {t('تم فحصه','checked')}</span>}
+     {!!archive?.error&&<small role="status">{t('فيه كتب ما اتحفظتش، جرّب تاني بعد التحقق من الاتصال.','Some books were not copied; retry when connected.')}</small>}
+     {!!archive&&<code dir="ltr">{archive.directory}</code>}
+    </div>
+    <div className="bs-book-archive-actions">
+     <button className="bs-muted-btn" type="button" disabled={archiveBusy||!!archive?.running}
+      onClick={()=>void archiveBooks(false)}><BookOpen size={15}/>{archive?.enabled?t('استكمال حفظ الكتب','Resume copying'):t('حفظ نسخة من كل الكتب','Save all books offline')}</button>
+     {!!archive?.enabled&&<button className="bs-muted-btn" type="button" disabled={archiveBusy}
+      onClick={()=>void archiveBooks(true)}>{t('إيقاف النسخ التلقائي','Pause automatic copying')}</button>}
+    </div>
+    <small>{t('PDFs المحفوظة تفتح بدون إنترنت، والملفات الأصلية تفضل في Drive من غير مشاركة مع أي حساب تاني.','Saved PDFs open offline; originals stay private in Drive.')}</small>
+   </section>
    <div className="bs-organizer-summary">
     <span><Layers size={15}/>{stats?.grouped||0} {t('كتاب ضمن سلاسل','books grouped')}</span>
     <span><Search size={15}/>{stats?.review||0} {t('يحتاج مراجعة','need review')}</span>
