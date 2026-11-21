@@ -61,6 +61,14 @@ def _build_backup() -> None:
                 if copy.execute("PRAGMA quick_check(1)").fetchone()[0] != "ok":
                     raise ValueError("SQLite snapshot did not pass integrity verification")
         with closing(sqlite3.connect(str(staging_db))) as snapshot:
+            # Never mislabel a partially mirrored Drive library as a complete
+            # backup. The owner should finish local PDF copying first.
+            total_books = snapshot.execute("SELECT COUNT(*) FROM books WHERE active=1").fetchone()[0]
+            saved_books = snapshot.execute(
+                "SELECT COUNT(*) FROM books b JOIN book_archives a ON a.file_id=b.id WHERE b.active=1"
+            ).fetchone()[0]
+            if total_books != saved_books:
+                raise ValueError("Some books are not copied offline yet; finish archiving before full backup")
             rows = snapshot.execute("SELECT digest,size FROM book_archives").fetchall()
         # A physical PDF is written once even when multiple books reference it.
         unique = {str(digest): int(size) for digest, size in rows}
