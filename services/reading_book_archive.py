@@ -248,14 +248,22 @@ def archive_status() -> dict:
         count = db.execute(
             "SELECT COUNT(*) FROM books WHERE active=1"
         ).fetchone()[0]
-        archived = db.execute(
-            "SELECT COUNT(*) FROM book_archives a "
+        entries = db.execute(
+            "SELECT a.digest,a.size FROM book_archives a "
             "JOIN books b ON b.id=a.file_id AND b.active=1"
-        ).fetchone()[0]
-        size = db.execute(
-            "SELECT COALESCE(SUM(size),0) FROM book_archives a "
-            "JOIN books b ON b.id=a.file_id AND b.active=1"
-        ).fetchone()[0]
+        ).fetchall()
+        # Status counts physically present PDFs, not database rows whose
+        # underlying files were deleted or whose size no longer matches.
+        available = []
+        for row in entries:
+            try:
+                digest, length = str(row["digest"]), int(row["size"])
+                if DIGEST.fullmatch(digest) and 5 <= length <= MAX_PDF and archive_path(digest).stat().st_size == length:
+                    available.append(length)
+            except (OSError, ValueError):
+                continue
+        archived = len(available)
+        size = sum(available)
         enabled = db.execute(
             "SELECT value FROM library_meta WHERE key='archive_enabled'"
         ).fetchone()
