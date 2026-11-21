@@ -290,3 +290,21 @@ def test_recovery_batch_validates_every_record_before_any_write(tmp_path, monkey
     good = api.post('/library/state/flush', json={"records":{key:'{"page":25,"marks":[]}'}})
     assert good.status_code == 200 and good.json()["saved"] == 1
     assert api.get('/library/state/'+key).json()["value"] == '{"page":25,"marks":[]}'
+
+
+
+def test_selected_g_drive_never_falls_back_to_empty_appdata_database(tmp_path,monkeypatch):
+    import pytest
+    monkeypatch.delenv("BARQ_READING_DB_DIR",raising=False)
+    monkeypatch.setattr(reading_local_library,"data_dir",lambda:tmp_path)
+    monkeypatch.setattr(reading_local_library,"_PINNED_DB_PATH",None)
+    chosen=tmp_path/"reading"/".g_drive_database_selected"
+    chosen.parent.mkdir(parents=True)
+    chosen.write_text("G:/BARQ DATABASE",encoding="utf-8")
+    path=reading_local_library.db_path()
+    assert path.as_posix()=="G:/BARQ DATABASE/barq_library.sqlite3"
+    with pytest.raises(FileNotFoundError,match="G:"):
+        with reading_local_library.LOCK, reading_local_library.database():
+            pass
+    # Never tell the owner a second, empty catalogue is their actual library.
+    assert not (tmp_path/"reading"/"barq_library.sqlite3").exists()
