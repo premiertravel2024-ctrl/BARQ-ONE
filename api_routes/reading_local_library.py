@@ -38,9 +38,27 @@ def db_path() -> Path:
         return Path(configured).expanduser() / "barq_library.sqlite3"
     global _PINNED_DB_PATH
     if _PINNED_DB_PATH is None:
+        # A previous owner choice of G: is durable across restarts. If G: is
+        # disconnected, opening must fail visibly; never create an empty second
+        # catalogue in AppData and make the owner think the books vanished.
         preferred = Path("G:/BARQ DATABASE")
-        parent = preferred if os.name == "nt" and preferred.is_dir() else data_dir() / "reading"
-        _PINNED_DB_PATH = parent / "barq_library.sqlite3"
+        marker = data_dir() / "reading" / ".g_drive_database_selected"
+        selected_g = marker.is_file() or (os.name == "nt" and preferred.is_dir())
+        if selected_g:
+            _PINNED_DB_PATH = preferred / "barq_library.sqlite3"
+            if not marker.is_file():
+                marker.parent.mkdir(parents=True, exist_ok=True)
+                with NamedTemporaryFile(dir=marker.parent, prefix=".barq-db-", delete=False) as file:
+                    staged = Path(file.name)
+                    file.write(b"G:/BARQ DATABASE")
+                    file.flush()
+                    os.fsync(file.fileno())
+                try:
+                    staged.replace(marker)
+                finally:
+                    staged.unlink(missing_ok=True)
+        else:
+            _PINNED_DB_PATH = data_dir() / "reading" / "barq_library.sqlite3"
     return _PINNED_DB_PATH
 
 
@@ -148,6 +166,10 @@ def schema(db):
 @contextmanager
 def database():
     destination = db_path()
+    # Never recreate an intentionally selected G: library folder silently.
+    marker = data_dir() / "reading" / ".g_drive_database_selected"
+    if marker.is_file() and destination.as_posix().startswith("G:/") and not destination.parent.is_dir():
+        raise FileNotFoundError("BARQ library drive G: is unavailable; reconnect it before opening the database")
     destination.parent.mkdir(parents=True, exist_ok=True)
     migrate_previous_database(destination)
     with closing(sqlite3.connect(str(destination), timeout=15)) as db:
