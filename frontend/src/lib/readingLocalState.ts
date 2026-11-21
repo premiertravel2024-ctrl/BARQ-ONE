@@ -22,8 +22,10 @@ function eligible(key:string){
 }
 function validValue(value:unknown):value is string{
  if(typeof value!=='string'||new TextEncoder().encode(value).byteLength>MAX)return false;
- try{return !!JSON.parse(value)&&typeof JSON.parse(value)==='object'&&!Array.isArray(JSON.parse(value));}
- catch{return false;}
+ try{
+  const parsed=JSON.parse(value) as unknown;
+  return parsed!==null&&typeof parsed==='object'&&!Array.isArray(parsed);
+ }catch{return false;}
 }
 function readJournal():Record<string,string>{
  try{
@@ -98,11 +100,16 @@ export async function retryReadingLocalState():Promise<boolean>{
    const keys=Object.keys(records);
    if(!keys.length)return;
    if(keys.length>MAX_PENDING)throw new Error('Too many queued reading changes');
-   const reply=await requestJSON<{saved:number}>(base+'/flush',{
-    method:'POST',body:JSON.stringify({records}),
-   });
-   if(reply.saved!==keys.length)throw new Error('SQLite did not confirm all reading changes');
-   for(const key of keys)clearPendingIfCurrent(key,records[key]);
+   // Keep each transaction below the API's 2 MB limit, including large bookmarks.
+   for(let offset=0;offset<keys.length;offset+=40){
+    const slice=keys.slice(offset,offset+40);
+    const batch=Object.fromEntries(slice.map(key=>[key,records[key]]));
+    const reply=await requestJSON<{saved:number}>(base+'/flush',{
+     method:'POST',body:JSON.stringify({records:batch}),
+    });
+    if(reply.saved!==slice.length)throw new Error('SQLite did not confirm all reading changes');
+    for(const key of slice)clearPendingIfCurrent(key,records[key]);
+   }
   });
   if(!Object.keys(pendingSnapshot()).length)lastError=null;
   emitStatus();
@@ -136,7 +143,12 @@ export async function hydrateReadingLocalState():Promise<void>{
  return pendingHydration;
 }
 export function saveReadingLocalState(key:string,value:string):void{
- if(!eligible(key)||!validValue(value))return;
+ if(!eligible(key))return;
+ if(!validValue(value)){
+  lastError='Reading data is too large or invalid; the change was not saved.';
+  emitStatus();
+  return;
+ }
  try{localStorage.setItem(key,value);}catch{
   lastError='Reading cache unavailable; checking durable SQLite save.';
  }
