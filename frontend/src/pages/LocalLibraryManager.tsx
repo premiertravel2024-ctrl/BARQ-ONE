@@ -2,6 +2,7 @@ import {useEffect,useMemo,useState,type FormEvent} from 'react';
 import {BookOpen,Database,RefreshCw,Settings2,Sparkles,Search,Layers,ArrowUp,ArrowDown,EyeOff,CheckSquare} from 'lucide-react';
 import {requestJSON} from '../lib/backend';
 import {EditableCover} from './EditableCover';
+import {getReadingStorageStatus,retryReadingLocalState} from '../lib/readingLocalState';
 
 type Book={
  id:string;title:string;source_title:string;folder_name:string;cover_id:string|null;
@@ -23,6 +24,8 @@ export function LocalLibraryManager({ar}:{ar:boolean}){
  const [error,setError]=useState('');
  const [notice,setNotice]=useState('');
  const [report,setReport]=useState<Report>();
+ const [readingSave,setReadingSave]=useState(getReadingStorageStatus);
+ const [retryingSave,setRetryingSave]=useState(false);
  const [query,setQuery]=useState('');
  const [tab,setTab]=useState<Filter>('all');
  const [selected,setSelected]=useState<string[]>([]);
@@ -61,11 +64,15 @@ export function LocalLibraryManager({ar}:{ar:boolean}){
    if(group)beginSeries(group);
   };
   const storageChanged=()=>{void requestJSON<Stats>(base+'/status').then(setStats).catch(()=>{});};
+  const pendingChanged=()=>setReadingSave(getReadingStorageStatus());
   window.addEventListener('barq:library-manage',manage);
   window.addEventListener('barq:library-storage-changed',storageChanged);
+  window.addEventListener('barq:reading-storage-status',pendingChanged);
+  pendingChanged();
   return()=>{
    window.removeEventListener('barq:library-manage',manage);
    window.removeEventListener('barq:library-storage-changed',storageChanged);
+   window.removeEventListener('barq:reading-storage-status',pendingChanged);
   };
  },[ar,data.series]);
  async function action(url:string,body?:object,method='POST'){
@@ -81,6 +88,14 @@ export function LocalLibraryManager({ar}:{ar:boolean}){
    setError(t('التعديل ما اتحفظش. تأكد من اتصال Drive ثم جرّب تاني.','Could not save. Check Drive connection and retry.'));
    return undefined;
   }finally{setBusy(false);}
+ }
+ async function retryReadingSaves(){
+  setRetryingSave(true);
+  try{
+   const ok=await retryReadingLocalState();
+   setReadingSave(getReadingStorageStatus());
+   if(ok)await reload();
+  }finally{setRetryingSave(false);}
  }
  async function backup(){
   setBusy(true);setError('');setNotice('');
@@ -200,6 +215,15 @@ export function LocalLibraryManager({ar}:{ar:boolean}){
    </div>}
   </div>
   {(notice||error)&&<p role="status" className={error?'bs-alert':'bs-organizer-ok'}>{error||notice}</p>}
+  {readingSave.pending>0&&<div className="bs-reading-save-warning" role="status">
+   <span>{t('فيه تغييرات قراءة لسه ما اتأكدش حفظها على G:','Some reading changes have not been confirmed on disk')}
+    {' · '}{readingSave.pending} {t('تعديل معلّق','pending changes')}
+   </span>
+   <button type="button" className="bs-muted-btn" disabled={retryingSave} onClick={()=>void retryReadingSaves()}>
+    <RefreshCw size={14}/>{retryingSave?t('جاري إعادة المحاولة','Retrying'):t('أعد الحفظ','Retry save')}
+   </button>
+  </div>}
+
   {!!report&&<p className="bs-organizer-report" role="status">
    {report.preview?t('معاينة بدون تغيير:','Preview only:'):t('تم التنظيم:','Organized:')}
    {' '}{report.books} {t('كتاب','books')} · {report.assigned} {t('داخل سلاسل','grouped')} · {report.numbered} {t('رقم عدد','numbered')} · {report.review} {t('يحتاج مراجعة','need review')}
