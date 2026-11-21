@@ -226,7 +226,10 @@ def media(file_id: str, request: Request):
     # tokens, internet or a recent catalogue refresh. Check the local manifest
     # and SHA-256 before trusting a file.
     from services.reading_book_archive import archived_pdf
-    cached = archived_pdf(file_id)
+    try:
+        cached = archived_pdf(file_id)
+    except (OSError, RuntimeError):
+        cached = None
     if cached is not None:
         return cached
     with LOCK:
