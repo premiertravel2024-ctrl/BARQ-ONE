@@ -260,6 +260,23 @@ def sync_local_reading_state(info: StateSync):
         return {"records": {row["key"]: row["value"] for row in rows}}
 
 
+@router.post("/state/flush")
+def flush_pending_reading_state(info: StateSync):
+    """Atomically replay a browser's pending saves after a disconnected session.
+
+    Unlike /state/sync (initial import, insert-only), this endpoint deliberately
+    updates existing records with the owner's latest queued edit.
+    """
+    if len(info.records) > 250 or sum(len(value.encode("utf-8")) for value in info.records.values()) > 2_097_152:
+        raise HTTPException(413, "Pending reading changes exceed safe limits")
+    validated = [(state_key(key), state_value(value)) for key, value in info.records.items()]
+    with LOCK, database() as db:
+        for key, value in validated:
+            db.execute("""INSERT INTO reader_state(key,value) VALUES(?,?)
+                ON CONFLICT(key) DO UPDATE SET value=excluded.value""", (key,value))
+    return {"saved": len(validated)}
+
+
 @router.put("/state/{key:path}")
 def store_reading_state(key: str, info: StateValue):
     identifier = state_key(key)
