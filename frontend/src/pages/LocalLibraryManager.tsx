@@ -270,7 +270,7 @@ export function LocalLibraryManager({ar}:{ar:boolean}){
      <span>{t('الحجم','Size')}: {(stats.db_bytes/1024).toFixed(0)} KB</span>
      <span>{t('ملفات WAL و SHM مؤقتة ومن الطبيعي اختفاؤها بعد إغلاق الاتصال.','WAL and SHM are temporary SQLite files and may disappear when connections close.')}</span>
      <button type="button" className="bs-muted-btn" disabled={busy} onClick={()=>void backup()}>
-      {t('حفظ نسخة احتياطية على القرص','Create local database backup')}
+      {t('نسخة احتياطية من بيانات المكتبة (بدون ملفات PDF)','Backup library metadata (PDF files excluded)')}
      </button>
     </div>
    </details>}
