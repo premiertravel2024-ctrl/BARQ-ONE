@@ -363,6 +363,18 @@ def status():
                 "journal_mode": db.execute("PRAGMA journal_mode").fetchone()[0]}
 
 
+@router.post("/backup/full")
+def begin_full_library_backup():
+    from services.reading_full_backup import start_full_backup
+    return start_full_backup()
+
+
+@router.get("/backup/full/status")
+def full_library_backup_status():
+    from services.reading_full_backup import status
+    return status()
+
+
 @router.post("/backup")
 def backup_database():
     """Owner-requested consistent on-disk snapshot including all covers/read state."""
