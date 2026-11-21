@@ -74,3 +74,16 @@ def test_damaged_book_prevents_a_misleading_complete_backup(tmp_path,monkeypatch
     assert status["error"] and not status["file"]
     assert not list((tmp_path/"backups").glob("BARQ_FULL_LIBRARY*.zip"))
     assert not list((tmp_path/"backups").glob("*.part"))
+
+
+
+def test_full_backup_never_claims_success_when_some_books_have_no_local_copy(tmp_path,monkeypatch):
+    api, _=make(tmp_path,monkeypatch)
+    with reading_local_library.LOCK, reading_local_library.database() as db:
+        db.execute("INSERT INTO books(id,title,source_title) VALUES(?,?,?)",
+                   ("qrstuvwxyzABCDEF","Book not yet downloaded","Book not yet downloaded"))
+    assert api.post("/v1/reading/library/backup/full").status_code==200
+    finished()
+    status=api.get("/v1/reading/library/backup/full/status").json()
+    assert status["error"] and "not copied offline yet" in status["error"]
+    assert not status["file"]
