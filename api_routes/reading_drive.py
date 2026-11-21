@@ -5,6 +5,7 @@ import hashlib
 import json
 import re
 import secrets
+import sqlite3
 import time
 import webbrowser
 from threading import RLock
@@ -228,7 +229,7 @@ def media(file_id: str, request: Request):
     from services.reading_book_archive import archived_pdf
     try:
         cached = archived_pdf(file_id)
-    except (OSError, RuntimeError):
+    except (OSError, RuntimeError, ValueError, sqlite3.Error):
         cached = None
     if cached is not None:
         return cached
