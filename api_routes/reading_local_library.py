@@ -186,7 +186,9 @@ def snapshot(db):
     books = [dict(row) for row in db.execute(
         "SELECT id,title,source_title,folder_name,cover_id,active,published,hidden,"
         "series_id,issue_number,position,review_reason,manual_series,manual_issue,"
-        "manual_title,manual_position FROM books ORDER BY position,issue_number,title")]
+        "manual_title,manual_position,"
+        "EXISTS(SELECT 1 FROM book_archives a WHERE a.file_id=books.id) AS archived "
+        "FROM books ORDER BY position,issue_number,title")]
     series = [dict(row) for row in db.execute(
         "SELECT id,title,description,genre,position,source_key FROM series ORDER BY position,title")]
     return {"books": books, "series": series}
