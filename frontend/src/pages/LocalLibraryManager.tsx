@@ -215,8 +215,10 @@ export function LocalLibraryManager({ar}:{ar:boolean}){
    </div>}
   </div>
   {(notice||error)&&<p role="status" className={error?'bs-alert':'bs-organizer-ok'}>{error||notice}</p>}
-  {readingSave.pending>0&&<div className="bs-reading-save-warning" role="status">
-   <span>{t('فيه تغييرات قراءة لسه ما اتأكدش حفظها على G:','Some reading changes have not been confirmed on disk')}
+  {(readingSave.pending>0||readingSave.error)&&<div className="bs-reading-save-warning" role="status">
+   <span>{readingSave.error?
+    t('فيه مشكلة في حفظ بيانات القراءة.','A reading save needs attention.'):
+    t('فيه تغييرات قراءة لسه ما اتأكدش حفظها على G:','Some reading changes have not been confirmed on disk')}
     {' · '}{readingSave.pending} {t('تعديل معلّق','pending changes')}
    </span>
    <button type="button" className="bs-muted-btn" disabled={retryingSave} onClick={()=>void retryReadingSaves()}>
