@@ -280,13 +280,16 @@ export function LocalLibraryManager({ar}:{ar:boolean}){
      <span>{archive?
       `${archive.archived} / ${archive.total} ${t('كتاب محفوظ','books copied')} · ${(archive.bytes/1048576).toFixed(1)} MB`:
       t('جاري قراءة حالة النسخ','Checking offline archive')}</span>
-     {archive?.running&&<span role="status">{t('جاري النسخ','Copying books')} · {archive.processed} {t('تم فحصه','checked')}</span>}
+     {!!archive&&archive.total>0&&<progress className="bs-book-archive-progress"
+       max={archive.total} value={Math.min(archive.archived,archive.total)}
+       aria-label={t('نسبة الكتب المحفوظة على الجهاز','Offline books saved')}/>}
+     {archive?.running&&<span role="status">{t('جاري نسخ الكتب بالتدريج','Copying books one by one')} · {archive.processed} {t('تم فحصه','checked')}</span>}
      {!!archive?.error&&<small role="status">{t('فيه كتب ما اتحفظتش، جرّب تاني بعد التحقق من الاتصال.','Some books were not copied; retry when connected.')}</small>}
      {!!archive&&<code dir="ltr">{archive.directory}</code>}
     </div>
     <div className="bs-book-archive-actions">
      <button className="bs-muted-btn" type="button" disabled={archiveBusy||!!archive?.running}
-      onClick={()=>void archiveBooks(false)}><BookOpen size={15}/>{archive?.enabled?t('استكمال حفظ الكتب','Resume copying'):t('حفظ نسخة من كل الكتب','Save all books offline')}</button>
+      onClick={()=>void archiveBooks(false)}><BookOpen size={15}/>{archive?.enabled?t('تحقق من النسخ الناقصة','Check missing copies'):t('حفظ نسخة من كل الكتب','Save all books offline')}</button>
      {!!archive?.enabled&&<button className="bs-muted-btn" type="button" disabled={archiveBusy}
       onClick={()=>void archiveBooks(true)}>{t('إيقاف النسخ التلقائي','Pause automatic copying')}</button>}
     </div>
