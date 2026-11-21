@@ -179,7 +179,7 @@ def catalogue():
                 files = []
                 while True:
                     params = {'q': f"'{folder}' in parents and trashed = false",
-                        'fields': 'nextPageToken,files(id,name,mimeType,size)', 'pageSize': '500',
+                        'fields': 'nextPageToken,files(id,name,mimeType,size,md5Checksum)', 'pageSize': '500',
                         'supportsAllDrives': 'true', 'includeItemsFromAllDrives': 'true'}
                     if page:
                         params['pageToken'] = page
@@ -207,7 +207,9 @@ def catalogue():
                     allowed[pdf['id']] = pdf['mimeType']
                     if cover:
                         allowed[cover['id']] = cover['mimeType']
-                    books.append({'id': pdf['id'], 'title': title, 'group': group, 'cover': cover['id'] if cover else None})
+                    books.append({'id': pdf['id'], 'title': title, 'group': group,
+                                  'cover': cover['id'] if cover else None,
+                                  'md5': pdf.get('md5Checksum')})
         with LOCK:
             if not connection or connection['folder'] != root:
                 raise HTTPException(409, 'Drive connection changed, refresh again')
@@ -220,6 +222,13 @@ def catalogue():
 
 @router.get('/media/{file_id}')
 def media(file_id: str, request: Request):
+    # Owner-authorized PDFs mirrored to G: must keep opening without Google
+    # tokens, internet or a recent catalogue refresh. Check the local manifest
+    # and SHA-256 before trusting a file.
+    from services.reading_book_archive import archived_pdf
+    cached = archived_pdf(file_id)
+    if cached is not None:
+        return cached
     with LOCK:
         mime = items.get(file_id)
         if not mime:
