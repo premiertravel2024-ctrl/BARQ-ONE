@@ -1,5 +1,8 @@
 """Persistent local music library. Only native picker selections may enter it."""
 import hashlib
+import shutil
+import zipfile
+from tempfile import NamedTemporaryFile
 import json
 import os
 from pathlib import Path
@@ -8,7 +11,7 @@ import threading
 from core.paths import data_dir
 
 _lock=threading.RLock()
-EXTENSIONS={'.mp3','.m4a','.mp4','.aac','.flac','.ogg','.opus','.wav'}
+EXTENSIONS={'.mp3','.m4a','.mp4','.aac','.flac','.ogg','.opus','.wav','.webm'}
 
 def folder():
     p=data_dir()/'music';p.mkdir(parents=True,exist_ok=True);return p
@@ -80,3 +83,98 @@ def import_selected(paths):
             except (OSError,ValueError):skipped+=1
         save(records)
     return {'imported':imported,'skipped':skipped,'tracks':tracks()}
+
+
+# User-provided collection; large source audio is deliberately not checked into Git.
+# The Windows file picker imports WINTER MUSIC.zip into the app's OWN persistent
+# music folder, so moving the downloaded ZIP cannot break playback.
+WINTER_COLLECTION="WINTER MUSIC"
+WINTER_TRACKS=(
+    ("WINTER MUSIC 01.webm", 7288.768),
+    ("WINTER MUSIC 02.m4a", 3600.649),
+    ("WINTER MUSIC 03.m4a", 7555.913),
+)
+WINTER_MAX_TRACK=190*1024*1024
+WINTER_MAX_TOTAL=420*1024*1024
+
+
+def _winter_signature(name: str, first: bytes) -> bool:
+    if name.endswith(".webm"):
+        return first.startswith(b"\x1a\x45\xdf\xa3")
+    if name.endswith(".m4a"):
+        return len(first)>=12 and first[4:8]==b"ftyp"
+    return False
+
+
+def import_winter_pack(zip_path: str | Path):
+    """Import exactly the 3 named owner-provided recordings (no zip-slip, no re-encoding).
+
+    Extract into app-private persistent music storage and publish index entries
+    only after every file is verified. Reimports are idempotent.
+    """
+    archive=Path(zip_path)
+    if not archive.is_file() or archive.suffix.lower()!=".zip":
+        raise ValueError("Select a WINTER MUSIC ZIP file")
+    if archive.stat().st_size>WINTER_MAX_TOTAL:
+        raise ValueError("WINTER MUSIC ZIP is too large")
+    destination=folder()/WINTER_COLLECTION
+    with _lock:
+        destination.mkdir(parents=True,exist_ok=True)
+        staged=[]
+        try:
+            with zipfile.ZipFile(archive,"r",allowZip64=True) as packed:
+                infos=[]
+                for name,_ in WINTER_TRACKS:
+                    matches=[item for item in packed.infolist()
+                             if item.filename in (name,WINTER_COLLECTION+"/"+name)]
+                    if len(matches)!=1:
+                        raise ValueError("WINTER MUSIC pack must contain all three distinct tracks")
+                    info=matches[0]
+                    if info.is_dir() or info.file_size<32 or info.file_size>WINTER_MAX_TRACK:
+                        raise ValueError("Invalid WINTER MUSIC audio file size")
+                    if (info.external_attr >> 16) & 0o170000 == 0o120000:
+                        raise ValueError("Archive links are not accepted")
+                    infos.append((name,info))
+                if sum(info.file_size for _,info in infos)>WINTER_MAX_TOTAL:
+                    raise ValueError("WINTER MUSIC pack is too large")
+                for name,info in infos:
+                    with NamedTemporaryFile(dir=destination,prefix=".barq-winter-",suffix=".part",delete=False) as target:
+                        temp=Path(target.name)
+                        staged.append((name, temp))
+                        total=0
+                        first=b""
+                        with packed.open(info,"r") as original:
+                            while True:
+                                chunk=original.read(128*1024)
+                                if not chunk:break
+                                if total==0:first=chunk[:16]
+                                total+=len(chunk)
+                                if total>info.file_size or total>WINTER_MAX_TRACK:
+                                    raise ValueError("WINTER MUSIC audio exceeded expected size")
+                                target.write(chunk)
+                        target.flush()
+                        os.fsync(target.fileno())
+                        if total!=info.file_size or not _winter_signature(name,first):
+                            raise ValueError("WINTER MUSIC audio file is corrupt or mislabeled")
+                records=load()
+                updated=[]
+                for (name,duration),(_,temp) in zip(WINTER_TRACKS,staged):
+                    path=destination/name
+                    if path.is_symlink():
+                        raise ValueError("Symlink destination is not allowed")
+                    # A persistent copy belongs to BARQ, not the removable ZIP.
+                    os.replace(temp,path)
+                    identifier=hashlib.sha256(str(path).lower().encode()).hexdigest()[:24]
+                    record={"id":identifier,"path":str(path),"title":Path(name).stem,
+                            "artist":"","album":WINTER_COLLECTION,
+                            "duration":duration,"artwork":False}
+                    records[identifier]=record
+                    updated.append(public(record))
+                save(records)
+                return {"collection":WINTER_COLLECTION,"imported":updated,
+                        "tracks":[public(record) for record in records.values()]}
+        except (zipfile.BadZipFile,EOFError) as exc:
+            raise ValueError("Invalid or incomplete WINTER MUSIC ZIP") from exc
+        finally:
+            for _,temp in staged:
+                temp.unlink(missing_ok=True)
