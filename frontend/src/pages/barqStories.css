@@ -334,125 +334,6 @@
 .bs-organizer-book:hover{border-color:#665567}
 
 
-/* BARQ 2.41.21 — consistent book browsing toolbar, accessible search and cards. */
-.bs-hub{gap:14px}
-.bs-hub .bs-header{min-height:50px;align-items:center}
-.bs-hub .bs-organizer{margin:0;min-width:0}
-.bs-hub .bs-organizer-tools{display:flex;align-items:center;justify-content:flex-start;gap:8px;padding:4px 0 8px;min-height:48px}
-.bs-hub .bs-organizer-tools>.bs-muted-btn{min-height:38px;padding:8px 13px;border-radius:11px;white-space:nowrap}
-.bs-hub .bs-organizer-counter{
-  display:inline-flex;align-items:center;min-height:34px;max-width:100%;
-  margin-inline-start:0;padding:6px 11px;border-radius:10px;
-  background:#171a21;border:1px solid #323943;color:#adb6c5;
-  font-variant-numeric:tabular-nums;font-size:.73rem;white-space:normal;line-height:1.5
-}
-.bs-hub .bs-collection{display:grid;gap:12px;min-width:0}
-.bs-hub .bs-title-row{display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:32px;flex-wrap:wrap}
-.bs-hub .bs-title-row h2{font-size:1.02rem;line-height:1.4;font-weight:850;letter-spacing:0;margin:0}
-.bs-hub .bs-title-row .bs-result-count{margin:0;color:#b1b8c5;font-size:.72rem}
-.bs-hub .bs-discovery-row{display:flex;align-items:center;justify-content:space-between;gap:12px;min-width:0}
-.bs-hub .bs-discovery-row .bs-filters{
-  display:flex;flex:1 1 auto;align-items:center;min-width:0;max-width:100%;
-  gap:7px;overflow-x:auto;padding:2px 0 5px;scrollbar-width:thin;scrollbar-color:#525566 transparent;
-}
-.bs-hub .bs-discovery-row .bs-filters button{
-  border-radius:10px;min-height:40px;padding:8px 12px;font-size:.75rem;
-  background:#181c24;border-color:#303742;color:#d1d3db;
-}
-.bs-hub .bs-discovery-row .bs-filters button[aria-pressed=true]{
-  background:#a2335b;border-color:#d26987;color:#fff;
-}
-.bs-hub .bs-discovery-row .bs-search{
-  display:flex;flex:0 0 300px;align-items:center;gap:10px;
-  min-width:240px;max-width:100%;height:41px;padding:7px 12px;
-  border-radius:11px;border:1px solid #414755;background:#151920;
-  color:#aeb6c6;transition:border-color .18s,box-shadow .18s
-}
-.bs-hub .bs-discovery-row .bs-search:focus-within{
-  border-color:#c45c81;box-shadow:0 0 0 2px #bd4a7530
-}
-.bs-hub .bs-discovery-row .bs-search input{width:100%;min-width:0;color:#f5f1f5;font-size:.79rem}
-.bs-hub .bs-discovery-row .bs-search input::placeholder{color:#8d98a8}
-.bs-hub .bs-discovery-row .bs-clear-search{min-height:28px;min-width:28px}
-.bs-hub .bs-real-grid{gap:13px;align-items:stretch}
-.bs-hub .bs-published-card{
-  min-width:0;min-height:195px;padding:13px;gap:13px;
-  border:1px solid #333b47;border-radius:15px;
-  background:linear-gradient(152deg,#1e232c,#191d25);
-  transition:border-color .18s,background .18s,transform .18s;
-}
-.bs-hub .bs-published-card:hover{
-  border-color:#81506a;background:linear-gradient(152deg,#252330,#1b202a);
-  transform:translateY(-2px)
-}
-.bs-hub .bs-published-card .bs-real-copy{min-width:0;gap:5px}
-.bs-hub .bs-published-card .bs-real-copy h3{
-  font-weight:850;font-size:.91rem;line-height:1.48;min-width:0;margin:0;
-  display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden
-}
-.bs-hub .bs-published-card .bs-real-copy p{
-  font-size:.72rem;line-height:1.6;color:#aeb8c5;margin:0;
-  display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden
-}
-.bs-hub .bs-published-card .bs-real-copy>span{font-size:.68rem;color:#f2a2be}
-.bs-hub .bs-published-card .bs-published-actions{gap:7px;min-width:0}
-.bs-hub .bs-published-card .bs-published-actions button{
-  border-radius:9px;min-height:34px;transition:background .18s,border-color .18s
-}
-.bs-hub .bs-series-grid-card{
-  border-color:#5a394c;background:linear-gradient(145deg,#251e2a,#1b2029 72%);
-}
-.bs-hub .bs-series-grid-card .bs-real-copy{
-  display:grid;grid-template-rows:auto auto minmax(0,1fr) auto;gap:5px
-}
-.bs-hub .bs-series-grid-card .bs-series-chip{
-  display:inline-flex;align-items:center;gap:5px;color:#f1a6bd;
-  font-size:.69rem;min-width:0;white-space:normal
-}
-.bs-hub .bs-series-grid-card .bs-published-actions{
-  display:grid;grid-template-columns:minmax(0,1fr) 35px 35px;
-  gap:6px;min-width:0;align-items:stretch
-}
-.bs-hub .bs-series-grid-card .bs-published-actions>.bs-series-open{
-  display:inline-flex;align-items:center;justify-content:center;gap:6px;
-  flex:none;min-width:0;min-height:35px;padding:6px 8px;
-  white-space:nowrap;font-size:.73rem;font-weight:800;
-  border:1px solid #a85878;background:#71314b;color:#fff
-}
-.bs-hub .bs-series-grid-card .bs-published-actions>.bs-series-open:hover{background:#8c3a5c}
-.bs-hub .bs-library-icon-action{
-  display:grid;place-items:center;min-width:35px;min-height:35px;padding:0;
-  border-radius:9px;border:1px solid #444552;background:#272936;color:#e9c9d4
-}
-.bs-hub .bs-library-icon-action:hover{border-color:#bf6789;background:#493347;color:#fff}
-.bs-hub .bs-editable-cover{min-width:0}
-.bs-hub .bs-editable-cover .bs-real-cover:has(img){background:#20232d}
-.bs-hub .bs-editable-cover .bs-real-cover img{display:block;object-fit:contain}
-.bs-hub .bs-cover-edit{border:1px solid #b2a3b677;background:#22262ee8;backdrop-filter:blur(5px)}
-@media(max-width:1080px){
- .bs-hub .bs-discovery-row{flex-wrap:wrap}
- .bs-hub .bs-discovery-row .bs-filters{flex:1 1 100%}
- .bs-hub .bs-discovery-row .bs-search{flex:1 1 100%;max-width:none}
-}
-@media(max-width:640px){
- .bs-hub{gap:12px}
- .bs-hub .bs-organizer-tools{gap:6px}
- .bs-hub .bs-organizer-tools>.bs-muted-btn{padding:7px 9px;min-height:36px;font-size:.72rem}
- .bs-hub .bs-organizer-counter{width:100%;justify-content:center}
- .bs-hub .bs-title-row{align-items:start}
- .bs-hub .bs-real-grid{gap:9px}
- .bs-hub .bs-published-card{min-height:178px;padding:10px;gap:9px}
- .bs-hub .bs-published-card .bs-real-copy h3{font-size:.82rem}
- .bs-hub .bs-series-grid-card .bs-published-actions{grid-template-columns:minmax(0,1fr) 32px 32px;gap:4px}
- .bs-hub .bs-library-icon-action{min-width:32px}
-}
-@media(prefers-reduced-motion:reduce){
- .bs-hub .bs-discovery-row .bs-search,.bs-hub .bs-published-card,
- .bs-hub .bs-published-card .bs-published-actions button{transition:none}
- .bs-hub .bs-published-card:hover{transform:none}
-}
-
-
 /* BARQ Library design system — consistent structure, spacing, and RTL layout. */
 .bs-hub{
   --bs-space:12px;
@@ -506,80 +387,6 @@
 .bs-hub .bs-discovery-row .bs-search:focus-within{
   border-color:#d56c91;box-shadow:0 0 0 2px #d56c9128
 }
-/* This is important: cloud cards and in-app books share the SAME CSS grid. */
-.bs-hub .bs-unified-library{
-  display:grid;
-  grid-template-columns:repeat(auto-fill,minmax(min(100%,305px),1fr));
-  gap:14px;align-items:stretch;min-width:0;
-}
-.bs-hub .bs-unified-library>.bs-drive-section[data-inline="true"]{display:contents}
-.bs-hub .bs-unified-library .bs-published-card{
-  display:grid;grid-template-columns:90px minmax(0,1fr);gap:12px;
-  min-height:198px;align-items:stretch;min-width:0;padding:12px;
-  border:1px solid var(--bs-border);border-radius:15px;
-  background:linear-gradient(145deg,#1d222b,#181d26);
-  transition:border-color .18s,background .18s,transform .18s;
-}
-.bs-hub .bs-unified-library .bs-published-card:focus-within{border-color:#c16888}
-.bs-hub .bs-unified-library .bs-published-card:hover{
-  border-color:#84546d;background:linear-gradient(145deg,#25232e,#1d222a);
-  transform:translateY(-2px)
-}
-.bs-hub .bs-unified-library .bs-published-card>.bs-editable-cover{
-  width:90px;min-width:0;align-self:start
-}
-.bs-hub .bs-unified-library .bs-published-card .bs-real-copy{
-  display:flex;flex-direction:column;min-width:0;gap:6px;
-}
-.bs-hub .bs-unified-library .bs-published-card .bs-real-copy h3{
-  margin:0;font-size:.91rem;font-weight:850;line-height:1.5;
-  overflow-wrap:anywhere;display:-webkit-box;
-  -webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden
-}
-.bs-hub .bs-unified-library .bs-published-card .bs-real-copy>strong{
-  color:#c8cfda;font-size:.74rem;font-weight:650;line-height:1.45
-}
-.bs-hub .bs-unified-library .bs-published-card .bs-real-copy>p{
-  color:#aeb9c7;font-size:.73rem;line-height:1.55;
-  margin:0;flex:1 1 auto;min-height:0;
-  display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden
-}
-.bs-hub .bs-unified-library .bs-published-card .bs-published-actions{
-  display:flex;flex-flow:row nowrap;gap:6px;align-items:center;
-  width:100%;min-width:0;margin-block-start:auto;
-}
-.bs-hub .bs-unified-library .bs-published-card .bs-published-actions .bs-series-open{
-  display:inline-flex;align-items:center;justify-content:center;
-  flex:1 1 auto;min-width:0;min-height:36px;padding:6px 8px;
-  text-align:center;white-space:nowrap;font-size:.72rem;
-  border-radius:9px;overflow:hidden
-}
-.bs-hub .bs-unified-library .bs-published-card .bs-published-actions .bs-series-open svg{
-  flex-shrink:0;width:14px
-}
-.bs-hub .bs-unified-library .bs-published-card .bs-published-actions :is(.bs-library-icon-action,.bs-favorite){
-  display:grid;place-items:center;flex:0 0 35px;
-  min-width:35px;width:35px;height:36px;min-height:36px;
-  padding:0;border-radius:9px;
-}
-.bs-hub .bs-unified-library .bs-series-grid-card{
-  border-color:#5b4054;background:linear-gradient(145deg,#271f2b,#1a2029 78%);
-}
-.bs-hub .bs-unified-library .bs-series-grid-card .bs-series-chip{
-  display:inline-flex;gap:6px;align-items:center;min-width:0;
-  white-space:normal;font-size:.68rem;color:#f3a9c6
-}
-.bs-hub .bs-unified-library .bs-series-grid-card .bs-published-actions>.bs-series-open{
-  color:#ffe6ef;background:#71344d;border-color:#ae607e;
-}
-.bs-hub .bs-unified-library .bs-series-grid-card .bs-published-actions>.bs-series-open:hover{
-  background:#883f5e
-}
-.bs-hub .bs-unified-library .bs-published-card .bs-real-cover{
-  max-width:100%;height:auto;border-radius:7px 11px 11px 7px;
-}
-.bs-hub .bs-editable-cover .bs-real-cover img{display:block;object-fit:contain}
-.bs-hub .bs-cover-edit{border:1px solid #a3a8b677;background:#22262ee8;backdrop-filter:blur(5px)}
 .bs-hub .bs-organizer-panel{
   gap:14px;padding:clamp(12px,1.8vw,18px);
   border-radius:16px;border-color:#39414d;
@@ -610,24 +417,13 @@
  .bs-hub .bs-header{align-items:flex-start}
  .bs-hub .bs-header .bs-drive-header{margin-inline-start:0;justify-content:flex-start}
  .bs-hub .bs-organizer-counter{margin-inline-start:0;flex:1 1 100%}
- .bs-hub .bs-unified-library{grid-template-columns:repeat(auto-fit,minmax(min(100%,286px),1fr))}
 }
 @media(max-width:430px){
  .bs-hub .bs-header .bs-drive-header{width:100%}
  .bs-hub .bs-header .bs-muted-btn{flex:1 1 auto}
- .bs-hub .bs-unified-library .bs-published-card{grid-template-columns:78px minmax(0,1fr);gap:10px;padding:10px;min-height:178px}
- .bs-hub .bs-unified-library .bs-published-card>.bs-editable-cover{width:78px}
- .bs-hub .bs-unified-library .bs-published-card .bs-real-copy h3{font-size:.85rem}
- .bs-hub .bs-unified-library .bs-published-card .bs-published-actions :is(.bs-library-icon-action,.bs-favorite){
-  flex-basis:30px;width:30px;min-width:30px;height:34px;min-height:34px
- }
- .bs-hub .bs-unified-library .bs-published-card .bs-published-actions .bs-series-open{
-  font-size:.68rem;padding:4px 5px;min-height:34px
- }
 }
 @media(prefers-reduced-motion:reduce){
- .bs-hub .bs-unified-library .bs-published-card,.bs-hub .bs-discovery-row .bs-search{transition:none}
- .bs-hub .bs-unified-library .bs-published-card:hover{transform:none}
+ .bs-hub .bs-discovery-row .bs-search{transition:none}
 }
 
 /* Library Guardian — visible unconfirmed edits, without blocking the reader. */
