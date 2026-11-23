@@ -246,3 +246,73 @@
  :is(.bs-hub,.bs-library-modal) .bs-card-actions button{transition:none}
  :is(.bs-hub .bs-unified-library,.bs-library-modal .bs-series-modal-grid) .bs-library-card:hover{transform:none}
 }
+
+
+/* 2.41.25 — All book covers fill their portrait frame, including custom covers.
+   Preserve aspect ratio by center-cropping, not distorting source artwork. */
+.bs-hub{
+ --bs-book-ink:#f0f3f8;
+ --bs-book-secondary:#bcc7d5;
+ --bs-book-muted:#aab5c5;
+}
+:is(.bs-hub .bs-unified-library,.bs-library-modal .bs-series-modal-grid) .bs-library-card .bs-real-cover{
+ padding:0;
+ align-items:stretch;
+ justify-content:stretch;
+ background:#303849;
+}
+:is(.bs-hub .bs-unified-library,.bs-library-modal .bs-series-modal-grid) .bs-library-card .bs-real-cover img{
+ display:block;
+ width:100%;
+ height:100%;
+ object-fit:cover;
+ object-position:center;
+ border-radius:inherit;
+}
+:is(.bs-hub .bs-unified-library,.bs-library-modal .bs-series-modal-grid) .bs-library-card .bs-real-cover:not(:has(img)){
+ align-items:center;
+ justify-content:center;
+ padding:8px 6px;
+}
+/* Matching title, category and subtitle colors for cloud and published books. */
+:is(.bs-hub,.bs-library-modal) .bs-card-details h3{color:var(--bs-book-ink,#f0f3f8)}
+:is(.bs-hub,.bs-library-modal) .bs-card-meta,
+:is(.bs-hub,.bs-library-modal) .bs-card-meta .bs-series-chip{
+ color:var(--bs-book-secondary,#bcc7d5);
+}
+:is(.bs-hub,.bs-library-modal) .bs-card-details>strong{
+ color:var(--bs-book-secondary,#bcc7d5);
+}
+:is(.bs-hub,.bs-library-modal) .bs-card-details>.bs-card-description{
+ color:var(--bs-book-muted,#aab5c5);
+}
+@media(min-width:901px){
+ /* Filters scroll horizontally on desktop instead of pushing search down. */
+ .bs-hub .bs-discovery-row{
+  display:flex;
+  flex-flow:row nowrap;
+  align-items:center;
+  gap:12px;
+  min-width:0;
+ }
+ .bs-hub .bs-discovery-row .bs-filters{
+  flex:1 1 0;
+  min-width:0;
+  max-width:none;
+  overflow-x:auto;
+  flex-wrap:nowrap;
+ }
+ .bs-hub .bs-discovery-row .bs-search{
+  flex:0 0 clamp(245px,23vw,330px);
+  min-width:245px;
+  max-width:330px;
+  width:auto;
+  margin:0;
+  align-self:center;
+ }
+}
+@media(max-width:900px){
+ .bs-hub .bs-discovery-row{flex-wrap:wrap}
+ .bs-hub .bs-discovery-row .bs-filters{flex:1 1 100%;min-width:0}
+ .bs-hub .bs-discovery-row .bs-search{flex:1 1 100%;min-width:0;max-width:none;width:100%}
+}
