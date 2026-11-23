@@ -8,7 +8,7 @@
   min-width:0;
 }
 .bs-hub .bs-unified-library>.bs-drive-section[data-inline="true"]{display:contents}
-.bs-hub :is(.bs-unified-library,.bs-series-modal-grid) .bs-library-card{
+:is(.bs-hub .bs-unified-library,.bs-library-modal .bs-series-modal-grid) .bs-library-card{
   display:grid;
   grid-template-columns:90px minmax(0,1fr);
   grid-template-rows:minmax(0,1fr) auto;
@@ -23,16 +23,16 @@
   box-shadow:0 7px 24px #00000014;
   transition:border-color .18s ease,background .18s ease,transform .18s ease;
 }
-.bs-hub :is(.bs-unified-library,.bs-series-modal-grid) .bs-library-card:is(:hover,:focus-within){
+:is(.bs-hub .bs-unified-library,.bs-library-modal .bs-series-modal-grid) .bs-library-card:is(:hover,:focus-within){
   border-color:#8f5a76;
   background:linear-gradient(150deg,#25232d,#1c2029);
 }
-.bs-hub :is(.bs-unified-library,.bs-series-modal-grid) .bs-library-card:hover{transform:translateY(-2px)}
-.bs-hub :is(.bs-unified-library,.bs-series-modal-grid) .bs-library-card.bs-series-grid-card{
+:is(.bs-hub .bs-unified-library,.bs-library-modal .bs-series-modal-grid) .bs-library-card:hover{transform:translateY(-2px)}
+:is(.bs-hub .bs-unified-library,.bs-library-modal .bs-series-modal-grid) .bs-library-card.bs-series-grid-card{
   background:linear-gradient(150deg,#261f2c,#1c2029);
   border-color:#594357;
 }
-.bs-hub :is(.bs-unified-library,.bs-series-modal-grid) .bs-library-card>.bs-editable-cover{
+:is(.bs-hub .bs-unified-library,.bs-library-modal .bs-series-modal-grid) .bs-library-card>.bs-editable-cover{
   grid-column:1;
   grid-row:1;
   width:90px;
@@ -40,7 +40,7 @@
   align-self:start;
   justify-self:start;
 }
-.bs-hub :is(.bs-unified-library,.bs-series-modal-grid) .bs-library-card .bs-real-cover{
+:is(.bs-hub .bs-unified-library,.bs-library-modal .bs-series-modal-grid) .bs-library-card .bs-real-cover{
   width:90px;
   height:137px;
   max-width:100%;
@@ -53,12 +53,12 @@
   padding:9px 6px;
   text-align:center;
 }
-.bs-hub :is(.bs-unified-library,.bs-series-modal-grid) .bs-library-card .bs-real-cover img{
+:is(.bs-hub .bs-unified-library,.bs-library-modal .bs-series-modal-grid) .bs-library-card .bs-real-cover img{
   width:100%;
   height:100%;
   object-fit:contain;
 }
-.bs-hub :is(.bs-unified-library,.bs-series-modal-grid) .bs-library-card>.bs-card-details{
+:is(.bs-hub .bs-unified-library,.bs-library-modal .bs-series-modal-grid) .bs-library-card>.bs-card-details{
   grid-column:2;
   grid-row:1;
   display:flex;
@@ -69,7 +69,7 @@
   gap:6px;
   text-align:start;
 }
-.bs-hub .bs-card-meta{
+:is(.bs-hub,.bs-library-modal) .bs-card-meta{
   display:flex;
   align-items:center;
   flex-wrap:wrap;
@@ -80,7 +80,7 @@
   font-weight:750;
   line-height:1.4;
 }
-.bs-hub .bs-card-meta .bs-series-chip{
+:is(.bs-hub,.bs-library-modal) .bs-card-meta .bs-series-chip{
   display:inline-flex;
   align-items:center;
   gap:5px;
@@ -89,14 +89,14 @@
   font-size:inherit;
   overflow-wrap:anywhere;
 }
-.bs-hub .bs-card-meta .bs-offline-copy{
+:is(.bs-hub,.bs-library-modal) .bs-card-meta .bs-offline-copy{
   font-size:.62rem;
   padding:2px 6px;
   color:#b0e7d0;
   background:#17372d;
   border-color:#3c6555;
 }
-.bs-hub .bs-card-details h3{
+:is(.bs-hub,.bs-library-modal) .bs-card-details h3{
   display:-webkit-box;
   -webkit-box-orient:vertical;
   -webkit-line-clamp:2;
@@ -109,7 +109,7 @@
   margin:0;
   min-height:0;
 }
-.bs-hub .bs-card-details>strong{
+:is(.bs-hub,.bs-library-modal) .bs-card-details>strong{
   display:-webkit-box;
   -webkit-box-orient:vertical;
   -webkit-line-clamp:1;
@@ -119,7 +119,7 @@
   font-weight:650;
   line-height:1.5;
 }
-.bs-hub .bs-card-details>.bs-card-description{
+:is(.bs-hub,.bs-library-modal) .bs-card-details>.bs-card-description{
   margin:0;
   color:#acb6c6;
   font-size:.72rem;
@@ -130,7 +130,7 @@
   overflow:hidden;
   overflow-wrap:anywhere;
 }
-.bs-hub .bs-card-support-link{
+:is(.bs-hub,.bs-library-modal) .bs-card-support-link{
   display:inline-flex;
   align-items:center;
   align-self:flex-start;
@@ -140,8 +140,8 @@
   color:#e9adc5;
   text-decoration:none;
 }
-.bs-hub .bs-card-support-link:hover{text-decoration:underline}
-.bs-hub :is(.bs-unified-library,.bs-series-modal-grid) .bs-library-card>.bs-card-actions{
+:is(.bs-hub,.bs-library-modal) .bs-card-support-link:hover{text-decoration:underline}
+:is(.bs-hub .bs-unified-library,.bs-library-modal .bs-series-modal-grid) .bs-library-card>.bs-card-actions{
   grid-column:1 / -1;
   grid-row:2;
   display:flex;
@@ -154,7 +154,7 @@
   padding-top:10px;
   border-top:1px solid #ffffff10;
 }
-.bs-hub .bs-card-actions>.bs-card-primary{
+:is(.bs-hub,.bs-library-modal) .bs-card-actions>.bs-card-primary{
   flex:1 1 0;
   min-width:0;
   min-height:40px;
@@ -172,17 +172,17 @@
   line-height:1.4;
   transition:background .18s ease,border-color .18s ease;
 }
-.bs-hub .bs-card-actions>.bs-card-primary span{
+:is(.bs-hub,.bs-library-modal) .bs-card-actions>.bs-card-primary span{
   overflow:hidden;
   text-overflow:ellipsis;
   white-space:nowrap;
 }
-.bs-hub .bs-card-actions>.bs-card-primary svg{flex:0 0 auto}
-.bs-hub .bs-card-actions>.bs-card-primary:hover{
+:is(.bs-hub,.bs-library-modal) .bs-card-actions>.bs-card-primary svg{flex:0 0 auto}
+:is(.bs-hub,.bs-library-modal) .bs-card-actions>.bs-card-primary:hover{
   background:#82415f;
   border-color:#d27c9d;
 }
-.bs-hub .bs-card-actions>.bs-card-secondary{
+:is(.bs-hub,.bs-library-modal) .bs-card-actions>.bs-card-secondary{
   flex:0 0 40px;
   width:40px;
   min-width:40px;
@@ -196,16 +196,16 @@
   color:#d5dce7;
   transition:background .18s ease,border-color .18s ease;
 }
-.bs-hub .bs-card-actions>.bs-card-secondary:hover{
+:is(.bs-hub,.bs-library-modal) .bs-card-actions>.bs-card-secondary:hover{
   background:#303543;
   border-color:#bd718f;
 }
-.bs-hub .bs-card-actions>.bs-card-secondary[aria-pressed="true"]{
+:is(.bs-hub,.bs-library-modal) .bs-card-actions>.bs-card-secondary[aria-pressed="true"]{
   color:#ff8fb2;
   border-color:#8d4b65;
   background:#422838;
 }
-.bs-hub :is(.bs-unified-library,.bs-series-modal-grid) .bs-library-card .bs-cover-edit{
+:is(.bs-hub .bs-unified-library,.bs-library-modal .bs-series-modal-grid) .bs-library-card .bs-cover-edit{
   inset-block-start:5px;
   inset-inline-end:5px;
 }
@@ -216,33 +216,33 @@
   }
 }
 @media(max-width:430px){
-  .bs-hub :is(.bs-unified-library,.bs-series-modal-grid) .bs-library-card{
+  :is(.bs-hub .bs-unified-library,.bs-library-modal .bs-series-modal-grid) .bs-library-card{
     grid-template-columns:78px minmax(0,1fr);
     min-height:218px;
     padding:11px;
     gap:9px;
   }
-  .bs-hub :is(.bs-unified-library,.bs-series-modal-grid) .bs-library-card>.bs-editable-cover,
-  .bs-hub :is(.bs-unified-library,.bs-series-modal-grid) .bs-library-card .bs-real-cover{
+  :is(.bs-hub .bs-unified-library,.bs-library-modal .bs-series-modal-grid) .bs-library-card>.bs-editable-cover,
+  :is(.bs-hub .bs-unified-library,.bs-library-modal .bs-series-modal-grid) .bs-library-card .bs-real-cover{
     width:78px;
   }
-  .bs-hub :is(.bs-unified-library,.bs-series-modal-grid) .bs-library-card .bs-real-cover{
+  :is(.bs-hub .bs-unified-library,.bs-library-modal .bs-series-modal-grid) .bs-library-card .bs-real-cover{
     height:116px;
   }
-  .bs-hub .bs-card-actions>.bs-card-secondary{
+  :is(.bs-hub,.bs-library-modal) .bs-card-actions>.bs-card-secondary{
     flex-basis:37px;
     width:37px;
     min-width:37px;
     min-height:38px;
   }
-  .bs-hub .bs-card-actions>.bs-card-primary{
+  :is(.bs-hub,.bs-library-modal) .bs-card-actions>.bs-card-primary{
     min-height:38px;
     padding:7px;
     font-size:.71rem;
   }
 }
 @media(prefers-reduced-motion:reduce){
- .bs-hub :is(.bs-unified-library,.bs-series-modal-grid) .bs-library-card,
- .bs-hub .bs-card-actions button{transition:none}
- .bs-hub :is(.bs-unified-library,.bs-series-modal-grid) .bs-library-card:hover{transform:none}
+ :is(.bs-hub .bs-unified-library,.bs-library-modal .bs-series-modal-grid) .bs-library-card,
+ :is(.bs-hub,.bs-library-modal) .bs-card-actions button{transition:none}
+ :is(.bs-hub .bs-unified-library,.bs-library-modal .bs-series-modal-grid) .bs-library-card:hover{transform:none}
 }
