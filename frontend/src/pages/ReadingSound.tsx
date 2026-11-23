@@ -7,6 +7,7 @@ type Mood='all'|'quiet'|'bright';
 export function ReadingSound({ar}:{ar:boolean}){
  const audio=useRef<HTMLAudioElement>(null);
  const [open,setOpen]=useState(false);
+ const [trackPicker,setTrackPicker]=useState(false);
  const [playing,setPlaying]=useState(false);
  const [loading,setLoading]=useState(false);
  const [volume,setVolume]=useState(22);
@@ -39,11 +40,11 @@ export function ReadingSound({ar}:{ar:boolean}){
   select(queue[(position+delta+queue.length)%queue.length],resume);
  }
 
- return <div className="bs-reading-sound" onKeyDown={event=>{if(event.key==='Escape')setOpen(false);}}>
+ return <div className="bs-reading-sound" onKeyDown={event=>{if(event.key==='Escape'){setOpen(false);setTrackPicker(false);}}}>
   <audio ref={audio} preload="none" onPlay={()=>setPlaying(true)} onPause={()=>setPlaying(false)}
    onEnded={()=>step(1,true)} onError={()=>{setPlaying(false);setLoading(false);setError(true);}}/>
   <button type="button" title={label('موسيقى القراءة','Reading music')} aria-label={label('موسيقى القراءة','Reading music')}
-   aria-expanded={open} data-playing={playing} onClick={()=>setOpen(!open)}><Music2 size={17}/></button>
+   aria-expanded={open} data-playing={playing} onClick={()=>{setOpen(!open);setTrackPicker(false);}}><Music2 size={17}/></button>
   {open&&<div className="bs-sound-panel">
    <strong>{label('ساوندتراك القراءة','Reading soundtrack')}</strong>
    <label>{label('المزاج','Mood')}<select value={mood} onChange={event=>{
@@ -55,9 +56,17 @@ export function ReadingSound({ar}:{ar:boolean}){
     <option value="quiet">{label('هادي وتركيز','Quiet focus')}</option>
     <option value="bright">{label('خفيف ومبهج','Light and bright')}</option>
    </select></label>
-   <label>{label('المقطوعة','Track')}<select dir="auto" value={index} onChange={event=>select(Number(event.target.value))}>
-    {queue.map(i=><option key={i} value={i}>{soundtracks[i].title}</option>)}
-   </select></label>
+   <div className="bs-track-picker">
+    <span>{label('المقطوعة','Track')}</span>
+    <button type="button" className="bs-track-picker-toggle" aria-expanded={trackPicker}
+      aria-haspopup="listbox" onClick={()=>setTrackPicker(value=>!value)}>
+      <span dir="auto">{track.title}</span><span aria-hidden="true">⌄</span>
+    </button>
+    {trackPicker&&<div className="bs-track-picker-list" role="listbox" aria-label={label('اختيار مقطوعة','Choose track')}>
+      {queue.map(i=><button type="button" role="option" aria-selected={i===index} key={i}
+       onClick={()=>{select(i);setTrackPicker(false);}}>{soundtracks[i].title}</button>)}
+    </div>}
+   </div>
    <div className="bs-sound-meta" dir="ltr">{track.composer} · {track.artist}</div>
    <div className="bs-sound-controls" dir="ltr">
     <button type="button" aria-label={label('المقطوعة السابقة','Previous track')} onClick={()=>step(-1)}><SkipBack size={16}/></button>
