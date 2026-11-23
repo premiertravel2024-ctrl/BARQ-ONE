@@ -357,7 +357,7 @@ export function WorkspaceStudio({open,onClose}:{open:boolean;onClose:()=>void;em
  const oldSection=legacy[activity];const paneStyle={gridTemplateColumns:layout.zen||editorView==='work'?'minmax(0,1fr)':`minmax(160px,${layout.side}px) minmax(0,1fr)`} as CSSProperties;
  if(!open)return null;
  if(twoPane)return <section className="barq-studio barq-two-pane flex h-full min-h-0 flex-col overflow-hidden bg-base"
-     dir="rtl" aria-label="مساحة برمجة برق - الملفات والكود" data-studio-version="v2.41.24-two-pane-code" data-release-marker="v2.41.24-build-gated-ui" data-chat-mode="unified">
+     dir="rtl" aria-label="مساحة برمجة برق - الملفات والكود" data-studio-version="v2.41.25-two-pane-code" data-release-marker="v2.41.25-build-gated-ui" data-chat-mode="unified">
    <header className="barq-two-header" dir="rtl">
     <button className="studio-icon" onClick={onClose} title="العودة إلى المحادثة" aria-label="العودة إلى المحادثة"><MessageCircle size={19}/></button>
     <strong>مساحة العمل</strong><span className="barq-two-project" dir="ltr" title={tree?.root||''}>{tree?.root.split(/[\\/]/).at(-1)||'بدون مشروع'}</span>
@@ -413,7 +413,7 @@ export function WorkspaceStudio({open,onClose}:{open:boolean;onClose:()=>void;em
     </main>
    </div>
  </section>;
- return <section className="barq-studio flex h-full min-h-0 flex-col overflow-hidden bg-base" dir={rtl?'rtl':'ltr'} aria-label="مساحة برمجة برق" data-studio-version="v2.41.24-work-center-ui-audit" data-release-marker="v2.41.24-build-gated-ui" data-chat-mode="unified">
+ return <section className="barq-studio flex h-full min-h-0 flex-col overflow-hidden bg-base" dir={rtl?'rtl':'ltr'} aria-label="مساحة برمجة برق" data-studio-version="v2.41.25-work-center-ui-audit" data-release-marker="v2.41.25-build-gated-ui" data-chat-mode="unified">
   {!layout.zen&&<header className="studio-topbar flex shrink-0 items-center gap-2 px-3 py-2">
    <button type="button" className="studio-back-chat studio-icon" onClick={onClose} title={rtl?'الرجوع للمحادثة':'Back to chat'} aria-label={rtl?'الرجوع للمحادثة':'Back to chat'}><MessageCircle size={19}/></button>
    <div className="min-w-0 flex-1 studio-project-switcher"><div className="truncate text-sm font-semibold">{tree?.root.split(/[\\/]/).at(-1)||'BARQ Studio'}</div><select aria-label="تبديل المشروع" dir="ltr" value={tree?.root||''} onChange={e=>{if(e.target.value)void openProject(e.target.value)}} title={tree?.root||'المشاريع الأخيرة'}><option value="">{tree?'المشاريع الأخيرة':'اختر مشروعًا'}</option>{recent.map(item=><option key={item} value={item}>{item}</option>)}</select></div>
