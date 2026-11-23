@@ -49,6 +49,7 @@ test('actions share one primary and accessible square shortcuts',()=>{
  const drive=read('DriveBooks.tsx');
  assert.match(drive,/label=\{ar\?'عرض الأعداد':'View issues'\}/);
  assert.match(drive,/label=\{ar\?'اقرأ':'Read'\}/);
+ assert.match(drive,/bodyClassName="bs-series-scroll bs-library-modal"/);
  const published=read('BarqStories.tsx');
  assert.match(published,/secondary=\{\[\{/);
  assert.match(published,/pressed:favorites\.includes\(book\.id\)/);
@@ -61,6 +62,7 @@ test('all library actions remain aligned and responsive in RTL and reduced motio
  assert.match(css,/grid-template-rows:minmax\(0,1fr\) auto/);
  assert.match(css,/grid-column:1 \/ -1/);
  assert.match(css,/grid-row:2/);
+ assert.match(css,/bs-library-modal \.bs-series-modal-grid/);
  assert.match(css,/\.bs-card-actions>\.bs-card-primary/);
  assert.match(css,/\.bs-card-actions>\.bs-card-secondary/);
  assert.match(css,/@media\(max-width:430px\)/);
