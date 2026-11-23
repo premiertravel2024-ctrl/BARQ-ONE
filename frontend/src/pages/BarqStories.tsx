@@ -1,6 +1,7 @@
 import {EditableCover} from './EditableCover';
 import {lazy,Suspense,useCallback,useEffect,useRef,useState,type ChangeEvent} from 'react';
-import {ArrowLeft,BookOpen,ExternalLink,Heart,Search,Upload,X} from 'lucide-react';
+import {BookOpen,ExternalLink,Heart,Search,Upload,X} from 'lucide-react';
+import {LibraryCardActions} from './LibraryCardActions';
 import {ButtonGroup, ButtonGroupItem} from '../components/ui/ButtonGroup';
 import {Modal} from '../components/ui/Modal';
 import {useAppView} from '../lib/appContext';
@@ -172,21 +173,33 @@ export function BarqStories(){
      </label>
     </div>
     {results.length||visibleDrive.length?<div className="bs-real-grid bs-unified-library">
-     {visibleDrive.length>0&&<DriveBooks books={visibleDrive} ar={ar} onOpen={setEdition} heading={false}/>}{results.map(book=><article className="bs-real-card bs-published-card" key={book.id} data-genre={book.genre}>
-     <EditableCover id={book.id} title={book.title} ar={ar}><Cover book={book}/></EditableCover>
-     <div className="bs-real-copy"><span>{book.genre}</span><h3 dir="auto">{book.title}</h3><strong dir="auto">{book.author}</strong><p>{book.description}</p>
-      <div className="bs-published-actions">
-       <button className="bs-series-open" type="button" onClick={()=>openBook(book)}
-        aria-label={book.series?label('أعداد السلسلة','Browse issues'):(book.format||matchesDrive(book).length)?label('اقرأ في برق','Read in BARQ'):label('افتح نسختك PDF','Open your PDF')}>
-        {book.series?label('الأعداد','Issues'):(book.format||matchesDrive(book).length)?label('اقرأ','Read'):label('افتح PDF','Open PDF')}<ArrowLeft size={15}/>
-       </button>
-       <button className="bs-favorite" type="button" aria-label={label('احفظ ','Save ')+book.title} aria-pressed={favorites.includes(book.id)} onClick={()=>favorite(book.id)}>
-        <Heart size={17} fill={favorites.includes(book.id)?'currentColor':'none'}/>
-       </button>
-      </div>
-      {!book.format&&!book.series&&!matchesDrive(book).length&&<a href={book.url} target="_blank" rel="noopener noreferrer" className="bs-publisher-link"><ExternalLink size={13}/>{label('الطبعة الرسمية','Official edition')}</a>}
-     </div>
-    </article>)}</div>:<p className="bs-empty">{label('مفيش كتب مطابقة للبحث.','No matching books.')}</p>}
+     {visibleDrive.length>0&&<DriveBooks books={visibleDrive} ar={ar} onOpen={setEdition} heading={false}/>}{results.map(book=>{
+      const linked=matchesDrive(book).length>0;
+      const hasReader=!!book.format||linked;
+      const primary=book.series?label('عرض الأعداد','View issues'):
+       hasReader?label('اقرأ','Read'):label('افتح PDF','Open PDF');
+      return <article className="bs-real-card bs-published-card bs-library-card" key={book.id} data-genre={book.genre}>
+       <EditableCover id={book.id} title={book.title} ar={ar}><Cover book={book}/></EditableCover>
+       <div className="bs-card-details">
+        <div className="bs-card-meta"><span>{book.genre}</span></div>
+        <h3 dir="auto">{book.title}</h3>
+        <strong dir="auto">{book.author}</strong>
+        <p className="bs-card-description">{book.description}</p>
+        {!hasReader&&!book.series&&<a href={book.url} target="_blank" rel="noopener noreferrer"
+         className="bs-card-support-link"><ExternalLink size={13} aria-hidden="true"/>
+         {label('الطبعة الرسمية','Official edition')}</a>}
+       </div>
+       <LibraryCardActions label={primary} onPrimary={()=>openBook(book)}
+        ariaLabel={(book.series?label('عرض أعداد ','Browse issues of '):hasReader?
+         label('قراءة ','Read '):label('فتح PDF لـ ','Open PDF for '))+book.title}
+        secondary={[{
+         id:'favorite',label:(favorites.includes(book.id)?label('إزالة من المفضلة: ','Remove favorite: '):
+          label('إضافة للمفضلة: ','Add favorite: '))+book.title,
+         icon:<Heart size={17} aria-hidden="true" fill={favorites.includes(book.id)?'currentColor':'none'}/>,
+         pressed:favorites.includes(book.id),onClick:()=>favorite(book.id),
+        }]}/>
+      </article>;
+     })}</div>:<p className="bs-empty">{label('مفيش كتب مطابقة للبحث.','No matching books.')}</p>}
    </section>
   </>}
   <Modal open={!!series&&!edition} onClose={closeSeries} title={series?.title||''} wide bodyClassName="bs-series-scroll"
