@@ -55,3 +55,31 @@
 /* The outer stage owns vertical scrolling. Never shrink the room to its viewport. */
 .one-page > .bm-player { flex:0 0 auto; overflow:visible; }
 .bm-load-more { display:block; margin:12px auto; padding:9px 15px; border:1px solid #674658; border-radius:9px; }
+
+
+/* Owner-provided WINTER MUSIC: a quiet collection action, not a separate room. */
+.bm-player .bm-library-hero .bm-winter-import{
+ background:#302a3f;
+ border:1px solid #66536e;
+ color:#f0e5fb;
+ min-height:40px;
+ border-radius:10px;
+ white-space:nowrap;
+ font-size:.76rem;
+}
+.bm-player .bm-library-hero .bm-winter-import:hover{
+ background:#463450;
+ border-color:#a082aa;
+ color:#fff;
+}
+.bm-player .bm-library-hero>div:first-child>div{
+ display:flex;
+ flex-wrap:wrap;
+ align-items:center;
+ gap:7px;
+}
+.bm-player .bm-library-hero button{margin-inline-end:0}
+@media(max-width:700px){
+ .bm-player .bm-library-hero>div:first-child>div{align-items:stretch}
+ .bm-player .bm-library-hero .bm-winter-import{flex:1 1 auto}
+}
