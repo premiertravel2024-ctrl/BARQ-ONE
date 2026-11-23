@@ -3,7 +3,8 @@ import {useEffect,useRef,useState,type ChangeEvent} from 'react';
 import {BookOpen,FolderOpen} from 'lucide-react';
 import type {ReadingEdition} from './BookReader';
 import {Modal} from '../components/ui/Modal';
-import {ArrowLeft,Settings2,Layers,Play} from 'lucide-react';
+import {Settings2,Layers,Play} from 'lucide-react';
+import {LibraryCardActions} from './LibraryCardActions';
 
 export type DriveBook={edition:ReadingEdition;cover?:File;coverId?:string;group:string;issueNumber?:number;sortPosition?:number;seriesId?:string;manualSeries?:boolean;reviewReason?:string;offline?:boolean};
 let pickedBooks:DriveBook[]|undefined;
@@ -126,16 +127,19 @@ export function DriveBooks({books,ar,onOpen,heading=true,collectionLabel}:{
  }
  const current=collected.find(group=>group.key===selectedGroup);
  function bookCard(item:DriveBook){
-  return <article className="bs-real-card bs-published-card" key={item.edition.id}>
+  const subtitle=item.group.split(' / ').filter(Boolean).slice(-1)[0];
+  return <article className="bs-real-card bs-published-card bs-library-card bs-single-card" key={item.edition.id}>
    <EditableCover id={item.edition.id} title={item.edition.title} ar={ar}><DriveCover book={item}/></EditableCover>
-   <div className="bs-real-copy">
-    {item.issueNumber&&<span>{ar?'العدد':'Issue'} {item.issueNumber}</span>}
-    {item.offline&&<span className="bs-offline-copy">{ar?'محفوظ على الجهاز':'Available offline'}</span>}
+   <div className="bs-card-details">
+    <div className="bs-card-meta">
+     <span>{item.issueNumber?((ar?'العدد ':'Issue ')+item.issueNumber):(ar?'رواية':'Book')}</span>
+     {item.offline&&<span className="bs-offline-copy">{ar?'متاح بدون إنترنت':'Available offline'}</span>}
+    </div>
     <h3 dir="auto">{item.edition.title}</h3>
-    <button className="bs-series-open" type="button" onClick={()=>onOpen(item.edition)}>
-     {ar?'اقرأ':'Read'} <ArrowLeft size={14}/>
-    </button>
+    <p className="bs-card-description" dir="auto">{subtitle||(ar?'جاهز للقراءة في برق':'Ready to read in BARQ')}</p>
    </div>
+   <LibraryCardActions label={ar?'اقرأ':'Read'} onPrimary={()=>onOpen(item.edition)}
+    ariaLabel={(ar?'قراءة ':'Read ')+item.edition.title}/>
   </article>;
  }
  function manage(seriesId?:string) {
@@ -144,31 +148,32 @@ export function DriveBooks({books,ar,onOpen,heading=true,collectionLabel}:{
  return <section className="bs-drive-section" data-inline={!heading} aria-label={collectionLabel||(ar?'الروايات':'Books')}>
   {heading&&<h2>{collectionLabel||(ar?'رواياتي':'My books')}</h2>}
   {books.length===0?<p role="status">{ar?'مفيش روايات في الفولدر.':'No books in this folder.'}</p>:<>
-   {collected.map(group=><article className="bs-real-card bs-published-card bs-series-grid-card" key={group.key}>
+   {collected.map(group=><article className="bs-real-card bs-published-card bs-series-grid-card bs-library-card" key={group.key}>
     <EditableCover id={'library-series:'+(group.seriesId||group.key)} title={group.title} ar={ar}>
      <DriveCover book={group.items.find(item=>item.coverId||item.cover)||group.items[0]}/>
     </EditableCover>
-    <div className="bs-real-copy">
-     <span className="bs-series-chip"><Layers size={13}/>{ar?'سلسلة روايات':'Book series'} · {group.items.length} {ar?'عدد':'issues'}</span>
+    <div className="bs-card-details">
+     <div className="bs-card-meta"><span className="bs-series-chip"><Layers size={13} aria-hidden="true"/>
+      {ar?'سلسلة روايات':'Book series'} · {group.items.length} {ar?'عدد':'issues'}
+     </span></div>
      <h3 dir="auto">{group.title}</h3>
-     <p>{ar?'الأعداد مرتبة وجاهزة للقراءة':'Issues organized and ready to read'}</p>
-     <div className="bs-published-actions">
-      <button className="bs-series-open" type="button" onClick={()=>setSelectedGroup(group.key)}>
-       {ar?'عرض الأعداد':'View issues'} <ArrowLeft size={14}/>
-      </button>
-      <button className="bs-library-icon-action" type="button"
-       title={ar?'ابدأ القراءة':'Start reading'} aria-label={(ar?'ابدأ قراءة ':'Start reading ')+group.title}
-       onClick={()=>onOpen(group.items[0].edition)}><Play size={15}/></button>
-      <button className="bs-library-icon-action" type="button" title={ar?'تعديل السلسلة':'Edit series'}
-       aria-label={(ar?'إدارة ':'Manage ')+group.title} onClick={()=>manage(group.seriesId)}>
-       <Settings2 size={15}/>
-      </button>
-     </div>
+     <p className="bs-card-description">{ar?'الأعداد مرتبة وجاهزة للقراءة':'Issues organized and ready to read'}</p>
     </div>
+    <LibraryCardActions
+     label={ar?'عرض الأعداد':'View issues'}
+     onPrimary={()=>setSelectedGroup(group.key)}
+     ariaLabel={(ar?'عرض أعداد ':'View issues of ')+group.title}
+     secondary={[
+      {id:'play',label:(ar?'ابدأ قراءة ':'Start reading ')+group.title,
+       icon:<Play size={15} aria-hidden="true"/>,onClick:()=>onOpen(group.items[0].edition)},
+      {id:'manage',label:(ar?'إدارة سلسلة ':'Manage series ')+group.title,
+       icon:<Settings2 size={15} aria-hidden="true"/>,onClick:()=>manage(group.seriesId)},
+     ]}
+    />
    </article>)}
    {singles.map(bookCard)}
   </>}
-  <Modal open={!!current} onClose={()=>setSelectedGroup(undefined)} title={current?.title||''} wide bodyClassName="bs-series-scroll">
+  <Modal open={!!current} onClose={()=>setSelectedGroup(undefined)} title={current?.title||''} wide bodyClassName="bs-series-scroll bs-library-modal">
    {current&&<div className="bs-series-books-view" dir={ar?'rtl':'ltr'}>
     <div className="bs-series-overview">
      <span>{current.items.length} {ar?'عدد في السلسلة':'issues in series'}</span>

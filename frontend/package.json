@@ -1,7 +1,7 @@
 {
   "name": "ai-router-agent-ui",
   "private": true,
-  "version": "2.41.23",
+  "version": "2.41.24",
   "type": "module",
   "scripts": {
     "dev": "vite --host 127.0.0.1",
@@ -14,7 +14,7 @@
     "test:frontend": "node --test scripts/frontend-flow.test.cjs",
     "test:approvals": "node ../scripts/chat_coordination_smoke.mjs tests/approval-flow.ts && node ../scripts/chat_coordination_smoke.mjs tests/replan-cooldown.ts",
     "test:workspace": "node ../scripts/chat_coordination_smoke.mjs tests/workspace-sync.ts",
-    "test:ui": "node --test tests/reading_durability.test.cjs tests/chat_typography.test.cjs tests/ui_polish.test.cjs tests/work_center.test.cjs tests/workspace_typecheck_regression.test.cjs tests/voice_settings_handler.test.cjs tests/composer_context_alignment.test.cjs",
+    "test:ui": "node --test tests/library_card_layout.test.cjs tests/reading_durability.test.cjs tests/chat_typography.test.cjs tests/ui_polish.test.cjs tests/work_center.test.cjs tests/workspace_typecheck_regression.test.cjs tests/voice_settings_handler.test.cjs tests/composer_context_alignment.test.cjs",
     "test:voice": "node --test ../tests-js/voice_capture_resample.cjs ../tests-js/live_voice_roundtrip.cjs ../tests-js/live_voice_crash_regression.cjs ../tests-js/voice_task_handoff.cjs",
     "test:folders": "node ../scripts/chat_coordination_smoke.mjs tests/folder-open.ts",
     "test:screen": "node ../scripts/chat_coordination_smoke.mjs tests/screen-read.ts",
