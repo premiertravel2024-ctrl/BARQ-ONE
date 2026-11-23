@@ -173,7 +173,7 @@ export function DriveBooks({books,ar,onOpen,heading=true,collectionLabel}:{
    </article>)}
    {singles.map(bookCard)}
   </>}
-  <Modal open={!!current} onClose={()=>setSelectedGroup(undefined)} title={current?.title||''} wide bodyClassName="bs-series-scroll">
+  <Modal open={!!current} onClose={()=>setSelectedGroup(undefined)} title={current?.title||''} wide bodyClassName="bs-series-scroll bs-library-modal">
    {current&&<div className="bs-series-books-view" dir={ar?'rtl':'ltr'}>
     <div className="bs-series-overview">
      <span>{current.items.length} {ar?'عدد في السلسلة':'issues in series'}</span>
