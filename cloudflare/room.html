@@ -526,7 +526,7 @@ body .room-viewer-actions button:not(:disabled):hover svg { transform:translateY
 <div id="joinPanel" class="panel" hidden><p>ادخل كود الغرفة اللي بعتهولك صاحبها</p><div class="row"><input id="code" maxlength="6" inputmode="numeric" placeholder="كود الغرفة" aria-label="كود الغرفة" autocomplete="one-time-code"><button id="join">دخول</button></div></div>
 <div class="grid">
 <section class="panel room-media-panel">
- <div class="room-viewer-actions"><div id="localWrap" hidden><button type="button" id="uploadMedia" title="اختيار ملف" aria-label="اختيار ملف"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 16V4m-4 4 4-4 4 4M4 16v4h16v-4"/></svg></button><button type="button" id="openMediaLink" title="تشغيل من رابط" aria-label="تشغيل من رابط"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 13a5 5 0 0 0 7 0l3-3a5 5 0 0 0-7-7l-2 2M14 11a5 5 0 0 0-7 0l-3 3a5 5 0 0 0 7 7l2-2"/></svg></button>
+ <div class="room-viewer-actions"><div id="localWrap" hidden><button type="button" id="screenShare" title="مشاركة شاشة ويندوز مع الضيف" aria-label="ابدأ مشاركة الشاشة والصوت" hidden>مشاركة الشاشة</button><button type="button" id="stopScreenShare" title="إيقاف مشاركة الشاشة" aria-label="أوقف مشاركة الشاشة" hidden>إيقاف المشاركة</button><button type="button" id="uploadMedia" title="اختيار ملف" aria-label="اختيار ملف"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 16V4m-4 4 4-4 4 4M4 16v4h16v-4"/></svg></button><button type="button" id="openMediaLink" title="تشغيل من رابط" aria-label="تشغيل من رابط"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 13a5 5 0 0 0 7 0l3-3a5 5 0 0 0-7-7l-2 2M14 11a5 5 0 0 0-7 0l-3 3a5 5 0 0 0 7 7l2-2"/></svg></button>
   <details id="sources" data-view="settings"><summary title="إعدادات الوسائط" aria-label="إعدادات الوسائط"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h9m4 0h3M4 17h3m4 0h9M13 4v6M7 14v6"/></svg><span id="sourceTitle" class="sr-only">إعدادات الوسائط</span></summary><div class="source-panel">
 
   <div class="source-options">
@@ -585,6 +585,52 @@ if(music){
  document.getElementById('subtitlePicker').hidden=true;
 }
 
+// Host-only, user-initiated desktop capture. Never share on room join.
+var screenShareButton=document.getElementById('screenShare');
+var stopScreenShareButton=document.getElementById('stopScreenShare');
+if(host&&!music)screenShareButton.hidden=false;
+function endScreenShare(){
+ var active=localStream;
+ if(!active||!video.srcObject||video.srcObject!==active)return;
+ closePeer();
+ localStream=null;
+ active.getTracks().forEach(function(track){track.stop();});
+ video.pause();video.srcObject=null;
+ stopScreenShareButton.hidden=true;screenShareButton.hidden=false;
+ note('تم إيقاف مشاركة الشاشة. اختر ملفًا أو ابدأ المشاركة مرة أخرى.');
+}
+stopScreenShareButton.onclick=endScreenShare;
+screenShareButton.onclick=async function(){
+ if(!host||music)return;
+ if(!navigator.mediaDevices||!navigator.mediaDevices.getDisplayMedia){
+  note('متصفح الغرفة لا يدعم مشاركة الشاشة. افتح الغرفة في Edge أو Chrome حديث.');return;
+ }
+ screenShareButton.disabled=true;
+ try{
+  // The browser itself asks which screen/window to share and whether audio is included.
+  var stream=await navigator.mediaDevices.getDisplayMedia({video:{frameRate:30},audio:true});
+  if(!stream.getVideoTracks().length){stream.getTracks().forEach(function(t){t.stop();});throw Error('No video track');}
+  ++loadVersion;
+  if(officialTrack){officialTrack=null;showTrack(null);send('track',null);}
+  closePeer();
+  if(localStream)localStream.getTracks().forEach(function(t){t.stop();});
+  if(blobUrl){URL.revokeObjectURL(blobUrl);blobUrl=null;}
+  localStream=stream;
+  video.pause();video.removeAttribute('src');video.srcObject=stream;
+  video.muted=true;video.playsInline=true;
+  await video.play().catch(function(){});
+  screenShareButton.hidden=true;stopScreenShareButton.hidden=false;
+  document.getElementById('sources').open=false;
+  note(stream.getAudioTracks().length
+   ?'الشاشة والصوت قيد المشاركة. الضيف يحتاج تفعيل الصوت عنده.'
+   :'الشاشة قيد المشاركة بدون صوت نظام. فعّل مشاركة الصوت من نافذة الاختيار إن كانت متاحة.');
+  stream.getVideoTracks()[0].addEventListener('ended',endScreenShare,{once:true});
+  queueRTC(makeOffer);
+ }catch(error){
+  if(error&&error.name==='NotAllowedError')note('تم إلغاء اختيار الشاشة.');
+  else note('تعذّر بدء مشاركة الشاشة على هذا الجهاز أو المتصفح.');
+ }finally{screenShareButton.disabled=false;}
+};
 var sources=document.getElementById('sources');
 var sourceToggle=sources.querySelector('summary');
 var linkButton=document.getElementById('openMediaLink');
@@ -1061,6 +1107,8 @@ if(host){
   if(localStream){localStream.getTracks().forEach(function(track){track.stop();});localStream=null;}
   if(blobUrl){URL.revokeObjectURL(blobUrl);blobUrl=null;}
   video.pause();
+  video.srcObject=null;
+  screenShareButton.hidden=music;stopScreenShareButton.hidden=true;
   if(external)video.crossOrigin='anonymous';else video.removeAttribute('crossorigin');
   if(!external)blobUrl=URL.createObjectURL(source);
   video.src=external?source:blobUrl;
