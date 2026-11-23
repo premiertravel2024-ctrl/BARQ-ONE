@@ -14,6 +14,7 @@ import {OnlineLibraryLink} from './OnlineLibraryLink';
 import {LocalLibraryManager} from './LocalLibraryManager';
 import {hydrateReadingLocalState,saveReadingLocalState} from '../lib/readingLocalState';
 import './barqStories.css';
+import './libraryCards.css';
 
 const BookReader=lazy(()=>import('./BookReader'));
 import type {ReadingEdition} from './BookReader';
