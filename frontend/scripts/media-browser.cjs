@@ -74,8 +74,24 @@ await page.goto('http://127.0.0.1:5173/tests/rebuild/index.html?books');
 await page.getByRole('group',{name:'تصنيف الكتب'}).getByRole('button',{name:'سلاسل مصرية',exact:true}).click();
 await page.getByRole('heading',{name:'ما وراء الطبيعة',exact:true}).waitFor();
 await page.getByRole('heading',{name:'رجل المستحيل',exact:true}).waitFor();
+await page.setViewportSize({width:1440,height:1000});
+// Visual regression: real rendered cards must share a bottom action baseline.
+const layout=await page.locator('.bs-unified-library .bs-library-card').evaluateAll(cards=>cards.map(card=>{
+ const cr=card.getBoundingClientRect(),footer=card.querySelector(':scope > .bs-card-actions');
+ const primary=footer?.querySelector('.bs-card-primary'),pr=primary?.getBoundingClientRect();
+ return {top:cr.top,footerTop:footer?.getBoundingClientRect().top,
+  footerBottom:footer?.getBoundingClientRect().bottom,
+  primaryHeight:pr?.height,width:cr.width,hasFooter:!!footer};
+}));
+assert.ok(layout.length>=2&&layout.every(card=>card.hasFooter),'all books and series must use a direct footer');
+const firstRow=layout.filter(card=>Math.abs(card.top-layout[0].top)<3);
+assert.ok(firstRow.length>=2,'desktop layout should show multiple cards per row');
+assert.ok(Math.max(...firstRow.map(card=>card.footerTop))-Math.min(...firstRow.map(card=>card.footerTop))<3,
+ 'book and series action bars must share one baseline');
+assert.ok(firstRow.every(card=>card.primaryHeight>=36),'all primary actions need the same accessible height');
+await page.screenshot({path:'test-results/library-desktop.png',fullPage:true});
 await page.locator('article').filter({has:page.getByRole('heading',{name:'ما وراء الطبيعة',exact:true})})
- .getByRole('button',{name:'أعداد السلسلة'}).click();
+ .getByRole('button',{name:'عرض أعداد ما وراء الطبيعة',exact:true}).click();
 const issues=page.getByRole('dialog',{name:'ما وراء الطبيعة'});
 await issues.locator('li').first().waitFor();
 assert.equal(await issues.locator('li').count(),81);
@@ -87,7 +103,7 @@ assert.equal(await issues.locator('li').count(),1);
 await issues.getByText(/الجزء الثاني/).waitFor();
 await page.keyboard.press('Escape');
 await issues.waitFor({state:'detached'});
-await page.getByRole('button',{name:'احفظ رجل المستحيل',exact:true}).click();
+await page.getByRole('button',{name:'إضافة للمفضلة: رجل المستحيل',exact:true}).click();
 await page.getByRole('button',{name:'مكتبتي',exact:true}).click();
 assert.equal(await page.getByRole('heading',{name:'رجل المستحيل',exact:true}).count(),1);
 assert.equal(await page.getByRole('heading',{name:'ما وراء الطبيعة',exact:true}).count(),0);
@@ -96,11 +112,12 @@ await page.getByRole('searchbox',{name:'ابحث في الكتب'}).fill('الف
 await page.getByRole('heading',{name:'الفيل الأزرق',exact:true}).waitFor();
 assert.ok(await page.locator('.bs-published-card .bs-real-cover').evaluate(art=>art.getBoundingClientRect().height<170),'book cover should fit a compact card');
 assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth+1),'reading library horizontal overflow');
+await page.setViewportSize({width:390,height:844});
 await page.screenshot({path:'test-results/library-mobile.png',fullPage:true});
 assert.equal(await page.getByRole('button',{name:'حكايات برق',exact:true}).count(),0);
 await page.getByRole('button',{name:'الكل',exact:true}).click();
 await page.getByRole('searchbox',{name:'ابحث في الكتب'}).fill('زينب');
-await page.getByRole('button',{name:'اقرأ في برق',exact:true}).click();
+await page.getByRole('button',{name:'قراءة زينب',exact:true}).click();
 await page.getByLabel('PDF 1',{exact:true}).waitFor();
 await page.locator('.bs-pdf-scroll').focus();
 await page.keyboard.press('End');
@@ -128,7 +145,7 @@ await page.waitForFunction(()=>document.querySelector('.bs-reader-progress')?.va
 await page.getByRole('button',{name:'علّم الصفحة',exact:true}).click();
 assert.equal(await page.getByRole('button',{name:'علّم الصفحة'}).getAttribute('aria-pressed'),'true');
 await page.getByRole('button',{name:'رجوع للمكتبة'}).click();
-await page.getByRole('button',{name:'اقرأ في برق',exact:true}).click();
+await page.getByRole('button',{name:'قراءة زينب',exact:true}).click();
 await page.waitForFunction(()=>document.querySelector('.bs-reader-progress')?.value===2);
 
 await page.addInitScript(()=>{
