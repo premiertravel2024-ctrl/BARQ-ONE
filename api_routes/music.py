@@ -39,18 +39,45 @@ def import_music(request:Import):
                         dirs[:]=[d for d in dirs if not (Path(base)/d).is_symlink()]
                         paths.extend(str(Path(base)/f) for f in files if Path(f).suffix.lower() in library.EXTENSIONS)
                         if len(paths)>=5000:break
-            else:paths=list(filedialog.askopenfilenames(parent=root,title='BARQ ONE — Import music',filetypes=[('Audio','*.mp3 *.m4a *.aac *.flac *.ogg *.opus *.wav')]))
+            else:paths=list(filedialog.askopenfilenames(parent=root,title='BARQ ONE — Import music',filetypes=[('Audio','*.mp3 *.m4a *.aac *.flac *.ogg *.opus *.wav *.webm')]))
         finally:root.destroy()
     except Exception as exc:raise HTTPException(503,'Music import unavailable. Check the desktop installation and try again.') from exc
     if not paths:return {'cancelled':True,'tracks':library.tracks()}
     result=library.import_selected(paths[:5000]);result['limited']=len(paths)>=5000
     return result
 
+@router.post('/import/winter-music')
+def import_winter_music():
+    """Explicit Windows picker; no browser-supplied filesystem paths."""
+    if sys.platform!='win32':
+        raise HTTPException(501,'WINTER MUSIC import is available in the Windows desktop app.')
+    try:
+        from tkinter import Tk, filedialog
+        root=Tk()
+        root.withdraw()
+        root.attributes('-topmost',True)
+        try:
+            chosen=filedialog.askopenfilename(
+                parent=root,title='BARQ ONE — Import WINTER MUSIC.zip',
+                filetypes=[('WINTER MUSIC ZIP','*.zip')],
+            )
+        finally:
+            root.destroy()
+    except Exception as exc:
+        raise HTTPException(503,'Could not open the Windows audio package picker.') from exc
+    if not chosen:
+        return {'cancelled':True,'tracks':library.tracks()}
+    try:
+        return library.import_winter_pack(chosen)
+    except (OSError,ValueError) as exc:
+        raise HTTPException(422,str(exc)) from exc
+
+
 @router.get('/stream/{identifier}')
 def stream(identifier:str):
     try:p=library.source(identifier)
     except ValueError as exc:raise HTTPException(404,str(exc)) from exc
-    return FileResponse(p)
+    return FileResponse(p,media_type='audio/webm' if p.suffix.lower()=='.webm' else None)
 
 @router.get('/art/{identifier}')
 def art(identifier:str):
