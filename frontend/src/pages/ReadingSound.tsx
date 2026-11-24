@@ -1,13 +1,14 @@
-import {useEffect,useRef,useState} from 'react';
+import {useCallback,useEffect,useRef,useState} from 'react';
 import {Music2,Pause,Play,SkipBack,SkipForward} from 'lucide-react';
+import {Modal} from '../components/ui/Modal';
 import {soundtracks} from './readingSoundtracks';
 
-type Mood='all'|'quiet'|'bright';
+type Mood='all'|'winter'|'quiet'|'bright';
 
 export function ReadingSound({ar}:{ar:boolean}){
  const audio=useRef<HTMLAudioElement>(null);
  const [open,setOpen]=useState(false);
- const [trackPicker,setTrackPicker]=useState(false);
+ const close=useCallback(()=>setOpen(false),[]);
  const [playing,setPlaying]=useState(false);
  const [loading,setLoading]=useState(false);
  const [volume,setVolume]=useState(22);
@@ -40,34 +41,32 @@ export function ReadingSound({ar}:{ar:boolean}){
   select(queue[(position+delta+queue.length)%queue.length],resume);
  }
 
- return <div className="bs-reading-sound" onKeyDown={event=>{if(event.key==='Escape'){setOpen(false);setTrackPicker(false);}}}>
+ return <div className="bs-reading-sound">
   <audio ref={audio} preload="none" onPlay={()=>setPlaying(true)} onPause={()=>setPlaying(false)}
    onEnded={()=>step(1,true)} onError={()=>{setPlaying(false);setLoading(false);setError(true);}}/>
   <button type="button" title={label('موسيقى القراءة','Reading music')} aria-label={label('موسيقى القراءة','Reading music')}
-   aria-expanded={open} data-playing={playing} onClick={()=>{setOpen(!open);setTrackPicker(false);}}><Music2 size={17}/></button>
-  {open&&<div className="bs-sound-panel">
-   <strong>{label('ساوندتراك القراءة','Reading soundtrack')}</strong>
+   aria-haspopup="dialog" aria-expanded={open} data-playing={playing} onClick={()=>setOpen(true)}><Music2 size={17}/></button>
+  <Modal open={open} onClose={close} title={label('ساوندتراك القراءة','Reading soundtrack')}
+   bodyClassName="bs-sound-panel">
+   <div className="bs-sound-fields" dir={ar?'rtl':'ltr'}>
    <label>{label('المزاج','Mood')}<select value={mood} onChange={event=>{
     const value=event.target.value as Mood;
     setMood(value);
     if(value!=='all'&&track.mood!==value)select(soundtracks.findIndex(item=>item.mood===value));
    }}>
     <option value="all">{label('كل المقطوعات','All recordings')} · {soundtracks.length}</option>
+    <option value="winter">WINTER MUSIC</option>
     <option value="quiet">{label('هادي وتركيز','Quiet focus')}</option>
     <option value="bright">{label('خفيف ومبهج','Light and bright')}</option>
    </select></label>
-   <div className="bs-track-picker">
-    <span>{label('المقطوعة','Track')}</span>
-    <button type="button" className="bs-track-picker-toggle" aria-expanded={trackPicker}
-      aria-haspopup="listbox" onClick={()=>setTrackPicker(value=>!value)}>
-      <span dir="auto">{track.title}</span><span aria-hidden="true">⌄</span>
-    </button>
-    {trackPicker&&<div className="bs-track-picker-list" role="listbox" aria-label={label('اختيار مقطوعة','Choose track')}>
-      {queue.map(i=><button type="button" role="option" aria-selected={i===index} key={i}
-       onClick={()=>{select(i);setTrackPicker(false);}}>{soundtracks[i].title}</button>)}
-    </div>}
-   </div>
-   <div className="bs-sound-meta" dir="ltr">{track.composer} · {track.artist}</div>
+   <label>{label('المقطوعة','Track')}
+    <select value={index} onChange={event=>select(Number(event.target.value))}>
+     {queue.map(i=><option key={i} value={i}>{soundtracks[i].title}</option>)}
+    </select>
+   </label>
+   <div className="bs-sound-meta" dir="auto">{track.source
+    ? [track.composer,track.artist].filter(Boolean).join(' · ')
+    : track.collection}</div>
    <div className="bs-sound-controls" dir="ltr">
     <button type="button" aria-label={label('المقطوعة السابقة','Previous track')} onClick={()=>step(-1)}><SkipBack size={16}/></button>
     <button type="button" aria-label={playing?label('إيقاف مؤقت','Pause'):label('تشغيل','Play')} disabled={loading}
@@ -76,8 +75,9 @@ export function ReadingSound({ar}:{ar:boolean}){
    </div>
    <label>{label('مستوى الصوت','Volume')}<input type="range" min="0" max="100" value={volume}
     onChange={event=>setVolume(Number(event.target.value))}/></label>
-   <a href={track.source} target="_blank" rel="noreferrer">{track.collection} · CC0</a>
+   {track.source&&<a href={track.source} target="_blank" rel="noreferrer">{track.collection} · CC0</a>}
    {error&&<span role="alert">{label('تعذّر تشغيل المقطوعة. جرّب مرة تانية أو اختار مقطوعة تانية.','Could not play this track. Retry or choose another recording.')}</span>}
-  </div>}
+   </div>
+  </Modal>
  </div>;
 }

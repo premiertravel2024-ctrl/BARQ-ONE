@@ -1,4 +1,4 @@
-// CC0 recordings. Each file description links the performer and dedication.
+// The existing recordings link to their CC0 source. WINTER MUSIC is bundled locally.
 export const soundtracks = [
  {
   "title": "Waltz in A minor, B. 150",
@@ -737,5 +737,32 @@ export const soundtracks = [
   "collection": "Open Well-Tempered Clavier",
   "audio": "https://upload.wikimedia.org/wikipedia/commons/5/5d/Kimiko_Ishizaka_-_Bach_-_Well-Tempered_Clavier%2C_Book_1_-_48_Fugue_No._24_in_B_minor%2C_BWV_869.ogg",
   "source": "https://commons.wikimedia.org/wiki/File:Kimiko_Ishizaka_-_Bach_-_Well-Tempered_Clavier%2C_Book_1_-_48_Fugue_No._24_in_B_minor%2C_BWV_869.ogg"
+ },
+ {
+  "title": "Disney",
+  "composer": "",
+  "artist": "",
+  "mood": "winter",
+  "collection": "WINTER MUSIC",
+  "audio": "/assets/reading-music/disney.ogg",
+  "source": null
+ },
+ {
+  "title": "Harry Potter",
+  "composer": "",
+  "artist": "",
+  "mood": "winter",
+  "collection": "WINTER MUSIC",
+  "audio": "/assets/reading-music/harry-potter.ogg",
+  "source": null
+ },
+ {
+  "title": "Studio Ghibli",
+  "composer": "",
+  "artist": "",
+  "mood": "winter",
+  "collection": "WINTER MUSIC",
+  "audio": "/assets/reading-music/studio-ghibli.ogg",
+  "source": null
  }
 ] as const;

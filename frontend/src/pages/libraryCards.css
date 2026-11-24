@@ -291,7 +291,7 @@
  .bs-hub .bs-discovery-row{
   display:flex;
   flex-flow:row nowrap;
-  align-items:center;
+  align-items:start;
   gap:12px;
   min-width:0;
  }
@@ -301,6 +301,10 @@
   max-width:none;
   overflow-x:auto;
   flex-wrap:nowrap;
+  padding-block:0 5px;
+ }
+ .bs-hub .bs-discovery-row .bs-filters button{
+  height:42px;
  }
  .bs-hub .bs-discovery-row .bs-search{
   flex:0 0 clamp(245px,23vw,330px);
@@ -308,7 +312,8 @@
   max-width:330px;
   width:auto;
   margin:0;
-  align-self:center;
+  align-self:start;
+  height:42px;
  }
 }
 @media(max-width:900px){

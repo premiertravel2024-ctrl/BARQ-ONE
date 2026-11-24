@@ -1,2 +1,2 @@
 """Canonical runtime release version; build entry points are checked against it."""
-VERSION = '2.41.26'
+VERSION = '2.41.27'
