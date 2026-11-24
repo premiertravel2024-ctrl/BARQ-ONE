@@ -43,7 +43,10 @@ def test_music_room_hides_video_only_fullscreen_options():
 def test_embedded_windows_room_grants_iframe_fullscreen_permission():
     react = (ROOT / "frontend/src/pages/WatchTogether.tsx").read_text(encoding="utf-8")
     assert 'allowFullScreen' in react
-    assert 'allow="autoplay; encrypted-media; fullscreen; picture-in-picture"' in react
+    iframe = re.search(r'<iframe\b[^>]*\ballow="([^"]+)"', react)
+    assert iframe is not None
+    permissions = {item.strip() for item in iframe.group(1).split(';')}
+    assert {'autoplay', 'encrypted-media', 'fullscreen', 'picture-in-picture', 'display-capture'} <= permissions
     assert 'barq-watch-player' in react
     css = (ROOT / "frontend/src/pages/barqMedia.css").read_text(encoding="utf-8")
     assert '.barq-watch-player iframe' in css
