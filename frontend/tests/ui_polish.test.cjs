@@ -35,15 +35,15 @@ test('BARQ ONE navigation retains model selection without mounting the removed w
   assert.doesNotMatch(app,/<Sidebar |<TopBar /);
   assert.match(sidebar,/<ModelSelector compact\/>/);
   assert.doesNotMatch(app,/<WorkspaceStudio/);
-  assert.ok(sidebar.includes("sections.filter(([key])=>key!=='chat').map("));
-  // Chat now lives with the other top-level destinations; no duplicate standalone control.
-  assert.match(sidebar,/\['center','chat','library','tools','monitor'\]/);
-  assert.doesNotMatch(sidebar,/className="ops-standalone-chat"/);
-  assert.doesNotMatch(sidebar,/className="ops-more"/);
-  assert.match(sidebar,/onClick=\{\(\)=>navigate\(key\)\}/);
+  assert.match(sidebar,/onClick=\{\(\)=>choose\(key\)\}/);
   const shell=read('pages/BarqOne.tsx');
-  for(const section of ['chat','center','voice','mission','library','installed','tools','monitor','automation','settings'])
-    assert.ok(shell.includes(`['${section}',`),section);
+  const primarySections=[...shell.matchAll(/^ \['([a-z]+)',/gm)].map(match=>match[1]);
+  const groups=sidebar.split('const navigationGroups = [')[1].split('] as const')[0];
+  const destinations=[...groups.matchAll(/pages:\[([^\]]+)\]/g)]
+    .flatMap(match=>[...match[1].matchAll(/'([a-z]+)'/g)].map(item=>item[1]));
+  assert.deepEqual(destinations.sort(),primarySections.sort());
+  assert.doesNotMatch(sidebar.split('export function OperationsRail')[0],/<nav /);
+  assert.match(sidebar,/ops-chat-history/);
   assert.doesNotMatch(sidebar,/onModeChange/);
   assert.match(read('components/chat/Composer.tsx'),/<ModelSelector\s*\/>/);
 });
