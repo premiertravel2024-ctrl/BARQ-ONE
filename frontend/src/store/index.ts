@@ -1,3 +1,4 @@
+import {removeDraft} from '../lib/chatDrafts';
 import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
 
@@ -50,7 +51,7 @@ export const useApp=create<State>()(persist((set,get)=>({
   selectChat:activeId=>set({activeId,sidebarOpen:false}),
   renameChat:(id,title)=>set(s=>({chats:updateChat(s.chats,id,c=>({...c,title:title.trim().slice(0,100)||c.title}))})),
   pinChat:id=>set(s=>({chats:updateChat(s.chats,id,c=>({...c,pinned:!c.pinned}))})),
-  deleteChat:id=>set(s=>({chats:s.chats.filter(c=>c.id!==id),activeId:s.activeId===id?null:s.activeId})),
+  deleteChat:id=>{removeDraft(id);set(s=>({chats:s.chats.filter(c=>c.id!==id),activeId:s.activeId===id?null:s.activeId}))},
   addMessage:(id,message)=>set(s=>({chats:updateChat(s.chats,id,c=>({...c,title:c.messages.length===0 && message.role==='user'?message.content.slice(0,42)||c.title:c.title,messages:[...c.messages,message]}))})),
   updateMessage:(id,messageId,patch)=>set(s=>({chats:updateChat(s.chats,id,c=>({...c,messages:c.messages.map(m=>m.id===messageId?{...m,...patch}:m)}))})),
   editMessage:(id,messageId,text)=>set(s=>({chats:updateChat(s.chats,id,c=>({...c,messages:c.messages.map(m=>m.id===messageId?{...m,content:text}:m)}))})),
@@ -58,5 +59,5 @@ export const useApp=create<State>()(persist((set,get)=>({
   setStreaming:(streaming,streamingId=null)=>set({streaming,streamingId}),
   toast:(kind,title,description)=>{const id=uid();set(s=>({notices:[...s.notices.slice(-3),{id,kind,title,description}]}));},
   dismissToast:id=>set(s=>({notices:s.notices.filter(n=>n.id!==id)})),
-  clearAll:()=>{if(get().streaming)return;set({chats:[],activeId:null})}
+  clearAll:()=>{if(get().streaming)return;for(const chat of get().chats)removeDraft(chat.id);removeDraft('new');set({chats:[],activeId:null})}
 }),{name:'ai-router-premium-ui-v2',storage:createJSONStorage(()=>safeStorage),partialize:s=>({theme:s.theme,language:s.language,voiceId:s.voiceId,sidebarCollapsed:s.sidebarCollapsed,activeId:s.activeId,selectedModel:s.selectedModel,workspace:s.workspace,options:s.options,chats:s.chats.map(c=>({...c,messages:c.messages.map(m=>({...m,isStreaming:false,agentTask:m.agentTask?.phase?{...m.agentTask,phase:undefined,status:m.agentTask.retryId||m.agentTask.savedEdit?'paused':'failed'}:m.agentTask,attachments:m.attachments?.map(({url:_url,...rest})=>rest)}))}))})}));

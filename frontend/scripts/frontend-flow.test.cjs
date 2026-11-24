@@ -70,7 +70,7 @@ test('store actions preserve chat identity and update only targeted messages',()
  }}
  const safeStore={getItem(){return null},setItem(){},removeItem(){}};
  vm.runInNewContext(js,{
-   exports,require(name){if(name==='zustand')return {create};if(name==='zustand/middleware')return {persist:fn=>fn,createJSONStorage:()=>safeStore};throw Error(name)},
+   exports,require(name){if(name==='../lib/chatDrafts')return {removeDraft:()=>{}};if(name==='zustand')return {create};if(name==='zustand/middleware')return {persist:fn=>fn,createJSONStorage:()=>safeStore};throw Error(name)},
    crypto:globalThis.crypto,Math,Date,JSON,globalThis,localStorage:safeStore,console
  });
  const app=exports.useApp; const id=app.getState().newChat();

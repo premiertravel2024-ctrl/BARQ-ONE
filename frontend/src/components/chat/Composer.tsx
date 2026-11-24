@@ -5,14 +5,11 @@ import {useApp,type UploadedAttachment} from '../../store';import {useT} from '.
 import {IconButton} from '../ui/IconButton';import {Button} from '../ui/Button';import {Attachments,readFiles} from './Attachments';import {ModelSelector} from './ModelSelector';import {stopGeneration,submitChat} from '../../lib/chat';
 import {releaseAttachment} from '../../lib/attachmentRegistry';
 
-const draftFiles=new Map<string,UploadedAttachment[]>();
-const loadingDrafts=new Set<string>();
-const draftEvents=new EventTarget();
+import {draftEvents,draftFiles,loadingDrafts,readDraft,writeDraft} from '../../lib/chatDrafts';
 
 export function Composer({draftId,prefill,onPrefillUsed}:{draftId:string;prefill?:string;onPrefillUsed?:()=>void}){
  const t=useT(),language=useApp(s=>s.language),streaming=useApp(s=>s.streaming),toast=useApp(s=>s.toast);
- const draftKey='barq-chat-draft:'+draftId;
- const [value,setText]=useState(()=>{try{return localStorage.getItem(draftKey)||''}catch{return ''}});
+ const [value,setText]=useState(()=>readDraft(draftId));
  const [files,setFiles]=useState(()=>draftFiles.get(draftId)||[]);
  const [drag,setDrag]=useState(false),[reading,setReading]=useState(()=>loadingDrafts.has(draftId));
  useEffect(()=>{
@@ -22,7 +19,7 @@ export function Composer({draftId,prefill,onPrefillUsed}:{draftId:string;prefill
  },[draftId]);
  function setValue(next:string){
   setText(next);
-  try{if(next)localStorage.setItem(draftKey,next);else localStorage.removeItem(draftKey)}catch{/* Storage can be unavailable. */}
+  writeDraft(draftId,next);
  }
  function saveFiles(next:UploadedAttachment[]){
   if(next.length)draftFiles.set(draftId,next);
@@ -56,7 +53,10 @@ export function Composer({draftId,prefill,onPrefillUsed}:{draftId:string;prefill
   if(!allowed.length)return;
   loadingDrafts.add(draftId);draftEvents.dispatchEvent(new Event(draftId));
   const previous=files;
-  try{await readFiles(allowed,progress=>saveFiles([...previous,...progress]));}
+  try{await readFiles(allowed,progress=>{
+   if(loadingDrafts.has(draftId))saveFiles([...previous,...progress]);
+   else progress.forEach(file=>releaseAttachment(file.id));
+  });}
   finally{loadingDrafts.delete(draftId);draftEvents.dispatchEvent(new Event(draftId));}
  }
  function onDrop(e:DragEvent){e.preventDefault();e.stopPropagation();setDrag(false);void addFiles(e.dataTransfer.files)}
