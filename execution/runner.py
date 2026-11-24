@@ -8,6 +8,7 @@ import dataclasses
 import os
 import queue
 import re
+from core.security import is_secret_env_name
 import shutil
 import subprocess
 import threading
@@ -19,7 +20,6 @@ _ALLOWED = frozenset({'git','gh','node','npm','npx','pnpm','yarn','python','py',
                       'pip','code','powershell','pwsh','winget','explorer'})
 _WINDOWS_SHIM = frozenset({'npm','npx','pnpm','yarn','code'})
 _FORBIDDEN_CMD = re.compile(r'[&|<>^%!"\r\n\x00-\x1f]')
-_SECRET_ENV = re.compile(r'(?i)(?:^|[_-])(key|token|secret|password|credential)(?:$|[_-])')
 MAX_CAPTURE = 102_400
 
 class CommandRejected(ValueError):
@@ -154,12 +154,12 @@ class Runner:
 
     @staticmethod
     def child_env(additions: Mapping[str,str]|None=None)->dict[str,str]:
-        result={k:v for k,v in os.environ.items() if not _SECRET_ENV.search(k)}
+        result={k:v for k,v in os.environ.items() if not is_secret_env_name(k)}
         for key,val in (additions or {}).items():
-            if _SECRET_ENV.search(key):
-                raise CommandRejected('Secrets may not be injected into child environment')
             if not isinstance(key,str) or not isinstance(val,str) or '\x00' in key+val:
                 raise CommandRejected('Invalid environment setting')
+            if is_secret_env_name(key):
+                raise CommandRejected('Secrets may not be injected into child environment')
             result[key]=val
         return result
 

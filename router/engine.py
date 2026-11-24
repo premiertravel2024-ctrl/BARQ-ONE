@@ -16,6 +16,22 @@ from router.context import select_context, effective_window
 from providers.reliability import retry_limit, retry_delay
 
 
+async def _first_stream_piece(upstream, timeout):
+    """Wait for content within a single deadline, even across empty chunks."""
+    loop = asyncio.get_running_loop()
+    deadline = loop.time() + timeout
+    while True:
+        remaining = deadline - loop.time()
+        if remaining <= 0:
+            raise asyncio.TimeoutError('Provider took too long to start responding')
+        try:
+            piece = await asyncio.wait_for(anext(upstream), timeout=remaining)
+        except StopAsyncIteration:
+            return ''
+        if piece:
+            return piece
+
+
 class AllModelsFailed(Exception):
     def __init__(self, attempts, diagnostics=None):
         self.attempts = attempts
@@ -504,14 +520,24 @@ class Engine:
                 try:
                     if not self.network.breaker.allowed(ident):continue
                     claimed=True
-                    self.limiter.record(qkey,needed)
                     # The first visible token sets perceived latency. Free cloud endpoints
                     # can queue indefinitely: give another *free* provider a chance before
                     # falling back to local Ollama. This does not truncate active streams.
                     sem=self.limiter.semaphore(qkey,selected.max_concurrent or provider.max_concurrent)
-                    if sem:await sem.acquire()
-                    upstream = stream_complete(provider, selected, prepared)
+                    if sem:
+                        try:
+                            await asyncio.wait_for(sem.acquire(), timeout=8)
+                        except asyncio.TimeoutError:
+                            attempts.append(f'{ident}: Model is busy with other requests')
+                            yield {'type': 'routing', 'status': ident + ' busy; trying fallback…'}
+                            continue
+                    upstream = None
                     try:
+                        if not self.limiter.allowed(qkey,selected.rpm or provider.rpm,selected.rpd or provider.rpd,
+                                                    selected.tpm or provider.tpm,needed,selected.tpd or provider.tpd):
+                            continue
+                        self.limiter.record(qkey, needed)
+                        upstream = stream_complete(provider, selected, prepared)
                         default = 21 if task in ('coding', 'reasoning') else 13
                         try:
                             first_limit = max(6.0, min(50.0, float(os.getenv('BARQ_FIRST_TOKEN_TIMEOUT', default))))
@@ -519,10 +545,7 @@ class Engine:
                             first_limit = float(default)
                         if provider.kind == 'local':
                             first_limit = 120.0  # local model may need loading
-                        try:
-                            first_piece = await asyncio.wait_for(anext(upstream), timeout=first_limit)
-                        except StopAsyncIteration:
-                            first_piece = ''
+                        first_piece = await _first_stream_piece(upstream, first_limit)
                         async def visible_pieces():
                             if first_piece:
                                 yield first_piece
@@ -540,8 +563,12 @@ class Engine:
                             pieces.append(piece)
                             yield {'type': 'token', 'content':piece}
                     finally:
-                        await upstream.aclose()
-                        if sem:sem.release()
+                        try:
+                            if upstream is not None:
+                                await upstream.aclose()
+                        finally:
+                            if sem:
+                                sem.release()
                     result = ''.join(pieces)
                     if not acceptable(result, messages):
                         raise ProviderError('Empty or invalid-format streamed answer')
@@ -569,8 +596,8 @@ class Engine:
                     return
                 except (ProviderError, ValueError, KeyError, asyncio.TimeoutError) as exc:
                     status = getattr(exc, 'status', None)
-                    network = bool(getattr(exc, 'network', False)) or isinstance(exc, asyncio.TimeoutError)
-                    reason = f'{ident}: {str(exc)[:120]}'
+                    detail = 'Timed out waiting for a response' if isinstance(exc, asyncio.TimeoutError) else str(exc)[:120]
+                    reason = f'{ident}: {detail}'
                     attempts.append(reason)
                     self.health.report(ident, False,
                                        cooldown=120 if status==429 else 45 if status and status>=500 else 8, task=task)

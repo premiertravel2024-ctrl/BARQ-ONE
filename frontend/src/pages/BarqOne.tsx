@@ -2,7 +2,7 @@ import {Switch} from '../components/ui/Switch';
 import {useAppView} from '../lib/appContext';
 import type {OnePage} from '../lib/appNavigation';
 export type {OnePage} from '../lib/appNavigation';
-import {useEffect,useState} from 'react';
+import {lazy,Suspense,useEffect,useState} from 'react';
 import {Thermometer,MemoryStick,HardDrive,Activity,AudioLines,Cpu,Download,LayoutDashboard,LibraryBig,MessageSquare,Radio,Search,Settings2,Star,Terminal,Timer,Workflow,CircleDot,Package,Image,Shield,Headphones} from 'lucide-react';
 import {requestJSON,type RouterProvider} from '../lib/backend';
 import {useApp} from '../store';
@@ -11,12 +11,12 @@ import {Hologram} from '../components/chat/Hologram';
 import {Modal} from '../components/ui/Modal';
 import './barqOne.css';
 import './barqMedia.css';
-import {ResourceSaver} from './ResourceSaver';
-import {Wallpapers} from './Wallpapers';
-import {WatchTogether} from './WatchTogether';
-import {MusicPlayer} from './MusicPlayer';
-import {AutomationDashboard} from './AutomationDashboard';
-import {BarqStories} from './BarqStories';
+const ResourceSaver=lazy(()=>import('./ResourceSaver').then(module=>({default:module.ResourceSaver})));
+const Wallpapers=lazy(()=>import('./Wallpapers').then(module=>({default:module.Wallpapers})));
+const WatchTogether=lazy(()=>import('./WatchTogether').then(module=>({default:module.WatchTogether})));
+const MusicPlayer=lazy(()=>import('./MusicPlayer').then(module=>({default:module.MusicPlayer})));
+const AutomationDashboard=lazy(()=>import('./AutomationDashboard').then(module=>({default:module.AutomationDashboard})));
+const BarqStories=lazy(()=>import('./BarqStories').then(module=>({default:module.BarqStories})));
 
 export const sections=[
  ['center','مركز الأوامر','Command Center',LayoutDashboard],
@@ -345,12 +345,14 @@ export function BarqOne({page,providers,onVoice,onNavigate,onModels,onQuick}:Pro
   {page==='voice'&&<Hologram onStart={onVoice}/>}
   {page==='mission'&&<Mission/>}
   {page==='monitor'&&<MonitorPanel full/>}
+  <Suspense fallback={<p role="status" className="p-4 text-sm text-secondary">{ar?'جاري فتح القسم…':'Opening section…'}</p>}>
   {page==='resources'&&<ResourceSaver/>}
   {page==='wallpapers'&&<Wallpapers onOpenSettings={()=>onNavigate('settings')}/>}
   {page==='watch'&&<WatchTogether mode="video"/>}
   {page==='music'&&<MusicPlayer/>}
   {page==='stories'&&<BarqStories/>}
   {page==='automation'&&<AutomationDashboard/>}
+  </Suspense>
   {page==='tools'&&<div className="one-panels"><ProviderList providers={providers} onSettings={onModels}/><RuntimeTools/></div>}
   {(page==='library'||page==='installed')&&<OpenHub mode={page}/>} 
  </section>;

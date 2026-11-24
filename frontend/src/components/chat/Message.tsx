@@ -16,6 +16,7 @@ let detachSystemGlow:(()=>void)|undefined;
 export function Message({message,chatId}:{message:MessageType;chatId:string}){
  const t=useT(),voiceId=useApp(s=>s.voiceId),reduced=useReducedMotion(),update=useApp(s=>s.updateMessage),streaming=useApp(s=>s.streaming),toast=useApp(s=>s.toast),language=useApp(s=>s.language);
  const [agentBusy,setAgentBusy]=useState(false);
+ const canRegenerate=useApp(s=>s.chats.find(c=>c.id===chatId)?.messages.at(-1)?.id===message.id);
  const taskBusy=useApp(s=>!!s.taskActions[chatId]);
  const [reaBusy,setReaBusy]=useState(false),[reaStatus,setReaStatus]=useState(''),[reaConnected,setReaConnected]=useState(false);
  const [copied,setCopied]=useState(false),[editing,setEditing]=useState(false),[draft,setDraft]=useState(message.content),[showReason,setShowReason]=useState(false);
@@ -129,7 +130,13 @@ export function Message({message,chatId}:{message:MessageType;chatId:string}){
           pre({children}){return <>{children}</>},
           code({className,children,...props}){const lang=/language-([\w+-]+)/.exec(className||'')?.[1];const source=String(children).replace(/\n$/,'');
             return lang?<CodeBlock language={lang} code={source}/>:<code className={className} {...props}>{children}</code>},
-          a({href,children,...props}){return <a href={href} target="_blank" rel="noopener noreferrer" {...props}>{children}</a>}
+          a({href,children,...props}){return <a href={href} target="_blank" rel="noopener noreferrer" {...props}>{children}</a>},
+          img({src,alt}){
+            const label=alt||(language==='ar'?'صورة في الرد':'Image in response');
+            return src&&/^https?:\/\//i.test(src)
+              ? <a href={src} target="_blank" rel="noopener noreferrer">{language==='ar'?'افتح الصورة':'Open image'} · {label}</a>
+              : <span>{label}</span>;
+          }
         }}>{message.content||' '}</ReactMarkdown>
        </div>}
       {!isUser&&message.pendingCommand&&<section aria-label={language==='ar'?'استكمال الطلب المحفوظ':'Resume saved request'} className="mt-2 space-y-2 rounded-xl border border-stroke bg-elevated p-3 text-sm">
@@ -181,14 +188,18 @@ export function Message({message,chatId}:{message:MessageType;chatId:string}){
       </section>}
       {!isUser&&message.reasoning&&!message.reasoning.startsWith('Routing to')&&!message.reasoning.startsWith('Connecting to')&&<div className="mt-2"><button className="focus-ring flex items-center gap-1 text-xs text-muted" onClick={()=>setShowReason(v=>!v)} aria-expanded={showReason}><ChevronDown size={13} className={`transition-transform ${showReason?'rotate-180':''}`}/>{t('reasoning')}</button><AnimatePresence>{showReason&&<motion.p initial={{opacity:0}} animate={{opacity:1}} exit={{opacity:0}} className="mt-1 rounded-md bg-elevated p-3 text-xs text-secondary">{message.reasoning}</motion.p>}</AnimatePresence></div>}
     </div>
-    {!isUser&&message.incomplete&&<p className="mt-2 text-xs text-danger" role="status">{language==='ar'?'الرد انقطع قبل الاكتمال. حاول مجددًا.':'The response was interrupted. Please retry.'}</p>}
+    {!isUser&&message.incomplete&&<div className="mt-2 flex flex-wrap items-center gap-2">
+      <p className="text-xs text-danger" role="status">{language==='ar'?'الرد انقطع قبل ما يكمل.':'The response was interrupted.'}</p>
+      {canRegenerate&&<Button size="sm" variant="secondary" disabled={streaming}
+       icon={<RefreshCcw size={14}/>} onClick={()=>void regenerate(chatId)}>{language==='ar'?'حاول تاني':'Retry response'}</Button>}
+    </div>}
 
     {!isUser&&message.content.includes('```')&&<button type="button" className="mt-2 inline-flex items-center gap-2 rounded-lg border border-stroke bg-elevated px-3 py-2 text-xs text-secondary hover:text-primary" onClick={()=>{useApp.getState().setStudioCodeHandoff({chatId,messageId:message.id});useApp.getState().setToolHandoff({integration:'coding',goal:'عرض الكود من المحادثة',tab:'agent'})}}><Code2 size={15}/> {language==='ar'?'عرض الكود في مساحة العمل':'View live code in workspace'}</button>}
 
     {!message.isStreaming&&!editing&&<div className={`message-actions mt-1.5 flex items-center gap-0.5 ${isUser?'justify-end':''}`}>
       <IconButton label={copied?t('copied'):t('copy')} icon={copied?<Check size={15} className="text-success"/>:<Copy size={15}/>} size="sm" className="!min-h-8 !min-w-8" onClick={copy}/>
       {isUser?<IconButton label={t('edit')} icon={<Pencil size={15}/>} size="sm" className="!min-h-8 !min-w-8" disabled={streaming} onClick={()=>{setDraft(message.content);setEditing(true)}}/>:<>
-        <IconButton label={t('regenerate')} icon={<RefreshCcw size={15}/>} size="sm" className="!min-h-8 !min-w-8" onClick={()=>void regenerate(chatId)}/>
+        {canRegenerate&&!message.incomplete&&<IconButton label={t('regenerate')} icon={<RefreshCcw size={15}/>} size="sm" className="!min-h-8 !min-w-8" disabled={streaming} onClick={()=>void regenerate(chatId)}/>}
         <IconButton label={t('like')} icon={<ThumbsUp size={15} fill={message.rating==='like'?'currentColor':'none'}/>} size="sm" className="!min-h-8 !min-w-8" onClick={()=>void sendFeedback('like')}/>
         <IconButton label={t('dislike')} icon={<ThumbsDown size={15} fill={message.rating==='dislike'?'currentColor':'none'}/>} size="sm" className="!min-h-8 !min-w-8" onClick={()=>void sendFeedback('dislike')}/>
         <IconButton label={t('readAloud')} icon={<Volume2 size={15}/>} size="sm" className="!min-h-8 !min-w-8" onClick={speak}/>

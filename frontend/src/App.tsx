@@ -6,6 +6,7 @@ import {ComputerControlStatus} from './components/workspace/ComputerControlStatu
 import {startDataSync} from './lib/sync';
 import {deleteConversation, type RouterProvider} from './lib/backend';
 import {useApp} from './store';import {useT} from './i18n';
+import {SectionBoundary} from './components/layout/SectionBoundary';
 import {RightPanel} from './components/layout/RightPanel';
 import {OperationsHeader,OperationsRail,ConversationHeader} from './components/layout/OperationsFrame';import {SettingsModal,shortcuts} from './components/layout/SettingsModal';
 import {EmptyState} from './components/chat/EmptyState';import {MessageList} from './components/chat/MessageList';import {BrainStatus} from './components/chat/BrainStatus';import {Composer} from './components/chat/Composer';
@@ -146,7 +147,8 @@ export default function App(){
   <div className={playground?'hidden':'ops-body'} dir="ltr">
    <OperationsRail page={onePage} navigate={navigateOne} newChat={()=>{newChat();navigateOne('chat')}} onDelete={setDeleteId} onPlayground={openPlayground}/>
    <main className={onePage==='chat'?'ops-stage ops-chat-stage':'ops-stage'} dir={language==='ar'?'rtl':'ltr'} aria-label={language==='ar'?'مساحة التطبيق':'Application workspace'}>
-    {media&&<div hidden={onePage!==media} className="ops-media-page" key={media}>{renderSection(media)}</div>}
+    {media&&<div hidden={onePage!==media} className="ops-media-page" key={media}><SectionBoundary ar={language==='ar'}>{renderSection(media)}</SectionBoundary></div>}
+    <SectionBoundary key={onePage} ar={language==='ar'}>
     {onePage==='settings'?<SettingsModal embedded open initialTab={settingsTab} onWorkspace={()=>navigateOne('chat')} onClose={()=>navigateOne('center')}/>
     :onePage!=='chat'?<>
       {onePage!=='watch'&&onePage!=='music'&&renderSection(onePage)}
@@ -158,6 +160,7 @@ export default function App(){
       <VoiceResultsStrip/>
       <Composer prefill={prefill} onPrefillUsed={()=>setPrefill('')}/>
     </>}
+    </SectionBoundary>
    </main>
    {onePage==='chat'&&<RightPanel/>}
   </div>
@@ -168,7 +171,7 @@ export default function App(){
   <ApprovalDialog enabled={!settings&&!shortcutsOpen&&!deleteId&&!launcherOpen&&!palette&&!playground}/>
   <SettingsModal open={settings} initialTab={settingsTab} onWorkspace={()=>{setSettings(false);setPlayground(false)}} onClose={()=>setSettings(false)}/>
   <LauncherPalette open={launcherOpen} initial={launcherQuery} onClose={()=>setLauncherOpen(false)}/>
-  <CommandPalette open={palette} onClose={()=>setPalette(false)} onSettings={()=>setSettings(true)} onShortcuts={()=>setShortcutsOpen(true)} onPlayground={openPlayground}/>
+  <CommandPalette open={palette} onNavigate={navigateOne} onClose={()=>setPalette(false)} onSettings={()=>setSettings(true)} onShortcuts={()=>setShortcutsOpen(true)} onPlayground={openPlayground}/>
   <Modal open={shortcutsOpen} onClose={()=>setShortcutsOpen(false)} title={t('shortcutsTitle')}><div className="space-y-3">{shortcuts.map(([shortcut,description])=><div key={shortcut} className="flex items-center justify-between gap-3 border-b border-stroke pb-2 text-sm"><span>{description}</span><kbd className="whitespace-nowrap rounded-sm border border-stroke bg-elevated px-2 py-1 font-mono text-xs">{shortcut}</kbd></div>)}</div></Modal>
   <Modal open={!!deleteId} onClose={()=>setDeleteId(null)} title={t('removeConfirm')} footer={<><Button variant="secondary" onClick={()=>setDeleteId(null)}>{t('cancel')}</Button><Button variant="danger" disabled={streaming} icon={<Trash2 size={16}/>} onClick={confirmDelete}>{t('confirm')}</Button></>}><p className="text-sm text-secondary">{t('removeDescription')} <strong>{useApp.getState().chats.find(c=>c.id===deleteId)?.title||''}</strong></p></Modal>
  </div>

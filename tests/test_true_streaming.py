@@ -184,3 +184,19 @@ def test_performance_endpoint_uses_measured_samples(monkeypatch):
     assert d['fallback_responses']==1
     assert d['ttft_seconds']['p95']>=0
     assert d['recent_models']==['ollama/test','gemini/test']
+
+
+@pytest.mark.asyncio
+async def test_empty_chunks_share_the_first_response_deadline():
+    from router.engine import _first_stream_piece
+
+    async def provider():
+        yield ''
+        await asyncio.Event().wait()
+
+    upstream = provider()
+    try:
+        with pytest.raises(asyncio.TimeoutError):
+            await asyncio.wait_for(_first_stream_piece(upstream, 0.02), timeout=0.5)
+    finally:
+        await upstream.aclose()

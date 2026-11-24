@@ -110,3 +110,30 @@ async def test_503_retries_are_bounded_and_429_hands_off(monkeypatch,tmp_path):
     with pytest.raises(AllModelsFailed):
         await engine.run([{'role':'user','content':'Fix Python project'}],use_cache=False)
     assert calls==['first'], 'Retry-After must block every model sharing the same quota scope'
+
+
+def test_loopback_guard_blocks_malformed_origin_and_cross_site_writes():
+    import api
+
+    with TestClient(api.app, base_url='http://localhost') as client:
+        assert client.post('/v1/brain/cancel', headers={'Origin': 'http://['}).status_code == 403
+        assert client.post('/v1/brain/cancel', headers={'Sec-Fetch-Site': 'cross-site'}).status_code == 403
+        response = client.get('/health')
+        assert response.status_code == 200
+        assert response.headers['X-Frame-Options'] == 'SAMEORIGIN'
+        assert response.headers['X-Content-Type-Options'] == 'nosniff'
+
+
+def test_child_environment_filters_secret_names_case_insensitively(monkeypatch):
+    from core.security import child_env
+
+    monkeypatch.setenv('provider_api_key', 'test credential')
+    monkeypatch.setenv('AWS_SECRET_ACCESS_KEY', 'test credential')
+    monkeypatch.setenv('BARQ_TASK', 'visible')
+    env = child_env()
+    assert 'provider_api_key' not in env
+    assert 'AWS_SECRET_ACCESS_KEY' not in env
+    assert env['BARQ_TASK'] == 'visible'
+    import pytest
+    with pytest.raises(ValueError):
+        child_env({'service_password': 'test credential'})

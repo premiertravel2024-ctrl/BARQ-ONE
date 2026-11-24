@@ -7,7 +7,14 @@ from .contracts import Request,TaskProfile
 
 AR = re.compile(r'[\u0600-\u06ff]')
 EN = re.compile(r'[a-zA-Z]')
-SECRET = re.compile(r'(?i)(?:sk-[A-Za-z0-9_-]{18,}|gh[pousr]_[A-Za-z0-9_]{20,}|(?:api[_-]?key|password|token|secret)\s*[:=]\s*[^\s,;]{8,})')
+SECRET = re.compile(
+    r'-----BEGIN (?:[A-Z0-9]+ )*PRIVATE KEY-----'
+    r'|\b(?:sk-[A-Za-z0-9_-]{18,}|gh[pousr]_[A-Za-z0-9_]{20,}|github_pat_[A-Za-z0-9_]{20,}|AIza[A-Za-z0-9_-]{35})'
+    r'|(?:api[_-]?key|password|token|secret)["\']?\s*[:=]\s*["\']?[^\s,;]{8,}'
+    r'|(?:مفتاح\s+(?:الـ?\s*)?API|كلمة\s+(?:المرور|السر)|رمز\s+الوصول)\s*[:=]\s*[^\s,;]{8,}'
+    r'|\bauthorization\s*:\s*bearer\s+[A-Za-z0-9._~+/=-]{8,}',
+    re.IGNORECASE,
+)
 PII = re.compile(r'(?i)(?:[\w.+-]+@[\w.-]+\.[a-z]{2,}|\+?\d[\d ()-]{9,}\d)')
 TIME_SENSITIVE=re.compile(r'(?i)\b(?:today|latest|now|current|weather|news|stock price)\b|النهارد[هة]|حاليا|دلوقتي|الطقس|آخر الأخبار|سعر\s+(?:العملات|السهم)')
 PATTERNS=[

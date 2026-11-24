@@ -46,10 +46,17 @@ async def local_origin_guard(request,call_next):
     if request.method not in ('GET','HEAD','OPTIONS'):
         origin=request.headers.get('origin')
         if origin:
-            parsed=urlsplit(origin)
-            own_host=request.headers.get('host','')
-            if parsed.scheme!=request.url.scheme or parsed.netloc.lower()!=own_host.lower():
+            try:
+                parsed=urlsplit(origin)
+                same_origin=(parsed.scheme==request.url.scheme
+                             and parsed.netloc.lower()==request.headers.get('host','').lower()
+                             and not (parsed.path or parsed.query or parsed.fragment))
+            except ValueError:
+                same_origin=False
+            if not same_origin:
                 return JSONResponse({'detail':'Cross-origin changes blocked'},status_code=403)
+        elif request.headers.get('sec-fetch-site') in ('cross-site','same-site'):
+            return JSONResponse({'detail':'Cross-origin changes blocked'},status_code=403)
     if request.method=='POST' and request.url.path in ('/v1/chat/completions','/v1/router/chat','/v1/router/chat/stream','/v1/vision/analyze',
             '/v1/agent/prepare','/v1/agent/plan','/v1/agent/retry-plan','/v1/brain/route','/v1/brain/command','/v1/brain/command/retry','/v1/brain/network/events') and host!='testserver':
         # Browser origin and loopback binding are validated above; forwarded headers are ignored.
@@ -57,7 +64,11 @@ async def local_origin_guard(request,call_next):
         delay=_chat_rate_limiter.check(peer)
         if delay:
             return JSONResponse({'detail':'طلبات كتير بسرعة؛ جرّب بعد لحظات.'},status_code=429,headers={'Retry-After':str(delay)})
-    return await call_next(request)
+    response = await call_next(request)
+    response.headers.setdefault('X-Content-Type-Options', 'nosniff')
+    response.headers.setdefault('X-Frame-Options', 'SAMEORIGIN')
+    response.headers.setdefault('Referrer-Policy', 'no-referrer')
+    return response
 
 from core.paths import resource,state_file
 app.mount('/fonts', StaticFiles(directory=resource('web','fonts')), name='fonts')

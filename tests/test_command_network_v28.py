@@ -113,3 +113,15 @@ def test_network_intake_rejects_non_messages():
     with TestClient(app) as client:
         response=client.post('/v1/brain/network/events',json={'messages':[]})
         assert response.status_code==400
+
+
+def test_common_credentials_and_arabic_password_labels_use_local_routing():
+    for text in (
+        'Authorization: Bearer sample-token-000',
+        'كلمة المرور: sample-password',
+        '-----BEGIN OPENSSH PRIVATE KEY-----',
+        'github_pat_' + 'a' * 24,
+    ):
+        request = Request(messages=[{'role': 'user', 'content': text}])
+        assert Triage.privacy_required(request)
+        assert not Triage.cacheable(request)
