@@ -18,7 +18,7 @@ export function OperationsHeader({page,navigate,search}:Actions){
  return <header className="ops-header" data-focus-region tabIndex={-1}>
   <div className="ops-brand">
    <button className="ops-mobile-menu" type="button" aria-label={ar?'القائمة':'Menu'} aria-controls="barq-sidebar" aria-expanded={open} onClick={()=>setOpen(true)}><Menu size={19}/></button>
-   <button className="ops-wordmark" type="button" onClick={()=>navigate('center')}><span className="ops-mark"><AudioLines size={17}/></span><span>BARQ <b>ONE</b></span></button>
+   <button className="ops-wordmark" type="button" aria-label={ar?'مركز الأوامر':'Command Center'} onClick={()=>navigate('center')}><span className="ops-mark"><AudioLines size={17}/></span><span>BARQ <b>ONE</b></span></button>
   </div>
   <p className="ops-current-section">{section?.[ar?1:2]}</p>
   <div className="ops-header-actions">
