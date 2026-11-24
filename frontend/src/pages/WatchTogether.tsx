@@ -265,7 +265,7 @@ export function WatchTogether({mode = 'video',track,onTrack,requestedProvider,on
         {!sharedSelection.current&&<button type="button" onClick={sendTrack}>{ar?'شارك الاختيار':'Share selection'}</button>}
         <span role="status">{trackStatus}</span>
       </div>}
-      <iframe ref={frame} style={frameHeight?{height:frameHeight}:undefined} title={ar ? 'مشغّل الغرفة' : 'Room player'} src={guest || current?.host_url} allow="autoplay; encrypted-media; fullscreen; picture-in-picture" allowFullScreen referrerPolicy="no-referrer"/>
+      <iframe ref={frame} style={frameHeight?{height:frameHeight}:undefined} title={ar ? 'مشغّل الغرفة' : 'Room player'} src={guest || current?.host_url} allow="autoplay; encrypted-media; fullscreen; picture-in-picture; display-capture" allowFullScreen referrerPolicy="no-referrer"/>
     </section>}
   </div>;
 }
