@@ -1,6 +1,6 @@
-; BARQ ONE v2.41.27 FRONTEND-ONLY UPDATE
+; BARQ ONE v2.41.28 FRONTEND-ONLY UPDATE
 ; This installer never replaces Python executables, models, or application settings.
-#define AppVersion "2.41.27"
+#define AppVersion "2.41.28"
 #define ReactDir AddBackslash(SourcePath) + "..\web\react"
 #if !FileExists(ReactDir + "\index.html")
  #error "Build fresh React UI before packaging the update."
@@ -13,14 +13,14 @@
 AppId={{9BB70D04-1EC5-4BC6-B811-64B08F5C8977}
 AppName=BARQ ONE
 AppVersion={#AppVersion}
-AppVerName=BARQ ONE 2.41.27 UI Update
+AppVerName=BARQ ONE 2.41.28 UI Update
 AppPublisher=BARQ ONE
 DefaultDirName={localappdata}\Programs\AI Router Agent
 UsePreviousAppDir=yes
 DisableDirPage=no
 DefaultGroupName=BARQ ONE
 OutputDir=..\release
-OutputBaseFilename=BARQ_UI_Update_2.41.27
+OutputBaseFilename=BARQ_UI_Update_2.41.28
 Compression=lzma2
 SolidCompression=yes
 WizardStyle=modern
