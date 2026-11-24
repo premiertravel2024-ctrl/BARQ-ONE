@@ -375,17 +375,19 @@ export async function generate(id:string,retryCommandId?:string){
     }
   }
   if(signal.aborted)return;
-  current.addMessage(id,{id:assistantId,role:'assistant',content:'',model:current.selectedModel,createdAt:Date.now(),isStreaming:true});
+  current.addMessage(id,{id:assistantId,role:'assistant',content:'',model:current.selectedModel,createdAt:Date.now(),isStreaming:true,routeStage:'selecting'});
   current.setStreaming(true,assistantId);
   let output='';let batch='';let lastFlush=Date.now();
   try{
     const latest=messages.at(-1);
     const files=(latest?.role==='user'?latest.attachments||[]:[]).map(a=>({attachment:a,file:getAttachment(a.id)}));
     if(files.some(item=>!item.file))throw new Error('Some original attachments are no longer available. Please attach them again.');
-    // Keep router diagnostics internal; the chat only presents the final answer.
     for await (const event of streamChat(messages,current.selectedModel,current.options,signal,files as {attachment:UploadedAttachment;file:File}[],id,appPrompt())){
       if(signal.aborted)break;
-      // No visible routing chatter; diagnostics remain in message metadata.
+      if(event.type==='routing'){
+        const routeStage=/fallback|unavailable| busy/i.test(event.value)?'fallback':/^routing to /i.test(event.value)?'connecting':undefined;
+        if(routeStage)useApp.getState().updateMessage(id,assistantId,{routeStage});
+      }
       if(event.type==='model')useApp.getState().updateMessage(id,assistantId,{model:event.value.model,provider:event.value.provider,dataUse:event.value.data_use,attempts:event.value.attempts,offline:event.value.offline,cached:event.value.cached});
       if(event.type==='metrics')useApp.getState().updateMessage(id,assistantId,{metrics:event.value});
       if(event.type==='token'){
@@ -403,9 +405,13 @@ export async function generate(id:string,retryCommandId?:string){
       const ar=useApp.getState().language==='ar';
       const hint=ar?'تعذّر الرد من النماذج المهيّأة. افتح إدارة النماذج واختبر Gemini أو Groq أو OpenRouter. Ollama احتياطي في الوضع التلقائي.':'All configured models failed. Check Gemini, Groq or OpenRouter in Model Center; Auto uses Ollama as a backup.';
       useApp.getState().toast('error',ar?'تعذّر توليد الرد':'Generation interrupted',reason);
-      useApp.getState().updateMessage(id,assistantId,{content:output||`${hint}\n\n${reason}`,reasoning:output?reason:undefined,isStreaming:false,incomplete:true});
+      useApp.getState().updateMessage(id,assistantId,{content:output||`${hint}\n\n${reason}`,reasoning:output?reason:undefined,isStreaming:false,incomplete:true,continuable:!!output});
     }
-  }finally{if(batch){output+=batch;batch='';useApp.getState().updateMessage(id,assistantId,{content:output})}useApp.getState().updateMessage(id,assistantId,{isStreaming:false})}
+  }finally{
+    if(batch){output+=batch;useApp.getState().updateMessage(id,assistantId,{content:output})}
+    if(signal.aborted&&output)useApp.getState().updateMessage(id,assistantId,{incomplete:true,continuable:true});
+    useApp.getState().updateMessage(id,assistantId,{isStreaming:false,routeStage:undefined});
+  }
   }finally{if(controller===activeController){useApp.getState().setStreaming(false);controller=null;activeGenerationChat=null}}
 }
 export function stopGeneration(){controller?.abort();if(activeGenerationChat)void requestJSON('/v1/brain/cancel',{method:'POST',body:JSON.stringify({conversation_id:activeGenerationChat})}).catch(()=>{});useApp.getState().setStreaming(false);}
@@ -428,4 +434,42 @@ export async function regenerate(id:string){
   const chat=state.chats.find(c=>c.id===id);if(!chat)return;
   const lastUser=[...chat.messages].reverse().find(m=>m.role==='user');if(!lastUser)return;
   state.trimAfter(id,lastUser.id);await generate(id);
+}
+
+export function appendContinuation(prefix:string,suffix:string){
+  const limit=Math.min(prefix.length,suffix.length,2000);
+  for(let length=limit;length>=8;length--){
+    if(prefix.endsWith(suffix.slice(0,length)))return prefix+suffix.slice(length);
+  }
+  return prefix+suffix;
+}
+
+export async function continueResponse(id:string,messageId:string){
+  const state=useApp.getState();
+  const chat=state.chats.find(item=>item.id===id);
+  const last=chat?.messages.at(-1);
+  if(state.streaming||!chat||last?.id!==messageId||!last.continuable||!last.incomplete)return;
+  const activeController=new AbortController();
+  controller=activeController;activeGenerationChat=id;
+  state.setStreaming(true,messageId);
+  state.updateMessage(id,messageId,{isStreaming:true,routeStage:'connecting'});
+  const prompt:Message={id:uid(),role:'user',createdAt:Date.now(),
+    content:'Continue the previous answer exactly where it stopped. Output only the continuation, preserving language and formatting. Do not restart or repeat previous text.'};
+  let suffix='',finished=false;
+  try{
+    for await(const event of streamChat([...chat.messages,prompt],state.selectedModel,
+      {...state.options,localOnly:state.options.localOnly||last.offline===true},activeController.signal,[],id,appPrompt())){
+      if(event.type==='token')suffix+=event.value;
+      if(event.type==='done')finished=true;
+      if(event.type==='routing'&&/fallback|unavailable| busy/i.test(event.value))state.updateMessage(id,messageId,{routeStage:'fallback'});
+      if(event.type==='model')state.updateMessage(id,messageId,{model:event.value.model,provider:event.value.provider,offline:event.value.offline,dataUse:event.value.data_use});
+    }
+  }catch(error){
+    if(!activeController.signal.aborted)state.toast('error',state.language==='ar'?'تعذّر استكمال الرد':'Could not continue the response',error instanceof Error?error.message:undefined);
+  }finally{
+    const content=appendContinuation(last.content,suffix);
+    const incomplete=!finished||activeController.signal.aborted||content===last.content;
+    state.updateMessage(id,messageId,{content,incomplete,continuable:incomplete,isStreaming:false,routeStage:undefined});
+    if(controller===activeController){state.setStreaming(false);controller=null;activeGenerationChat=null}
+  }
 }

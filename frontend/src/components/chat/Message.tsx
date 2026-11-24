@@ -3,7 +3,7 @@ import {MissionBoard} from '../workspace/MissionBoard';
 import {memo,useState} from 'react';import {AnimatePresence,motion,useReducedMotion} from 'framer-motion';
 import ReactMarkdown from 'react-markdown';import remarkGfm from 'remark-gfm';
 import {Copy,Check,RefreshCcw,ThumbsUp,ThumbsDown,Pencil,Volume2,Save,ChevronDown} from 'lucide-react';
-import {useApp,type Message as MessageType,type AgentPlan} from '../../store';import {editAndRegenerate,regenerate,retrySavedCommand} from '../../lib/chat';import {useT} from '../../i18n';
+import {useApp,type Message as MessageType,type AgentPlan} from '../../store';import {continueResponse,editAndRegenerate,regenerate,retrySavedCommand} from '../../lib/chat';import {useT} from '../../i18n';
 import {IconButton} from '../ui/IconButton';import {Button} from '../ui/Button';import {CodeBlock} from './CodeBlock';import {Attachments} from './Attachments';import {motionTokens} from '../../lib/motion';
 import {BrandMark} from '../ui/BrandMark';
 import {requestJSON} from '../../lib/backend';
@@ -21,6 +21,9 @@ export function Message({message,chatId}:{message:MessageType;chatId:string}){
  const [reaBusy,setReaBusy]=useState(false),[reaStatus,setReaStatus]=useState(''),[reaConnected,setReaConnected]=useState(false);
  const [copied,setCopied]=useState(false),[editing,setEditing]=useState(false),[draft,setDraft]=useState(message.content),[showReason,setShowReason]=useState(false);
  const isUser=message.role==='user';
+ const ar=language==='ar';
+ const routeLabel=message.routeStage==='fallback'?(ar?'بجرّب موديل بديل…':'Trying another model…'):
+   message.routeStage==='connecting'?(ar?'في انتظار رد الموديل…':'Waiting for the model…'):(ar?'بختار الموديل…':'Selecting a model…');
  async function copy(){try{await navigator.clipboard.writeText(message.content);setCopied(true);setTimeout(()=>setCopied(false),1400)}catch{toast('error','Clipboard unavailable')}}
  async function speak(){
   detachSystemGlow?.();detachSystemGlow=undefined;
@@ -188,10 +191,15 @@ export function Message({message,chatId}:{message:MessageType;chatId:string}){
       </section>}
       {!isUser&&message.reasoning&&!message.reasoning.startsWith('Routing to')&&!message.reasoning.startsWith('Connecting to')&&<div className="mt-2"><button className="focus-ring flex items-center gap-1 text-xs text-muted" onClick={()=>setShowReason(v=>!v)} aria-expanded={showReason}><ChevronDown size={13} className={`transition-transform ${showReason?'rotate-180':''}`}/>{t('reasoning')}</button><AnimatePresence>{showReason&&<motion.p initial={{opacity:0}} animate={{opacity:1}} exit={{opacity:0}} className="mt-1 rounded-md bg-elevated p-3 text-xs text-secondary">{message.reasoning}</motion.p>}</AnimatePresence></div>}
     </div>
-    {!isUser&&message.incomplete&&<div className="mt-2 flex flex-wrap items-center gap-2">
+    {!isUser&&message.isStreaming&&message.routeStage&&(!message.content||message.continuable)&&
+     <p role="status" className="mt-2 text-xs text-secondary">{routeLabel}</p>}
+    {!isUser&&message.provider&&typeof message.offline==='boolean'&&<p className="mt-2 text-xs text-secondary">
+     <bdi>{message.model}</bdi> · {message.offline?(ar?'محلي':'Local'):(ar?'سحابي':'Cloud')}
+    </p>}
+    {!isUser&&message.incomplete&&!message.isStreaming&&<div className="mt-2 flex flex-wrap items-center gap-2">
       <p className="text-xs text-danger" role="status">{language==='ar'?'الرد انقطع قبل ما يكمل.':'The response was interrupted.'}</p>
       {canRegenerate&&<Button size="sm" variant="secondary" disabled={streaming}
-       icon={<RefreshCcw size={14}/>} onClick={()=>void regenerate(chatId)}>{language==='ar'?'حاول تاني':'Retry response'}</Button>}
+       icon={<RefreshCcw size={14}/>} onClick={()=>void (message.continuable?continueResponse(chatId,message.id):regenerate(chatId))}>{message.continuable?(ar?'كمّل الرد':'Continue response'):(ar?'حاول تاني':'Retry response')}</Button>}
     </div>}
 
     {!isUser&&message.content.includes('```')&&<button type="button" className="mt-2 inline-flex items-center gap-2 rounded-lg border border-stroke bg-elevated px-3 py-2 text-xs text-secondary hover:text-primary" onClick={()=>{useApp.getState().setStudioCodeHandoff({chatId,messageId:message.id});useApp.getState().setToolHandoff({integration:'coding',goal:'عرض الكود من المحادثة',tab:'agent'})}}><Code2 size={15}/> {language==='ar'?'عرض الكود في مساحة العمل':'View live code in workspace'}</button>}

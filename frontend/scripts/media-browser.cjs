@@ -177,6 +177,14 @@ assert.equal(await page.evaluate(()=>document.activeElement?.getAttribute('aria-
 await menu.click();
 await chatNav.click();
 const composer=page.locator('#chatComposer');
+await composer.fill('مسودة اختبار محفوظة');
+await menu.click();
+await sidebar.getByRole('button',{name:'الإعدادات',exact:true}).click();
+await page.getByRole('combobox',{name:'قسم الإعدادات',exact:true}).selectOption('privacy');
+await page.getByRole('checkbox',{name:'معالجة المحادثة والمرفقات محليًا فقط'}).waitFor();
+await menu.click();
+await chatNav.click();
+assert.equal(await composer.inputValue(),'مسودة اختبار محفوظة');
 await composer.fill('افتح أنغامي');
 await composer.press('Enter');
 await page.getByRole('searchbox',{name:'البحث في أنغامي'}).waitFor();

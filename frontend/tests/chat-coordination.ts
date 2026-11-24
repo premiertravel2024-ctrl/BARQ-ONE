@@ -1,8 +1,11 @@
 import assert from 'node:assert/strict';
-import {submitChat,retrySavedCommand} from '../src/lib/chat';
+import {appendContinuation,continueResponse,submitChat,retrySavedCommand} from '../src/lib/chat';
 import {useApp} from '../src/store';
 import {taskMessages} from '../src/lib/backend';
 import {outcomeStatus,preparationStatus} from '../src/lib/agentOutcome';
+assert.equal(appendContinuation('الخطوة الأولى جاهزة', 'الأولى جاهزة، والخطوة التالية قيد العمل'), 'الخطوة الأولى جاهزة، والخطوة التالية قيد العمل');
+assert.equal(appendContinuation('جزء أول', ' وجزء تاني'), 'جزء أول وجزء تاني');
+assert.equal(appendContinuation('جزء أول', ''), 'جزء أول');
 const memory=new Map<string,string>();
 Object.defineProperty(globalThis,'localStorage',{value:{getItem:(key:string)=>memory.get(key)??null,setItem:(key:string,value:string)=>memory.set(key,value),removeItem:(key:string)=>memory.delete(key)}});
 const calls:Array<{path:string;body:any}>=[];
@@ -30,7 +33,7 @@ globalThis.fetch=async (url:any,init:any={})=>{
  else if(path==='/v1/launch/resolve')response=body.text==='افتح يوتيوب'?{decision:'auto',text_ar:'هفتح يوتيوب.',candidates:[{id:'site-youtube',kind:'site',label:'يوتيوب',path_or_appid:'https://www.youtube.com',score:1,risk:'low'}]}:{decision:'not_command',text_ar:'',candidates:[]};
  else if(path==='/v1/launch/execute')response={status:'opened',candidate:{label:'يوتيوب'},audit_id:'mock-audit-1'};
  else if(path==='/v1/brain/route'){const text=body.messages.at(-1)?.content;response=text===semanticRequest?{intent:{kind:'coding',goal:'Change save button to red',requires_approval:true}}:text==='حلله'?{intent:{kind:'rea',goal:'Analyze previous program',requires_approval:true}}:text==='كمل'?{intent:null,clarification:'تقصد أكمل أي مهمة؟ حدّد البرنامج أو المشروع.'}:text.includes('الهندسه')?{intent:null,reply:'اختار البرنامج لتحليله بأداة REA.',tool_request:{integration:'rea',intent:'capability',enabled:true,runner_available:true,connected:false,status:'not_tested'}}:{intent:null};}
- else if(path==='/v1/router/chat/stream'){const reply=body.messages.at(-1)?.content==='انقطع'?'رد جزئي':'أنا برق، عامل إيه؟';const events=[{name:'model',value:{model:'mock/free',provider:'mock',attempts:[]}},{name:'token',value:{content:reply}}];if(body.messages.at(-1)?.content!=='انقطع')events.push({name:'done',value:{}} as any);return new Response(events.map(e=>`event: ${e.name}\ndata: ${JSON.stringify(e.value)}\n\n`).join(''),{headers:{'Content-Type':'text/event-stream'}});}
+ else if(path==='/v1/router/chat/stream'){const reply=body.messages.at(-1)?.content==='انقطع'?'رد جزئي':body.messages.at(-1)?.content.startsWith('Continue the previous answer')?'، وده باقي الرد.':'أنا برق، عامل إيه؟';const events=[{name:'model',value:{model:'mock/free',provider:'mock',attempts:[]}},{name:'token',value:{content:reply}}];if(body.messages.at(-1)?.content!=='انقطع')events.push({name:'done',value:{}} as any);return new Response(events.map(e=>`event: ${e.name}\ndata: ${JSON.stringify(e.value)}\n\n`).join(''),{headers:{'Content-Type':'text/event-stream'}});}
  else if(path==='/v1/agent/task-intent')response=body.text==='حلله'
   ?{intent:{kind:'rea',goal:'Analyze previous program',requires_approval:true}}
   :(body.text==='اعمل برنامج'||body.text===longBuildRequest||(body.text==='حاول'&&body.previous_user_texts.at(-1)===longBuildRequest))
@@ -85,6 +88,15 @@ async function main(){
  await submitChat('انقطع');
  latest=useApp.getState().chats[0].messages.at(-1)!;
  assert.equal(latest.content,'رد جزئي');assert.equal(latest.incomplete,true);
+ assert.equal(latest.continuable,true);
+ const interruptedId=latest.id;
+ await continueResponse(useApp.getState().activeId!,interruptedId);
+ latest=useApp.getState().chats[0].messages.at(-1)!;
+ assert.equal(latest.id,interruptedId);
+ assert.equal(latest.content,'رد جزئي، وده باقي الرد.');
+ assert.equal(latest.incomplete,false);
+ assert.equal(useApp.getState().streaming,false);
+
  const brainCallCount=calls.filter(c=>c.path==='/v1/brain/route').length;
  useApp.getState().newChat();await submitChat('افتح يوتيوب');
  latest=useApp.getState().chats[0].messages.at(-1)!;

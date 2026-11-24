@@ -199,3 +199,17 @@
 /* Shared controls keep their position while their state changes. */
 .ops-shell :is(button,summary):focus-visible { outline:2px solid var(--barq-focus); outline-offset:2px; }
 .ops-shell :is(.barq-welcome-hero,.barq-suggestion-card,.ba-hero,.ba-card,.bs-document-toolbar) { background:var(--barq-panel); box-shadow:none; }
+
+/* Match playback controls across the music dock, reader and room toolbar. */
+.barq-transport-controls button {
+ min-inline-size:38px;
+ min-block-size:38px;
+ border-radius:10px;
+}
+.barq-transport-controls button:focus-visible {
+ outline:2px solid var(--accent-2);
+ outline-offset:2px;
+}
+@media(max-width:730px){
+ .barq-transport-controls button { min-inline-size:42px; min-block-size:42px; }
+}

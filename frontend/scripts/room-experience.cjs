@@ -73,7 +73,8 @@ const fs=require('node:fs'),path=require('node:path'),assert=require('node:asser
    assert.ok(panel.x>=0&&panel.x+panel.width<=390,'source popover fits a phone: '+JSON.stringify(panel));
    assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1));
    await page.screenshot({path:path.join(pictures,'focused-'+mode+'-mobile.png'),fullPage:true});
-   await page.getByRole('button',{name:'إنهاء الغرفة',exact:true}).click();
+   await page.getByRole('button',{name:'خيارات الغرفة',exact:true}).click();
+   await page.getByRole('menuitem',{name:'إنهاء الغرفة',exact:true}).click();
    await page.setViewportSize({width:1280,height:850});
   }
   await page.goto('http://127.0.0.1:5173/tests/rebuild/index.html?music');

@@ -10,19 +10,20 @@ import {LauncherSettings} from '../launcher/LauncherSettings';import {Performanc
 import {NetworkMap} from '../network/NetworkMap';
 import {ComputerControl} from '../workspace/ComputerControl';
 import {IntegrationsSettings} from './IntegrationsSettings';
+import {PrivacySettings} from './PrivacySettings';
 import {MemorySettings} from './MemorySettings';
-type Tab='assistant'|'launcher'|'network'|'general'|'appearance'|'models'|'voice'|'workspace'|'computer'|'integrations'|'memory'|'performance'|'shortcuts'|'data'|'about';
+type Tab='privacy'|'assistant'|'launcher'|'network'|'general'|'appearance'|'models'|'voice'|'workspace'|'computer'|'integrations'|'memory'|'performance'|'shortcuts'|'data'|'about';
 export const shortcuts=[['Ctrl + Space','مشغّل برق للبرامج والملفات'],['Ctrl / ⌘ + K','Open command palette'],['Ctrl / ⌘ + Shift + O','New chat'],['Ctrl / ⌘ + /','Keyboard shortcuts'],['Enter','Send message'],['Shift + Enter','New line'],['F6 / Shift + F6','Move between app regions'],['Esc','Close menu or dialog']];
 export function SettingsModal({open,onClose,initialTab='general',onWorkspace,embedded=false}:{open:boolean;onClose:()=>void;initialTab?:Tab;onWorkspace:()=>void;embedded?:boolean}){
  const [tab,setTab]=useState<Tab>(initialTab),[confirmClear,setConfirmClear]=useState(false),[sectionQuery,setSectionQuery]=useState('');
  const mainRef=useRef<HTMLElement>(null);const t=useT();const language=useApp(s=>s.language),setLanguage=useApp(s=>s.setLanguage),theme=useApp(s=>s.theme),setTheme=useApp(s=>s.setTheme),chats=useApp(s=>s.chats),clearAll=useApp(s=>s.clearAll),toast=useApp(s=>s.toast),sidebarCollapsed=useApp(s=>s.sidebarCollapsed),setCollapsed=useApp(s=>s.setSidebarCollapsed);
  useEffect(()=>{if(open){setTab(initialTab);setSectionQuery('')}},[open,initialTab]);
  useEffect(()=>{if(open&&mainRef.current)mainRef.current.scrollTop=0},[tab,open]);
- const tabs:[Tab,ReactNode, string][]=[['general',<Settings2 size={16}/>,t('general')],['appearance',<Palette size={16}/>,t('appearance')],['models',<BrainCircuit size={16}/>,t('models')],['voice',<AudioLines size={16}/>,language==='ar'?'المكالمات الصوتية':'Voice calls'],['assistant',<AudioLines size={16}/>,language==='ar'?'برق الصوتي':'BARQ Voice Assistant'],['workspace',<FolderCode size={16}/>,language==='ar'?'البرمجة':'Programming'],['computer',<ShieldAlert size={16}/>,language==='ar'?'التحكم في الكمبيوتر':'Computer Control'],['integrations',<PlugZap size={16}/>,language==='ar'?'التكاملات':'Integrations'],['memory',<BookOpen size={16}/>,language==='ar'?'الذاكرة':'Memory'],['launcher',<FolderCode size={16}/>,language==='ar'?'التشغيل بالأمر':'Launcher'],['performance',<Activity size={16}/>,language==='ar'?'الأداء':'Performance'],['network',<BrainCircuit size={16}/>,language==='ar'?'شبكة الأوامر':'Model network'],['shortcuts',<Keyboard size={16}/>,t('shortcuts')],['data',<Database size={16}/>,t('data')],['about',<Info size={16}/>,language==='ar'?'حول BARQ':'About BARQ']];
+ const tabs:[Tab,ReactNode, string][]=[['general',<Settings2 size={16}/>,t('general')],['appearance',<Palette size={16}/>,t('appearance')],['models',<BrainCircuit size={16}/>,t('models')],['voice',<AudioLines size={16}/>,language==='ar'?'المكالمات الصوتية':'Voice calls'],['assistant',<AudioLines size={16}/>,language==='ar'?'برق الصوتي':'BARQ Voice Assistant'],['workspace',<FolderCode size={16}/>,language==='ar'?'البرمجة':'Programming'],['privacy',<ShieldAlert size={16}/>,language==='ar'?'الخصوصية والصلاحيات':'Privacy and permissions'],['computer',<ShieldAlert size={16}/>,language==='ar'?'التحكم في الكمبيوتر':'Computer Control'],['integrations',<PlugZap size={16}/>,language==='ar'?'التكاملات':'Integrations'],['memory',<BookOpen size={16}/>,language==='ar'?'الذاكرة':'Memory'],['launcher',<FolderCode size={16}/>,language==='ar'?'التشغيل بالأمر':'Launcher'],['performance',<Activity size={16}/>,language==='ar'?'الأداء':'Performance'],['network',<BrainCircuit size={16}/>,language==='ar'?'شبكة الأوامر':'Model network'],['shortcuts',<Keyboard size={16}/>,t('shortcuts')],['data',<Database size={16}/>,t('data')],['about',<Info size={16}/>,language==='ar'?'حول BARQ':'About BARQ']];
 
  const groupedTabs:{labelAr:string;labelEn:string;ids:Tab[]}[]=[
   {labelAr:'التخصيص',labelEn:'Personalize',ids:['general','appearance','models','voice']},
-  {labelAr:'المهام والتحكم',labelEn:'Capabilities',ids:['assistant','workspace','computer','integrations','memory','launcher','network']},
+  {labelAr:'المهام والتحكم',labelEn:'Capabilities',ids:['privacy','assistant','workspace','computer','integrations','memory','launcher','network']},
   {labelAr:'النظام',labelEn:'System',ids:['performance','shortcuts','data','about']},
  ];
  const tabDescriptions:Record<Tab,[string,string]>={
@@ -32,6 +33,7 @@ export function SettingsModal({open,onClose,initialTab='general',onWorkspace,emb
   voice:['صوت Google للمحادثات والمكالمات المباشرة','Google voice for direct calls'],
   assistant:['الاستماع في الخلفية، أدوات البحث والطقس والكمبيوتر','Background listening, web, weather and Windows tools'],
   workspace:['بناء البرامج من المحادثة','Build applications from chat'],
+  privacy:['الصلاحيات المحلية ومعالجة المحادثة','Local permissions and chat processing'],
   computer:['صلاحيات الجهاز والتحكم في ويندوز','Desktop control and permission settings'],
   integrations:['ربط Outlook والتطبيقات بصلاحيات واضحة','Connect Outlook and apps with explicit permissions'],
   memory:['المعلومات المحفوظة بإذنك محليًا','Your user-approved local notes'],
@@ -67,6 +69,7 @@ export function SettingsModal({open,onClose,initialTab='general',onWorkspace,emb
    {tab==='voice'&&<VoiceSettings mode="conversation"/>}
    {tab==='assistant'&&<VoiceSettings mode="assistant" onNavigate={setTab}/>}
    {tab==='workspace'&&<div className="barq-settings-card space-y-3"><h3 className="text-sm font-semibold">{language==='ar'?'بناء البرامج من المحادثة':'Build applications from chat'}</h3><p className="text-sm text-secondary">{language==='ar'?'قول لبرق ابنيلي برنامج وحدد المطلوب. الطلب والتقدم والموافقات وملفات التسليم بتظهر في المحادثة. بناء EXE يحتاج Windows وأدوات البناء.':'Ask BARQ to build an application. Progress, approvals and deliverables appear in chat. EXE builds require Windows and build tools.'}</p><Button onClick={onWorkspace} variant="secondary">{language==='ar'?'ارجع للمحادثة':'Return to chat'}</Button></div>}
+   {tab==='privacy'&&<PrivacySettings ar={language==='ar'} openVoice={()=>setTab('assistant')} openComputer={()=>setTab('computer')}/>}
    {tab==='computer'&&<ComputerControl settingsOnly/>}
    {tab==='integrations'&&<div className="space-y-5"><IntegrationsSettings/>
     <section className="barq-settings-card bs-hub">

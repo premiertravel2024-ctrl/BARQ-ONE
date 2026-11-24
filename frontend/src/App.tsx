@@ -168,7 +168,7 @@ export default function App(){
       <BrainStatus/>
       {chat&&chat.messages.length?<MessageList key={id} id={id!}/>:<EmptyState onSuggestion={setPrefill} onHologram={()=>navigateOne('voice')}/>}
       <VoiceResultsStrip/>
-      <Composer prefill={prefill} onPrefillUsed={()=>setPrefill('')}/>
+      <Composer key={id??'new'} draftId={id??'new'} prefill={prefill} onPrefillUsed={()=>setPrefill('')}/>
     </>}
     </SectionBoundary>
    </main>

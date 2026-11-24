@@ -40,8 +40,8 @@
 .one-page .barq-watch-player-top { padding:8px 12px; min-height:50px; gap:10px; background:#171b21; }
 .one-page .barq-watch-player-top strong { font-size:13px; }
 .one-page .barq-room-actions { display:flex; align-items:center; gap:5px; flex-wrap:nowrap; }
-.one-page .barq-room-actions button { min-height:34px; height:34px; width:34px; min-width:34px!important; padding:7px; border-radius:9px; background:transparent; border:1px solid transparent; }
-.one-page .barq-room-actions button:hover { background:#ffffff0b; border-color:#ffffff17; }
+.one-page .barq-room-actions > button, .one-page .barq-room-actions button[aria-haspopup="menu"] { min-height:34px; height:34px; width:34px; min-width:34px!important; padding:7px; border-radius:9px; background:transparent; border:1px solid transparent; }
+.one-page .barq-room-actions > button:hover, .one-page .barq-room-actions button[aria-haspopup="menu"]:hover { background:#ffffff0b; border-color:#ffffff17; }
 .one-page .barq-room-actions .barq-room-connection-kind { display:inline-flex; padding:0 5px; color:#98a2b3; }
 .barq-room-presence { display:block; width:6px; height:6px; flex:none; border-radius:50%; background:#a67a89; margin-inline:5px; }
 .barq-room-presence.is-online { background:#72b89c; }
@@ -74,3 +74,6 @@
   .one-page .barq-cinema .bc-top { padding:12px 0; }
   .one-page .barq-cinema .bc-top h1 { font-size:22px; }
 }
+
+.barq-room-actions [role="menuitem"] { width:100%; border-radius:8px; padding:8px 10px; background:transparent; border:0; color:var(--text-primary); }
+.barq-room-actions [role="menuitem"]:hover { background:var(--bg-elevated); }

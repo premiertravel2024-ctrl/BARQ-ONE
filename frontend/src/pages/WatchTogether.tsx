@@ -1,9 +1,10 @@
 import {useCallback, useEffect, useRef, useState} from 'react';
-import {Copy, ExternalLink, Headphones, Link2, Radio, Video, Search, LogOut, Globe2} from 'lucide-react';
+import {Copy, ExternalLink, Headphones, Link2, Radio, Video, Search, LogOut, Globe2, Ellipsis} from 'lucide-react';
 import {requestJSON} from '../lib/backend';
 import {useApp} from '../store';
 import {ButtonGroup, ButtonGroupItem} from '../components/ui/ButtonGroup';
 import {Modal} from '../components/ui/Modal';
+import {Dropdown} from '../components/ui/Dropdown';
 import {IconButton} from '../components/ui/IconButton';
 import './roomExperience.css';
 import {useAppView} from '../lib/appContext';
@@ -247,15 +248,17 @@ export function WatchTogether({mode = 'video',track,onTrack,requestedProvider,on
     {(guest || current) && <section className={'barq-room-frame barq-watch-player'+(music?'':' barq-cinema-player')}>
       <div className="barq-watch-player-top">
         <div><Icon size={17}/><strong>{music ? (ar ? 'غرفة الموسيقى' : 'Music room') : (ar ? 'سينما برق' : 'BARQ Cinema')}</strong></div>
-        {current && !guest && <div className="barq-room-actions">
+        {current && !guest && <div className="barq-room-actions barq-transport-controls">
           <span className={'barq-room-presence'+(current.guest_connected?' is-online':'')} role="status" title={current.guest_connected?(ar?'صاحبك متصل':'Guest connected'):(ar?'في انتظار صاحبك':'Waiting for a guest')} aria-label={current.guest_connected?(ar?'صاحبك متصل':'Guest connected'):(ar?'في انتظار صاحبك':'Waiting for a guest')}/>
           <span className="barq-room-connection-kind" title={current.lan?(ar?'شبكة محلية':'Local network'):(ar?'عبر الإنترنت':'Online')}>{current.lan?<Radio size={15}/>:<Globe2 size={15}/>}</span>
           {music&&<IconButton label={ar?'اختار أغنية':'Choose music'} icon={<Search size={17}/>} onClick={()=>setProviderOpen(true)}/>}
-          {!current.public&&!current.lan&&<IconButton label={ar?'دعوة عبر الإنترنت':'Internet invite'} icon={<Globe2 size={17}/>} disabled={busy} onClick={publish}/>}
           {inviteCode&&<IconButton label={ar?'ادعُ صاحبك':'Invite a friend'} icon={<Link2 size={17}/>} onClick={()=>{setCopied(false);setShareOpen(true)}}/>}
-          <IconButton label={ar?'إنهاء الغرفة':'End room'} icon={<LogOut size={17}/>} disabled={busy} onClick={()=>void operate(async()=>{
-            await requestJSON('/v1/watchrooms/close',post({room_id:current.room_id}));setRoom(null);setCopied(false);
-          })}/>
+          <Dropdown trigger={<IconButton label={ar?'خيارات الغرفة':'Room options'} icon={<Ellipsis size={17}/>}/>} items={[
+            ...(!current.public&&!current.lan?[{id:'publish',label:ar?'دعوة عبر الإنترنت':'Internet invite',icon:<Globe2 size={16}/>,disabled:busy,onClick:publish}]:[]),
+            {id:'end',label:ar?'إنهاء الغرفة':'End room',icon:<LogOut size={16}/>,danger:true,disabled:busy,onClick:()=>void operate(async()=>{
+              await requestJSON('/v1/watchrooms/close',post({room_id:current.room_id}));setRoom(null);setCopied(false);
+            })},
+          ]}/>
         </div>}
         {guest&&<IconButton label={ar?'مغادرة الغرفة':'Leave room'} icon={<LogOut size={17}/>} onClick={()=>setGuest('')}/>}
       </div>

@@ -67,7 +67,7 @@ export function ReadingSound({ar}:{ar:boolean}){
    <div className="bs-sound-meta" dir="auto">{track.source
     ? [track.composer,track.artist].filter(Boolean).join(' · ')
     : track.collection}</div>
-   <div className="bs-sound-controls" dir="ltr">
+   <div className="bs-sound-controls barq-transport-controls" dir="ltr">
     <button type="button" aria-label={label('المقطوعة السابقة','Previous track')} onClick={()=>step(-1)}><SkipBack size={16}/></button>
     <button type="button" aria-label={playing?label('إيقاف مؤقت','Pause'):label('تشغيل','Play')} disabled={loading}
      onClick={()=>playing?audio.current?.pause():void play()}>{playing?<Pause size={17}/>:<Play size={17}/>}</button>
