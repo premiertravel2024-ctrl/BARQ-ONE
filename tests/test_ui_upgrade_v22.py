@@ -18,16 +18,14 @@ def test_barq_one_navigation_keeps_execution_services():
     assert '<Composer ' in app and '<ApprovalDialog ' in app
     sidebar=code('components/layout/OperationsFrame.tsx')
     assert '<OperationsRail ' in app
-    # Conversation is a first-class top navigation destination, not a separate floating button.
-    # Keep it out of the rail so desktop navigation does not duplicate the tab.
-    assert "sections.filter(([key])=>key!=='chat').map(" in sidebar
-    assert "(['center','chat','library','tools','monitor'] as const)" in sidebar
-    assert "onClick={()=>navigate(key)}" in sidebar
-    assert 'className="ops-standalone-chat"' not in sidebar
-    assert 'className="ops-more"' not in sidebar
-    assert "['chat'," in code('pages/BarqOne.tsx')
-    assert "['mission'," in code('pages/BarqOne.tsx')
-    assert "(['chat','agent'] as const)" not in sidebar
+    groups = sidebar.split('const navigationGroups = [', 1)[1].split('] as const', 1)[0]
+    destinations = [key for group in re.findall(r"pages:\[([^\]]+)\]", groups)
+                    for key in re.findall(r"'([a-z]+)'", group)]
+    sections = re.findall(r"^ \['([a-z]+)',", code('pages/BarqOne.tsx'), re.M)
+    assert sorted(destinations) == sorted(sections)
+    assert '<nav ' not in sidebar.split('export function OperationsRail', 1)[0]
+    assert "onClick={()=>choose(key)}" in sidebar
+    assert 'className="ops-chat-history"' in sidebar
     workspace = code('components/workspace/WorkspaceStudio.tsx')
     assert '<WorkspaceTools open inside' in workspace
     workspace += code('components/workspace/WorkspaceTools.tsx')
