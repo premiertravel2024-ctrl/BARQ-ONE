@@ -12,7 +12,7 @@ import {ComputerControl} from '../workspace/ComputerControl';
 import {IntegrationsSettings} from './IntegrationsSettings';
 import {MemorySettings} from './MemorySettings';
 type Tab='assistant'|'launcher'|'network'|'general'|'appearance'|'models'|'voice'|'workspace'|'computer'|'integrations'|'memory'|'performance'|'shortcuts'|'data'|'about';
-export const shortcuts=[['Ctrl + Space','مشغّل برق للبرامج والملفات'],['Ctrl / ⌘ + K','Open command palette'],['Ctrl / ⌘ + Shift + O','New chat'],['Ctrl / ⌘ + /','Keyboard shortcuts'],['Enter','Send message'],['Shift + Enter','New line'],['Esc','Close menu or dialog']];
+export const shortcuts=[['Ctrl + Space','مشغّل برق للبرامج والملفات'],['Ctrl / ⌘ + K','Open command palette'],['Ctrl / ⌘ + Shift + O','New chat'],['Ctrl / ⌘ + /','Keyboard shortcuts'],['Enter','Send message'],['Shift + Enter','New line'],['F6 / Shift + F6','Move between app regions'],['Esc','Close menu or dialog']];
 export function SettingsModal({open,onClose,initialTab='general',onWorkspace,embedded=false}:{open:boolean;onClose:()=>void;initialTab?:Tab;onWorkspace:()=>void;embedded?:boolean}){
  const [tab,setTab]=useState<Tab>(initialTab),[confirmClear,setConfirmClear]=useState(false),[sectionQuery,setSectionQuery]=useState('');
  const mainRef=useRef<HTMLElement>(null);const t=useT();const language=useApp(s=>s.language),setLanguage=useApp(s=>s.setLanguage),theme=useApp(s=>s.theme),setTheme=useApp(s=>s.setTheme),chats=useApp(s=>s.chats),clearAll=useApp(s=>s.clearAll),toast=useApp(s=>s.toast),sidebarCollapsed=useApp(s=>s.sidebarCollapsed),setCollapsed=useApp(s=>s.setSidebarCollapsed);

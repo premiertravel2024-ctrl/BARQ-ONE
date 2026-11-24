@@ -127,13 +127,23 @@ export default function App(){
  useEffect(()=>{document.documentElement.dataset.theme=theme;document.documentElement.lang=language;document.documentElement.dir=language==='ar'?'rtl':'ltr';document.querySelector('meta[name="theme-color"]')?.setAttribute('content',theme==='dark'?'#100D14':'#F8F4F6')},[theme,language]);
  useEffect(()=>{const handle=(e:Event)=>{setLauncherQuery((e as CustomEvent<{query?:string}>).detail?.query||'');setLauncherOpen(true)};window.addEventListener('barq-launcher-open',handle);return()=>window.removeEventListener('barq-launcher-open',handle)},[]);
  useEffect(()=>{const key=(e:KeyboardEvent)=>{
+  if(e.key==='F6'&&!playground&&!document.querySelector('[role="dialog"][aria-modal="true"]')){
+   const regions=[...document.querySelectorAll<HTMLElement>('[data-focus-region]')].filter(region=>region.getClientRects().length);
+   const current=regions.findIndex(region=>region.contains(document.activeElement));
+   if(regions.length){
+    e.preventDefault();
+    const next=current<0?(e.shiftKey?regions.length-1:0):(current+(e.shiftKey?-1:1)+regions.length)%regions.length;
+    regions[next].focus();
+   }
+   return;
+  }
   if(e.ctrlKey&&e.altKey&&e.key.toLowerCase()==='b'){e.preventDefault();setSettings(false);if(isHandsFreeActive())window.dispatchEvent(new Event('barq-handsfree-stop'));else openConsentedVoiceSession();return}
   if((e.ctrlKey||e.metaKey)&&e.code==='Space'){e.preventDefault();setLauncherQuery('');setLauncherOpen(v=>!v)}
-  if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='k'){e.preventDefault();setPalette(v=>!v)}
+  if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='k'){e.preventDefault();setSidebarOpen(false);setPalette(v=>!v)}
   if((e.ctrlKey||e.metaKey)&&e.shiftKey&&e.key.toLowerCase()==='o'){e.preventDefault();newChat();setOnePage('chat');setSidebarOpen(false)}
   if((e.ctrlKey||e.metaKey)&&e.key==='/'){e.preventDefault();setShortcutsOpen(true)}
   if(e.key==='Escape'){setLauncherOpen(false);setPalette(false);setSidebarOpen(false)}
- };window.addEventListener('keydown',key);return()=>window.removeEventListener('keydown',key)},[newChat,setSidebarOpen]);
+ };window.addEventListener('keydown',key);return()=>window.removeEventListener('keydown',key)},[newChat,setSidebarOpen,playground]);
  const confirmDelete=useCallback(()=>{if(deleteId&&!streaming){const target=deleteId;void deleteConversation(target).then(()=>{deleteChat(target);setDeleteId(null)}).catch(error=>useApp.getState().toast('error','Could not delete chat',error instanceof Error?error.message:'API unavailable'))}},[deleteId,streaming,deleteChat]);
  const navigateOne=(page:OnePage)=>{
   if(page==='settings'){setSettingsTab('general');setSettings(false);}
@@ -143,10 +153,10 @@ export default function App(){
    onModels={()=>{setSettingsTab('models');setSettings(true)}} onAssistantSettings={()=>{setSettingsTab('assistant');setSettings(true)}}
    onQuick={command=>{navigateOne('chat');setPrefill(command)}}/>;
  return <div data-release-marker={import.meta.env.VITE_BARQ_RELEASE_MARKER} className="ops-shell" dir={language==='ar'?'rtl':'ltr'}>
-  <OperationsHeader page={onePage} navigate={navigateOne} search={()=>setPalette(true)} settings={()=>navigateOne('settings')}/>
+  <OperationsHeader page={onePage} navigate={navigateOne} search={()=>setPalette(true)}/>
   <div className={playground?'hidden':'ops-body'} dir="ltr">
-   <OperationsRail page={onePage} navigate={navigateOne} newChat={()=>{newChat();navigateOne('chat')}} onDelete={setDeleteId} onPlayground={openPlayground}/>
-   <main className={onePage==='chat'?'ops-stage ops-chat-stage':'ops-stage'} dir={language==='ar'?'rtl':'ltr'} aria-label={language==='ar'?'مساحة التطبيق':'Application workspace'}>
+   <OperationsRail page={onePage} navigate={navigateOne} newChat={()=>{newChat();navigateOne('chat')}} search={()=>setPalette(true)}/>
+   <main data-focus-region tabIndex={-1} className={onePage==='chat'?'ops-stage ops-chat-stage':'ops-stage'} dir={language==='ar'?'rtl':'ltr'} aria-label={language==='ar'?'مساحة التطبيق':'Application workspace'}>
     {media&&<div hidden={onePage!==media} className="ops-media-page" key={media}><SectionBoundary ar={language==='ar'}>{renderSection(media)}</SectionBoundary></div>}
     <SectionBoundary key={onePage} ar={language==='ar'}>
     {onePage==='settings'?<SettingsModal embedded open initialTab={settingsTab} onWorkspace={()=>navigateOne('chat')} onClose={()=>navigateOne('center')}/>
