@@ -6,20 +6,12 @@ const ts=require('typescript');
 
 const page=fs.readFileSync(path.join(__dirname,'../src/pages/MusicPlayer.tsx'),'utf8');
 const cards=fs.readFileSync(path.join(__dirname,'../src/pages/libraryCards.css'),'utf8');
-const playerCss=fs.readFileSync(path.join(__dirname,'../src/pages/musicPlayer.css'),'utf8');
 
-test('music player loads WINTER MUSIC as a persistent playlist and saves it in local library',()=>{
+test('music player keeps regular imports without the WINTER MUSIC shortcut',()=>{
  const tree=ts.createSourceFile('MusicPlayer.tsx',page,ts.ScriptTarget.Latest,true,ts.ScriptKind.TSX);
  assert.equal(tree.parseDiagnostics.length,0);
- assert.match(page,/\/v1\/music\/import\/winter-music/);
- assert.match(page,/result\.imported\|\|\[\]/);
- assert.match(page,/setTracks\(result\.tracks\)/);
- assert.match(page,/name:'WINTER MUSIC',tracks:ids/);
- assert.match(page,/setView\('playlist:'\+id\)/);
- assert.match(page,/importWinterMusic\(\)/);
- assert.match(page,/bm-winter-import/);
- assert.match(page,/Snowflake/);
- assert.match(playerCss,/\.bm-winter-import/);
+ assert.doesNotMatch(page,/bm-winter-import|importWinterMusic/);
+ assert.ok(page.includes("importMusic('files')")&&page.includes("importMusic('folder')"));
 });
 
 test('book covers fill their entire frame and typography is consistent',()=>{
