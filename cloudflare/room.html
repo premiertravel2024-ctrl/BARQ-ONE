@@ -589,7 +589,7 @@ if(music){
 var screenShareButton=document.getElementById('screenShare');
 var stopScreenShareButton=document.getElementById('stopScreenShare');
 var screenStream=null,screenPreviewWasMuted=false,pageUnloading=false;
-if(host&&!music)screenShareButton.hidden=false;
+if(role==='host'&&!music)screenShareButton.hidden=false;
 function endScreenShare(){
  var active=screenStream;
  if(!active||localStream!==active)return;
@@ -626,8 +626,7 @@ screenShareButton.onclick=async function(){
   video.pause();video.removeAttribute('src');video.srcObject=stream;
   video.muted=true;video.playsInline=true;
   stream.getVideoTracks()[0].addEventListener('ended',endScreenShare,{once:true});
-  await video.play().catch(function(){});
-  if(screenStream!==stream)return;
+  void video.play().catch(function(){});
   showWaiting(false);
   screenShareButton.hidden=true;stopScreenShareButton.hidden=false;
   document.getElementById('sources').open=false;
