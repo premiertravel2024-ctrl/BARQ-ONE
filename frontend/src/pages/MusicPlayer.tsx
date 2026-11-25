@@ -1,5 +1,5 @@
 import {useEffect,useMemo,useRef,useState} from 'react';
-import {FolderPlus,Heart,Headphones,ListMusic,Music2,Pause,Play,Plus,Repeat,Search,Shuffle,SkipBack,SkipForward,Snowflake,Volume2,X} from 'lucide-react';
+import {FolderPlus,Heart,Headphones,ListMusic,Music2,Pause,Play,Plus,Repeat,Search,Shuffle,SkipBack,SkipForward,Volume2,X} from 'lucide-react';
 import {requestJSON} from '../lib/backend';
 import {useApp} from '../store';
 import {WatchTogether} from './WatchTogether';
@@ -47,33 +47,6 @@ export function MusicPlayer(){
   if(ended&&next>=list.length&&state.repeat==='off'){setPlaying(false);return;}next=(next+list.length)%list.length;select(list[next]);}
  function togglePlay(){const a=audio.current;if(!a)return;if(!current){if(shown[0])select(shown[0]);return;}if(a.paused)void a.play().catch(()=>setError(ar?'تعذّر تشغيل الملف. ممكن يكون اتحرك أو صيغته مش مدعومة.':'Could not play this file. It may have moved or use an unsupported codec.'));else a.pause();}
  async function importMusic(mode:'files'|'folder'){setBusy(true);setError('');setNotice('');try{const r=await requestJSON<{tracks:Track[];cancelled?:boolean;limited?:boolean;skipped?:number}>('/v1/music/import',{method:'POST',body:JSON.stringify({mode})});setTracks(r.tracks);if(!r.cancelled)setNotice(r.limited?(ar?'تم استيراد أول ٥٠٠٠ ملف.':'Imported the first 5,000 files.'):(ar?'المكتبة اتحدثت':'Library updated')+(r.skipped?` · ${r.skipped} ${ar?'ملفات متخطية':'files skipped'}`:''));}catch(e){setError(e instanceof Error?e.message:String(e));}finally{setBusy(false);}}
- async function importWinterMusic(){
-  setBusy(true);setError('');setNotice('');
-  try{
-   const result=await requestJSON<{tracks:Track[];imported?:Track[];collection?:string;cancelled?:boolean}>(
-    '/v1/music/import/winter-music',{method:'POST'});
-   if(result.cancelled)return;
-   const imported=result.imported||[];
-   if(result.collection!=='WINTER MUSIC'||imported.length!==3){
-    throw new Error('WINTER MUSIC import was not fully verified');
-   }
-   setTracks(result.tracks);
-   const ids=imported.map(track=>track.id);
-   const previous=latest.current.playlists.find(item=>item.name.toUpperCase()==='WINTER MUSIC');
-   const id=previous?.id||'winter-music';
-   setState(current=>({
-    ...current,
-    playlists:previous?
-     current.playlists.map(item=>item.id===id?{...item,name:'WINTER MUSIC',
-      tracks:[...new Set([...item.tracks,...ids])]}:item):
-     [...current.playlists,{id,name:'WINTER MUSIC',tracks:ids}],
-   }));
-   setView('playlist:'+id);
-   setNotice(ar?'تم حفظ ٣ ملفات في مكتبة برق وقائمة WINTER MUSIC.':
-    'Three songs saved locally in the WINTER MUSIC playlist.');
-  }catch(e){setError(e instanceof Error?e.message:String(e));}
-  finally{setBusy(false);}
- }
  function favorite(id:string){setState(s=>({...s,favorites:s.favorites.includes(id)?s.favorites.filter(x=>x!==id):[...s.favorites,id]}));}
  return <section className={"bm-player"+(musicView!=='local'?" bm-room-view":"")} dir={ar?'rtl':'ltr'}>
   <header className="bm-header"><div><h2>{ar?'موسيقى برق':'BARQ Music'}</h2></div><div className="bm-switch"><button aria-pressed={musicView==='local'} onClick={()=>setMusicView('local')}><Music2 size={17}/>{ar?'مكتبتي':'Library'}</button>
@@ -84,7 +57,7 @@ export function MusicPlayer(){
    requestedProvider={musicView==='spotify'||musicView==='anghami'?musicView:undefined}/></div>}
   {musicView==='local'&&<div>
    <div className={"bm-layout"+(showQueue?" bm-show-queue":"")}><aside className="bm-sidebar"><h3>{ar?'مكتبتك':'YOUR LIBRARY'}</h3>{[['library',ar?'كل الأغاني':'All tracks'],['favorites',ar?'المفضلة':'Favorites'],['recent',ar?'سمعتها مؤخرًا':'Recently played']].map(([id,label])=><button key={id} aria-pressed={view===id} onClick={()=>setView(id)}>{label}</button>)}<h3>{ar?'قوائم التشغيل':'PLAYLISTS'}</h3>{state.playlists.map(p=><div className="bm-playlist-row" key={p.id}><button aria-pressed={view==='playlist:'+p.id} onClick={()=>setView('playlist:'+p.id)}><ListMusic size={15}/>{p.name}</button><button aria-label={ar?'حذف القائمة':'Delete playlist'} onClick={()=>{setState(s=>({...s,playlists:s.playlists.filter(x=>x.id!==p.id)}));if(view==='playlist:'+p.id)setView('library');}}><X size={13}/></button></div>)}<form className="bm-create" onSubmit={e=>{e.preventDefault();if(!name.trim())return;const id=crypto.randomUUID();setState(s=>({...s,playlists:[...s.playlists,{id,name:name.trim(),tracks:[]}]}));setPlaylist(id);setName('');}}><input aria-label={ar?'اسم قائمة جديدة':'New playlist name'} value={name} maxLength={60} onChange={e=>setName(e.target.value)} placeholder={ar?'قائمة جديدة':'New playlist'}/><button aria-label={ar?'إنشاء':'Create'}><Plus size={16}/></button></form></aside>
-   <main className="bm-library"><section className="bm-library-hero"><div><p>{tracks.length} {ar?'أغنية في مكتبتك المحلية':'tracks in your local library'}</p><div><button disabled={busy} onClick={()=>void importMusic('files')}><Plus size={17}/>{ar?'أضف أغاني':'Import tracks'}</button><button disabled={busy} onClick={()=>void importMusic('folder')}><FolderPlus size={17}/>{ar?'أضف مجلد':'Import folder'}</button><button className="bm-winter-import" disabled={busy} onClick={()=>void importWinterMusic()}><Snowflake size={17}/>{ar?'استيراد WINTER MUSIC':'Import WINTER MUSIC'}</button></div></div><div className="bm-hero-art"><Art track={current||tracks.find(t=>t.artwork)}/></div></section>
+   <main className="bm-library"><section className="bm-library-hero"><div><p>{tracks.length} {ar?'أغنية في مكتبتك المحلية':'tracks in your local library'}</p><div><button disabled={busy} onClick={()=>void importMusic('files')}><Plus size={17}/>{ar?'أضف أغاني':'Import tracks'}</button><button disabled={busy} onClick={()=>void importMusic('folder')}><FolderPlus size={17}/>{ar?'أضف مجلد':'Import folder'}</button></div></div><div className="bm-hero-art"><Art track={current||tracks.find(t=>t.artwork)}/></div></section>
     <div className="bm-toolbar"><button aria-pressed={showQueue} onClick={()=>setShowQueue(v=>!v)}><ListMusic size={16}/>{ar?'الطابور':'Queue'} ({state.queue.length})</button><label><Search size={16}/><input value={query} onChange={e=>setQuery(e.target.value)} aria-label={ar?'ابحث في الموسيقى':'Search music'} placeholder={ar?'أغنية، فنان، ألبوم…':'Track, artist, album…'}/></label>{!!state.playlists.length&&<select aria-label={ar?'قائمة الإضافة':'Add-to playlist'} value={playlist} onChange={e=>setPlaylist(e.target.value)}><option value="">{ar?'اختار قائمة للإضافة':'Choose playlist to add to'}</option>{state.playlists.map(p=><option key={p.id} value={p.id}>{p.name}</option>)}</select>}</div>
     {busy&&<p role="status">{ar?'اختار الملفات من نافذة ويندوز؛ بنقرأ بياناتها…':'Select files in Windows; reading music metadata…'}</p>}
     {!shown.length&&!busy&&<div className="bm-empty"><Music2 size={40}/><h3>{ar?'ابدأ بأغنية بتحبها':'Start with a favorite track'}</h3><p>{ar?'استورد ملفاتك، أو غيّر البحث لو مكتبتك موجودة.':'Import audio files, or change your search.'}</p></div>}
