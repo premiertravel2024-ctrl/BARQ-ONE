@@ -179,7 +179,7 @@ export function BarqStories(){
       const hasReader=!!book.format||linked;
       const primary=book.series?label('عرض الأعداد','View issues'):
        hasReader?label('اقرأ','Read'):label('افتح PDF','Open PDF');
-      return <article className="bs-real-card bs-published-card bs-library-card" key={book.id} data-genre={book.genre}>
+      return <article data-spotlight className="bs-real-card bs-published-card bs-library-card" key={book.id} data-genre={book.genre}>
        <EditableCover id={book.id} title={book.title} ar={ar}><Cover book={book}/></EditableCover>
        <div className="bs-card-details">
         <div className="bs-card-meta"><span>{book.genre}</span></div>

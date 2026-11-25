@@ -41,9 +41,13 @@ test('BARQ ONE navigation retains model selection without mounting the removed w
   const groups=sidebar.split('const navigationGroups = [')[1].split('] as const')[0];
   const destinations=[...groups.matchAll(/pages:\[([^\]]+)\]/g)]
     .flatMap(match=>[...match[1].matchAll(/'([a-z]+)'/g)].map(item=>item[1]));
-  assert.deepEqual(destinations.sort(),primarySections.sort());
-  assert.doesNotMatch(sidebar.split('export function OperationsRail')[0],/<nav /);
-  assert.match(sidebar,/ops-chat-history/);
+  const top=[...sidebar.match(/topPages: readonly OnePage\[\]=\[([^\]]+)\]/)[1].matchAll(/'([a-z]+)'/g)].map(item=>item[1]);
+  assert.deepEqual([...new Set([...destinations,...top])].sort(),primarySections.sort());
+  assert.ok(top.includes('chat')&&!destinations.includes('chat'));
+  assert.match(sidebar,/className="ops-top-navigation"/);
+  assert.match(app,/onePage!=='chat'&&<OperationsRail/);
+  assert.match(sidebar,/Conversation history/);
+  assert.doesNotMatch(sidebar,/ops-chat-history/);
   assert.doesNotMatch(sidebar,/onModeChange/);
   assert.match(read('components/chat/Composer.tsx'),/<ModelSelector\s*\/>/);
 });

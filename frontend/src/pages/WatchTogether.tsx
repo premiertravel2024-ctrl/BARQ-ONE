@@ -204,7 +204,7 @@ export function WatchTogether({mode = 'video',track,onTrack,requestedProvider,on
       {provider&&<MusicServices key={provider} provider={provider} ar={ar} roomOnly onShare={selection=>{onTrack(selection);setProviderOpen(false)}}/>}
     </section>;
   return <div className={'barq-media barq-watch-room'+(music?' barq-music-app':'')} dir={ar ? 'rtl' : 'ltr'}>
-    {music&&!current&&!guest&&<section className="barq-music-lobby">
+    {music&&!current&&!guest&&<section data-spotlight className="barq-music-lobby">
       <div className="barq-lobby-top">
         <div className="barq-lobby-mark"><Headphones size={19}/><span>{ar?'استماع سوا':'Listen together'}</span></div>
         <div className="barq-lobby-actions">

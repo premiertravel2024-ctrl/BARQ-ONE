@@ -1,0 +1,79 @@
+/* BARQ implementations of the Fade Content, Animated Content and Spotlight Card
+   effects demonstrated in React Bits. */
+.ops-shell {
+ --barq-motion-ease:cubic-bezier(.22,1,.36,1);
+ --barq-spotlight:rgb(var(--accent-rgb) / .13);
+}
+.ops-shell .ops-header .ops-top-navigation {
+ justify-content:safe center;
+ max-inline-size:none;
+ gap:5px;
+ padding:4px;
+}
+.ops-shell .ops-top-navigation button {
+ display:inline-flex;
+ flex:none;
+ align-items:center;
+ gap:7px;
+ max-inline-size:none;
+ color:var(--text-secondary);
+}
+.ops-shell .ops-top-navigation button[aria-current="page"] {
+ color:var(--accent-2);
+ background:var(--bubble);
+ border-color:var(--border-strong);
+}
+.ops-shell .ops-top-navigation button svg { flex:none; }
+.ops-shell .ops-mobile-menu[hidden] { display:none; }
+.ops-body[data-chat="true"] .ops-chat-stage { width:100%; }
+.ops-shell [data-spotlight] { position:relative; isolation:isolate; }
+.ops-shell [data-spotlight]::after {
+ content:"";
+ position:absolute;
+ inset:0;
+ pointer-events:none;
+ border-radius:inherit;
+ opacity:0;
+ background:radial-gradient(240px circle at var(--spotlight-x,50%) var(--spotlight-y,50%),var(--barq-spotlight),transparent 72%);
+}
+
+@keyframes barq-content-arrive {
+ from { opacity:.55; translate:0 7px; }
+ to { opacity:1; translate:0 0; }
+}
+@keyframes barq-card-arrive {
+ from { opacity:.65; translate:0 5px; }
+ to { opacity:1; translate:0 0; }
+}
+@media(prefers-reduced-motion:no-preference) {
+ .ops-stage > :is(.one-page,.ops-settings,.ops-conversation-head),
+ .ops-media-page:not([hidden]) > .one-page,
+ .ops-stage :is(.barq-room-frame,.barq-music-lobby,.ba-card,.one-surface) {
+  animation:barq-content-arrive 230ms var(--barq-motion-ease) backwards;
+ }
+ .ops-stage :is(.bc-grid,.bs-real-grid,.bws-gallery,.bm-track-list) > [data-spotlight]:nth-child(-n+6) {
+  animation:barq-card-arrive 210ms var(--barq-motion-ease) backwards;
+ }
+ .ops-stage [data-spotlight]:nth-child(2) { animation-delay:25ms; }
+ .ops-stage [data-spotlight]:nth-child(3) { animation-delay:50ms; }
+ .ops-stage [data-spotlight]:nth-child(4) { animation-delay:75ms; }
+ .ops-stage [data-spotlight]:nth-child(5) { animation-delay:100ms; }
+ .ops-stage [data-spotlight]:nth-child(6) { animation-delay:125ms; }
+ .ops-shell .ops-top-navigation button[aria-current="page"] span { animation:barq-card-arrive 180ms var(--barq-motion-ease); }
+ .ops-shell .ops-top-navigation button svg,
+ .ops-shell .barq-transport-controls button svg {
+  transition:translate 160ms var(--barq-motion-ease);
+ }
+ .ops-shell :is(.ops-top-navigation,.barq-transport-controls) button:hover svg { translate:0 -2px; }
+}
+@media(hover:hover) and (pointer:fine) and (prefers-reduced-motion:no-preference) {
+ .ops-shell [data-spotlight]::after { transition:opacity 160ms ease-out; }
+ .ops-shell [data-spotlight]:hover::after { opacity:1; }
+}
+@media(max-width:730px) {
+ .ops-shell .ops-header .ops-top-navigation { justify-content:flex-start; margin-inline:0; }
+ .ops-shell .ops-header .ops-top-navigation button:not(.ops-mobile-chat) { display:inline-flex; }
+ .ops-shell .ops-top-navigation .ops-mobile-chat { order:-1; }
+ .ops-shell .ops-top-navigation button { padding-inline:8px; }
+ .ops-shell .ops-top-navigation button:not(.ops-mobile-chat) svg { display:none; }
+}

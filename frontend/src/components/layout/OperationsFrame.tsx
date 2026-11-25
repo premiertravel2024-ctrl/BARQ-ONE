@@ -1,5 +1,5 @@
 import {useEffect,useRef,useState} from 'react';
-import {AudioLines,Ellipsis,Menu,Copy,PanelLeftClose,PanelLeftOpen,Pencil,Plus,Search,Settings2,Trash2,X} from 'lucide-react';
+import {AudioLines,Ellipsis,History,Menu,Copy,PanelLeftClose,PanelLeftOpen,Pencil,Plus,Search,Settings2,Trash2,X} from 'lucide-react';
 import {useApp} from '../../store';
 import {sections,type OnePage} from '../../pages/BarqOne';
 import {ModelSelector} from '../chat/ModelSelector';
@@ -9,18 +9,27 @@ import {AppUpdates} from './AppUpdates';
 import {DayStatus} from './DayStatus';
 import './operationsFrame.css';
 
+const topPages: readonly OnePage[]=['center','chat','library','tools','monitor'];
+
 type Actions={page:OnePage;navigate:(page:OnePage)=>void;search:()=>void};
 export function OperationsHeader({page,navigate,search}:Actions){
  const ar=useApp(s=>s.language)==='ar',setOpen=useApp(s=>s.setSidebarOpen),toast=useApp(s=>s.toast);
  const open=useApp(s=>s.sidebarOpen);
- const section=sections.find(([key])=>key===page);
 
  return <header className="ops-header" data-focus-region tabIndex={-1}>
   <div className="ops-brand">
-   <button className="ops-mobile-menu" type="button" aria-label={ar?'القائمة':'Menu'} aria-controls="barq-sidebar" aria-expanded={open} onClick={()=>setOpen(true)}><Menu size={19}/></button>
+   <button className="ops-mobile-menu" type="button" aria-label={ar?'القائمة':'Menu'} aria-controls="barq-sidebar" aria-expanded={open} hidden={page==='chat'} onClick={()=>setOpen(true)}><Menu size={19}/></button>
    <button className="ops-wordmark" type="button" aria-label={ar?'مركز الأوامر':'Command Center'} onClick={()=>navigate('center')}><span className="ops-mark"><AudioLines size={17}/></span><span>BARQ <b>ONE</b></span></button>
   </div>
-  <p className="ops-current-section">{section?.[ar?1:2]}</p>
+  <nav className="ops-top-navigation" aria-label={ar?'التنقل الرئيسي':'Main navigation'}>
+   {topPages.map(key=>{
+    const [,label,english,Icon]=sections.find(section=>section[0]===key)!;
+    return <button key={key} type="button" className={key==='chat'?'ops-mobile-chat':undefined}
+     aria-current={page===key?'page':undefined} onClick={()=>{setOpen(false);navigate(key)}}>
+     <Icon size={16} aria-hidden="true"/><span>{ar?label:english}</span>
+    </button>;
+   })}
+  </nav>
   <div className="ops-header-actions">
    <DayStatus ar={ar} onOpen={()=>navigate('automation')} onFocusDone={()=>toast('success',ar?'انتهى وقت التركيز':'Focus session finished')}/>
    <AppUpdates ar={ar}/>
@@ -30,24 +39,18 @@ export function OperationsHeader({page,navigate,search}:Actions){
 }
 
 const navigationGroups = [
- {ar:'برق',en:'BARQ',pages:['center','chat','voice','mission']},
+ {ar:'برق',en:'BARQ',pages:['center','voice','mission']},
  {ar:'المكتبة والوسائط',en:'Library and media',pages:['stories','watch','music','wallpapers']},
  {ar:'النظام والأدوات',en:'System and tools',pages:['library','installed','tools','monitor','resources','automation','settings']},
 ] as const satisfies ReadonlyArray<{ar:string;en:string;pages:readonly OnePage[]}>;
 
-export function OperationsRail({page,navigate,newChat,search}:Pick<Actions,'page'|'navigate'|'search'>&{newChat:()=>void}){
+export function OperationsRail({page,navigate}:Pick<Actions,'page'|'navigate'>){
  const ar=useApp(s=>s.language)==='ar',open=useApp(s=>s.sidebarOpen),setOpen=useApp(s=>s.setSidebarOpen);
  const collapsed=useApp(s=>s.sidebarCollapsed),setCollapsed=useApp(s=>s.setSidebarCollapsed);
- const chats=useApp(s=>s.chats),activeId=useApp(s=>s.activeId),selectChat=useApp(s=>s.selectChat);
  const closeButton=useRef<HTMLButtonElement>(null);
  const rail=useRef<HTMLElement>(null);
  const [narrow,setNarrow]=useState(()=>window.matchMedia('(max-width: 730px)').matches);
  const drawer=open&&narrow;
- const history=page==='chat'?[...chats].filter(chat=>chat.messages.length||chat.id===activeId)
-  .sort((a,b)=>Number(b.pinned)-Number(a.pinned)||b.updatedAt-a.updatedAt):[];
- const recent=history.slice(0,8);
- const current=history.find(chat=>chat.id===activeId);
- if(current&&!recent.includes(current))recent[recent.length-1]=current;
 
  useEffect(()=>{
   const query=window.matchMedia('(max-width: 730px)');
@@ -86,30 +89,29 @@ export function OperationsRail({page,navigate,newChat,search}:Pick<Actions,'page
     <button ref={closeButton} className="ops-rail-close" type="button" aria-label={ar?'إغلاق':'Close'} onClick={()=>setOpen(false)}><X size={17}/></button>
    </div>
    <nav aria-label={ar?'أقسام التطبيق':'Application sections'}>
-    {navigationGroups.map(group=><div className="ops-rail-group" role="group" aria-label={ar?group.ar:group.en} key={group.en}>
-     <span className="ops-rail-group-title" aria-hidden="true">{ar?group.ar:group.en}</span>
-     {group.pages.map(key=>{
-      const [,label,english,Icon]=sections.find(section=>section[0]===key)!;
-      return <button key={key} data-section={key} type="button" title={ar?label:english} aria-current={page===key?'page':undefined}
-       aria-label={ar?label:english} onClick={()=>choose(key)}><i><Icon size={16}/></i><span>{ar?label:english}</span></button>;
-     })}
-     {group.en==='BARQ'&&page==='chat'&&<section className="ops-chat-history" aria-label={ar?'المحادثات الأخيرة':'Recent conversations'}>
-      <button type="button" className="ops-new-chat" onClick={()=>{newChat();setOpen(false)}}><Plus size={16}/>{ar?'محادثة جديدة':'New chat'}</button>
-      {recent.length>0&&<p>{ar?'المحادثات الأخيرة':'Recent conversations'}</p>}
-      {recent.map(chat=><button type="button" className="ops-history-item" key={chat.id} dir="auto" title={chat.title}
-       aria-current={chat.id===activeId?'true':undefined} onClick={()=>{selectChat(chat.id);setOpen(false)}}>{chat.title}</button>)}
-      {history.length>recent.length&&<button type="button" className="ops-history-more" onClick={()=>{setOpen(false);search()}}>{ar?'البحث في كل المحادثات':'Search all conversations'}</button>}
-     </section>}
-    </div>)}
+    {navigationGroups.map(group=>{
+     const pages=group.pages.filter(key=>!topPages.includes(key));
+     return <div className="ops-rail-group" role="group" aria-label={ar?group.ar:group.en} key={group.en}>
+      <span className="ops-rail-group-title" aria-hidden="true">{ar?group.ar:group.en}</span>
+      {pages.map(key=>{
+       const [,label,english,Icon]=sections.find(section=>section[0]===key)!;
+       return <button key={key} data-section={key} type="button" title={ar?label:english} aria-current={page===key?'page':undefined}
+        aria-label={ar?label:english} onClick={()=>choose(key)}><i><Icon size={16}/></i><span>{ar?label:english}</span></button>;
+      })}
+     </div>;
+    })}
    </nav>
   </aside>
  </>;
 }
 
-export function ConversationHeader({onDelete,onVoice,onNew}:{onDelete:()=>void;onVoice:()=>void;onNew:()=>void}){
+export function ConversationHeader({onDelete,onVoice,onNew,onSearch}:{onDelete:()=>void;onVoice:()=>void;onNew:()=>void;onSearch:()=>void}){
  const ar=useApp(s=>s.language)==='ar';
  const chat=useApp(s=>s.chats.find(c=>c.id===s.activeId));
  const rename=useApp(s=>s.renameChat),setRightOpen=useApp(s=>s.setRightOpen),toast=useApp(s=>s.toast);
+ const chats=useApp(s=>s.chats),selectChat=useApp(s=>s.selectChat);
+ const recent=[...chats].filter(item=>item.messages.length)
+  .sort((a,b)=>Number(b.pinned)-Number(a.pinned)||b.updatedAt-a.updatedAt).slice(0,8);
  const [name,setName]=useState<string>();
  function save(){if(chat&&name?.trim())rename(chat.id,name.trim());setName(undefined);}
  async function share(){
@@ -124,6 +126,10 @@ export function ConversationHeader({onDelete,onVoice,onNew}:{onDelete:()=>void;o
     onKeyDown={e=>{if(e.key==='Enter')save();if(e.key==='Escape')setName(undefined)}}/>}
   <div className="barq-conversation-actions">
    <ModelSelector compact/>
+   <Dropdown trigger={<IconButton label={ar?'سجل المحادثات':'Conversation history'} icon={<History size={17}/>}/>} items={[
+    ...recent.map(item=>({id:item.id,label:item.title,onClick:()=>{setName(undefined);selectChat(item.id)}})),
+    {id:'search',label:ar?'البحث في كل المحادثات':'Search all conversations',icon:<Search size={16}/>,onClick:onSearch},
+   ]}/>
    <button type="button" className="barq-new-conversation" onClick={onNew} aria-label={ar?'محادثة جديدة':'New chat'}>
     <Plus size={16}/><span>{ar?'محادثة جديدة':'New chat'}</span>
    </button>

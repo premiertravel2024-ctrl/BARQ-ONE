@@ -134,7 +134,7 @@ export function AutomationDashboard(){
    <div><h2>{ar?'مهامي':'My tasks'}</h2><p>{new Intl.DateTimeFormat(ar?'ar-EG':'en-GB',{dateStyle:'full',timeZone:overview?.timezone||'Asia/Riyadh'}).format(now)}</p></div>
    <div className="ba-time"><Clock3 size={17}/><strong dir="ltr">{currentTime}</strong><span>{ar?'توقيت المدينة':'City time'}</span></div>
   </header>
-  <section className="ba-card ba-world" aria-label={ar?'الساعات العالمية':'World clocks'}>
+  <section data-spotlight className="ba-card ba-world" aria-label={ar?'الساعات العالمية':'World clocks'}>
    {CLOCK_ZONES.filter(([zone])=>zones.includes(zone)).map(([zone,arabic,english])=><div key={zone}>
     <strong dir="ltr">{new Intl.DateTimeFormat(ar?'ar-EG':'en-GB',{timeZone:zone,hour:'2-digit',minute:'2-digit'}).format(now)}</strong><small>{ar?arabic:english}</small>
    </div>)}
@@ -157,14 +157,14 @@ export function AutomationDashboard(){
    <button type="button" className="ba-icon-btn" onClick={()=>{setCity(previous=>{setOverview(null);return previous});void requestJSON<Overview>('/v1/automation/overview?city='+encodeURIComponent(city)).then(setOverview).catch(e=>setError(String(e)))}} aria-label={ar?'تحديث':'Refresh'}><RefreshCw size={16}/></button>
   </div>
   <div className="ba-summary-grid">
-   <section className="ba-card ba-weather">
+   <section data-spotlight className="ba-card ba-weather">
     <div className="ba-card-top"><span><Cloud size={17}/>{ar?'حالة الطقس':'Weather'}</span><span>{ar?CITY_NAMES[city]:CITY_NAMES_EN[city]}</span></div>
     {weather?<><div className="ba-temp"><WeatherIcon size={45}/><strong dir="ltr">{weather.temperature}°</strong><div><b>{weatherLabel(weather.weather_code,ar)}</b><small>{ar?'المحسوسة':'Feels like'} {weather.feels_like}°</small></div></div>
      <div className="ba-weather-stats"><span><Sunrise size={15}/>{ar?'العظمى / الصغرى':'High / Low'} <b dir="ltr">{weather.high}° / {weather.low}°</b></span><span><Droplets size={15}/>{weather.humidity}%</span><span><Wind size={15}/>{weather.wind_kmh} km/h</span></div>
      <small className="ba-attribution"><a href="https://open-meteo.com/" target="_blank" rel="noopener noreferrer">Open-Meteo</a> · {ar?'آخر تحديث':'Updated'} {overview&&new Intl.DateTimeFormat(ar?'ar-EG':'en-GB',{timeZone:overview.timezone,hour:'2-digit',minute:'2-digit'}).format(new Date(overview.updated_at))}</small>
     </>:<div className="ba-empty">{loading?(ar?'بنجيب حالة الطقس...':'Loading weather...'):(ar?'الطقس مش متاح دلوقتي.':'Weather unavailable.')}</div>}
    </section>
-   <section className="ba-card ba-prayer-next">
+   <section data-spotlight className="ba-card ba-prayer-next">
     <div className="ba-card-top"><span><Compass size={17}/>{ar?'الصلاة القادمة':'Next prayer'}</span><span>{ar?'توقيت':'Time zone'} {overview?.timezone||'—'}</span></div>
     {next?<><div className="ba-prayer-name">{ar?next.label:PRAYER_NAMES[next.key]||next.key}</div><div className="ba-countdown" dir="ltr">{until!==null?duration(until):'--:--:--'}</div>
       <span className="ba-prayer-at" dir="ltr">{next.time}</span>
@@ -172,7 +172,7 @@ export function AutomationDashboard(){
      </>:<div className="ba-empty">{loading?(ar?'بنجيب مواعيد الصلاة...':'Loading prayer times...'):(ar?'مواعيد الصلاة مش متاحة حاليًا.':'Prayer schedule unavailable.')}</div>}
    </section>
   </div>
-  <section className="ba-card ba-forecast" aria-label={ar?'توقعات الطقس للأيام الجاية':'7-day weather outlook'}>
+  <section data-spotlight className="ba-card ba-forecast" aria-label={ar?'توقعات الطقس للأيام الجاية':'7-day weather outlook'}>
    <div className="ba-section-head"><div><CloudSun size={18}/><h3>{ar?'توقعات الأسبوع':'7-day forecast'}</h3></div>
     <span>{ar?'البيانات من Open-Meteo':'Source: Open-Meteo'}</span></div>
    {!!weather?.hourly?.length&&<div className="ba-hourly" aria-label={ar?'الطقس خلال الساعات الجاية':'Upcoming hourly weather'}>
@@ -201,7 +201,7 @@ export function AutomationDashboard(){
     </div>
     <small className="ba-attribution"><a href="https://aladhan.com/prayer-times-api" target="_blank" rel="noopener noreferrer">AlAdhan</a> · {ar?'ممكن تختلف الدقائق عن مسجدك':'Check local mosque for any differences'}</small>
    </section>
-   <section className="ba-card ba-focus">
+   <section data-spotlight className="ba-card ba-focus">
     <div className="ba-section-head"><div><Clock3 size={18}/><h3>{ar?'وقت التركيز':'Focus timer'}</h3></div></div>
     <div className="ba-focus-clock" dir="ltr">{duration(focusSeconds)}</div>
     <div className="ba-focus-controls">

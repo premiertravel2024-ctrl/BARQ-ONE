@@ -183,7 +183,7 @@ function OpenHub({mode}:{mode:'library'|'installed'|'tools'}){
 
 function ProviderList({providers,onSettings}:{providers:RouterProvider[];onSettings:()=>void}){
  const ar=useApp(s=>s.language)==='ar';
- return <section className="one-surface">
+ return <section data-spotlight className="one-surface">
   <div className="one-section-head"><h2>{ar?'مزودو النماذج':'Model providers'}</h2><button type="button" onClick={onSettings}>{ar?'الإعدادات':'Settings'}</button></div>
   <div className="one-provider-list">{providers.map(provider=><div className="one-line" key={provider.name}>
    <span>{provider.name}</span><span data-status={provider.ready?'verified':undefined}>{provider.ready?(ar?'جاهز':'Ready'):provider.configured?(ar?'مُعدّ':'Configured'):(ar?'غير مُعدّ':'Unconfigured')}</span>
@@ -201,7 +201,7 @@ function RuntimeTools(){
   catch{if(!signal?.aborted)setError(true);}
  }
  useEffect(()=>{const controller=new AbortController();void inspect(controller.signal);return()=>controller.abort();},[]);
- return <section className="one-surface">
+ return <section data-spotlight className="one-surface">
   <div className="one-section-head"><h2>{ar?'أدوات تشغيل النماذج':'AI model runtimes'}</h2><button type="button" onClick={()=>void inspect()}>{ar?'إعادة الفحص':'Scan again'}</button></div>
   {error&&<p role="alert">{ar?'تعذّر فحص الأدوات.':'Tool detection unavailable.'}</p>}
   {tools?.filter(tool=>/ollama|llama|model|ai|python|cuda|pytorch|torch|transformers|huggingface|deepseek|qwen|gemini|groq|mistral/i.test(tool.name)).map(tool=><div className="one-line" key={tool.name}><span>{tool.name}</span>
@@ -258,7 +258,7 @@ function MonitorPanel({full=false}:{full?:boolean}){
     const values=history.map(read);
     // Missing samples split the trace; no fabricated values or line across a gap.
     const points=values.map((v,i)=>typeof v==='number'&&Number.isFinite(v)?`${i===0||typeof values[i-1]!=='number'?'M':'L'}${i*240/29},${48-Math.min(125,Math.max(0,v))*44/125}`:'').join(' ');
-    return <article className="one-vital" key={label}>
+    return <article data-spotlight className="one-vital" key={label}>
      <div><span>{label}</span><Icon size={17}/></div>
      <strong dir="ltr">{valid?Math.round(value):'—'}<small>{unit}</small></strong>
      <svg viewBox="0 0 240 52" preserveAspectRatio="none" aria-hidden="true"><path d={error?'':points}/></svg>
@@ -286,7 +286,7 @@ function Mission(){
  const messages=useApp(s=>s.chats.find(chat=>chat.id===s.activeId)?.messages);
  const voice=useVoice();
  const missions=(messages||[]).filter(m=>m.agentTask).slice(-8).reverse();
- return <section className="one-surface"><h2>{ar?'المهام الأخيرة في المحادثة':'Recent missions in this chat'}</h2>
+ return <section data-spotlight className="one-surface"><h2>{ar?'المهام الأخيرة في المحادثة':'Recent missions in this chat'}</h2>
   {voice.task&&<p dir="auto" role="status">{voice.task.message}</p>}
   {missions.length?missions.map(m=><div className="one-line" key={m.id}><span dir="auto">{m.agentTask?.goal}</span><span data-status={m.agentTask?.status}>{m.agentTask?.status}</span></div>)
    :<p className="one-muted">{ar?'لسه مفيش مهام مسجلة في المحادثة دي.':'No missions recorded in this chat yet.'}</p>}
@@ -316,9 +316,9 @@ function OverviewSignals({providers,onTools}:{providers:RouterProvider[];onTools
    {jobs.length?jobs.slice(0,3).map(j=><div className="one-line" key={j.id}><span dir="auto">{j.item.split('/').at(-1)}</span><span data-status={j.status}>{jobLabel(j,ar)}</span></div>):<p className="one-muted">{ar?'الطابور فاضي':'Queue is empty'}</p>}
   </aside>
   <div className="one-kpi-group" dir={ar?'rtl':'ltr'}>
-   <section className="one-surface"><h2>{ar?'الردود المقاسة':'Measured replies'}</h2><strong>{metrics?.measured_responses??'—'}</strong></section>
-   <section className="one-surface"><h2>{ar?'زمن الرد الوسيط':'Median response time'}</h2><strong dir="ltr">{metrics?.total_seconds.median==null?'—':metrics.total_seconds.median.toFixed(2)+' s'}</strong></section>
-   <section className="one-surface"><h2>{ar?'الردود اللي احتاجت مزوّد بديل':'Fallback replies'}</h2><strong>{metrics?.fallback_responses??'—'}</strong></section>
+   <section data-spotlight className="one-surface"><h2>{ar?'الردود المقاسة':'Measured replies'}</h2><strong>{metrics?.measured_responses??'—'}</strong></section>
+   <section data-spotlight className="one-surface"><h2>{ar?'زمن الرد الوسيط':'Median response time'}</h2><strong dir="ltr">{metrics?.total_seconds.median==null?'—':metrics.total_seconds.median.toFixed(2)+' s'}</strong></section>
+   <section data-spotlight className="one-surface"><h2>{ar?'الردود اللي احتاجت مزوّد بديل':'Fallback replies'}</h2><strong>{metrics?.fallback_responses??'—'}</strong></section>
   </div>
  </>;
 }

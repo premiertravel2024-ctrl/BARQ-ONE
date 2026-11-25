@@ -1,3 +1,4 @@
+import {moveCardSpotlight} from './lib/cardSpotlight';
 import {stopSpeechPlayback} from './lib/speechGlow';
 import {useCallback,useEffect,useState} from 'react';
 import {Trash2} from 'lucide-react';
@@ -14,6 +15,7 @@ import {HandsFreeVoice,isHandsFreeActive} from './components/chat/HandsFreeVoice
 import {BarqOne,sections,type OnePage} from './pages/BarqOne';
 import './styles/experienceRefresh.css';
 import './styles/barqVisualSystem.css';
+import './styles/barqMotion.css';
 import {keepAppContextFresh,publishBookCatalogue,trackSection,type AppAction} from './lib/appContext';
 import {publishedBooks} from './pages/publishedBooks';
 import {VoiceResultsStrip} from './components/chat/VoiceResultsStrip';
@@ -152,10 +154,10 @@ export default function App(){
  const renderSection=(page:Exclude<OnePage,'chat'|'settings'>)=><BarqOne page={page} providers={providers} onVoice={openConsentedVoiceSession} onNavigate={navigateOne}
    onModels={()=>{setSettingsTab('models');setSettings(true)}} onAssistantSettings={()=>{setSettingsTab('assistant');setSettings(true)}}
    onQuick={command=>{navigateOne('chat');setPrefill(command)}}/>;
- return <div data-release-marker={import.meta.env.VITE_BARQ_RELEASE_MARKER} className="ops-shell" dir={language==='ar'?'rtl':'ltr'}>
+ return <div data-release-marker={import.meta.env.VITE_BARQ_RELEASE_MARKER} className="ops-shell" onPointerMove={moveCardSpotlight} dir={language==='ar'?'rtl':'ltr'}>
   <OperationsHeader page={onePage} navigate={navigateOne} search={()=>setPalette(true)}/>
-  <div className={playground?'hidden':'ops-body'} dir="ltr">
-   <OperationsRail page={onePage} navigate={navigateOne} newChat={()=>{newChat();navigateOne('chat')}} search={()=>setPalette(true)}/>
+  <div className={playground?'hidden':'ops-body'} data-chat={onePage==='chat'} dir="ltr">
+   {onePage!=='chat'&&<OperationsRail page={onePage} navigate={navigateOne}/>}
    <main data-focus-region tabIndex={-1} className={onePage==='chat'?'ops-stage ops-chat-stage':'ops-stage'} dir={language==='ar'?'rtl':'ltr'} aria-label={language==='ar'?'مساحة التطبيق':'Application workspace'}>
     {media&&<div hidden={onePage!==media} className="ops-media-page" key={media}><SectionBoundary ar={language==='ar'}>{renderSection(media)}</SectionBoundary></div>}
     <SectionBoundary key={onePage} ar={language==='ar'}>
@@ -164,7 +166,7 @@ export default function App(){
       {onePage!=='watch'&&onePage!=='music'&&renderSection(onePage)}
       <VoiceResultsStrip/>
     </>:<>
-      <ConversationHeader onDelete={()=>{if(id)setDeleteId(id)}} onVoice={()=>navigateOne('voice')} onNew={()=>{newChat();navigateOne('chat')}}/>
+      <ConversationHeader onSearch={()=>setPalette(true)} onDelete={()=>{if(id)setDeleteId(id)}} onVoice={()=>navigateOne('voice')} onNew={()=>{newChat();navigateOne('chat')}}/>
       <BrainStatus/>
       {chat&&chat.messages.length?<MessageList key={id} id={id!}/>:<EmptyState onSuggestion={setPrefill} onHologram={()=>navigateOne('voice')}/>}
       <VoiceResultsStrip/>

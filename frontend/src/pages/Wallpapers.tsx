@@ -207,7 +207,7 @@ export function Wallpapers({onOpenSettings}:{onOpenSettings?:()=>void}={}) {
        {([['all',ar?'الكل':'All'],['video',ar?'فيديو':'Videos'],['gif','GIF'],['favorites',ar?'المفضلة':'Favorites']] as const).map(([key,label])=><button type="button" key={key} aria-pressed={filter===key} onClick={()=>setFilter(key)}>{label}</button>)}
       </div>
      </div>
-     {list.length?<div className="bws-gallery">{list.map(item=><article key={item.id} onPointerEnter={()=>setPreviewId(item.id)} onPointerLeave={()=>setPreviewId(undefined)} className={'bws-wallpaper'+(data.engine?.wallpaper_id===item.id?' is-playing':'')}>
+     {list.length?<div className="bws-gallery">{list.map(item=><article key={item.id} onPointerEnter={()=>setPreviewId(item.id)} onPointerLeave={()=>setPreviewId(undefined)} data-spotlight className={'bws-wallpaper'+(data.engine?.wallpaper_id===item.id?' is-playing':'')}>
       <div className="bws-thumb"><Preview item={item} native={!!data.engine} active={previewId===item.id}/>
        <span className="bws-type">{isGif(item)?'GIF':isVideo(item)?'VIDEO':String(item.type).slice(0,12)}</span>
        <button type="button" className="bws-heart" aria-label={favorites.includes(item.id)?(ar?'إزالة من المفضلة':'Remove favorite'):(ar?'إضافة للمفضلة':'Add favorite')} aria-pressed={favorites.includes(item.id)} onClick={()=>toggleFavorite(item.id)}><Heart size={17} fill={favorites.includes(item.id)?'currentColor':'none'}/></button>

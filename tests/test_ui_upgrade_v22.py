@@ -22,10 +22,14 @@ def test_barq_one_navigation_keeps_execution_services():
     destinations = [key for group in re.findall(r"pages:\[([^\]]+)\]", groups)
                     for key in re.findall(r"'([a-z]+)'", group)]
     sections = re.findall(r"^ \['([a-z]+)',", code('pages/BarqOne.tsx'), re.M)
-    assert sorted(destinations) == sorted(sections)
-    assert '<nav ' not in sidebar.split('export function OperationsRail', 1)[0]
-    assert "onClick={()=>choose(key)}" in sidebar
-    assert 'className="ops-chat-history"' in sidebar
+    top_source = re.search(r"topPages: readonly OnePage\[\]=\[([^\]]+)\]", sidebar)[1]
+    top = re.findall(r"'([a-z]+)'", top_source)
+    assert sorted(set(destinations + top)) == sorted(sections)
+    assert 'chat' in top and 'chat' not in destinations
+    assert 'className="ops-top-navigation"' in sidebar
+    assert "onePage!=='chat'&&<OperationsRail" in app
+    assert 'Conversation history' in sidebar
+    assert 'className="ops-chat-history"' not in sidebar
     workspace = code('components/workspace/WorkspaceStudio.tsx')
     assert '<WorkspaceTools open inside' in workspace
     workspace += code('components/workspace/WorkspaceTools.tsx')
