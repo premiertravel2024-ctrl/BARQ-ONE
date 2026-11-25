@@ -205,6 +205,8 @@ const contextUpdate=page.waitForRequest(request=>request.method()==='PUT'&&
 await chatNav.click();
 await contextUpdate;
 assert.equal(await preservedView.count(),1,'asking BARQ should preserve a playing media view');
+assert.equal(await preservedView.isVisible(),false,'the retained room must be hidden outside cinema');
+assert.equal(await page.locator('.ops-media-page[hidden]').evaluate(el=>getComputedStyle(el).display),'none');
 await composer.fill('أنا كنت فاتح إيه');
 await composer.press('Enter');
 await page.getByText('آخر قسم فتحته هو الموسيقى · تملى معاك.',{exact:true}).waitFor();
