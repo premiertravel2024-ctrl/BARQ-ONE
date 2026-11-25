@@ -47,10 +47,13 @@ export function WatchTogether({mode = 'video',track,onTrack,requestedProvider,on
   const [invite, setInvite] = useState('');
   const [joinOpen, setJoinOpen] = useState(false);
   const [hostOpen, setHostOpen] = useState(false);
+  const [screenHelp,setScreenHelp]=useState(false);
+  const [browserPlayer,setBrowserPlayer]=useState(false);
   const [providerOpen,setProviderOpen]=useState(false);
   const [shareOpen, setShareOpen] = useState(false);
   const [provider,setProvider]=useState<RoomTrack['provider']>('spotify');
   const current = room?.mode === mode ? room : null;
+  useEffect(()=>setBrowserPlayer(false),[current?.room_id,current?.host_url]);
   useEffect(() => {
     if (!requestedProvider) return;
     setProvider(requestedProvider);
@@ -214,8 +217,9 @@ export function WatchTogether({mode = 'video',track,onTrack,requestedProvider,on
       </div>
       {picker}
     </section>}
-    {!music && !current && !guest && <CinemaDiscovery ar={ar} roomActive={false} onRoom={() => { setError(''); setHostOpen(true); }} onJoin={() => {setError('');setJoinOpen(true);}}/>}
-    <Modal open={hostOpen} onClose={()=>setHostOpen(false)} title={ar?'غرفة جديدة':'New room'} dialogClassName="barq-room-dialog">
+    {!music && !current && !guest && <CinemaDiscovery ar={ar} roomActive={false} onRoom={() => { setScreenHelp(false); setError(''); setHostOpen(true); }} onScreenShare={()=>{setScreenHelp(true);setError('');setHostOpen(true)}} onJoin={() => {setError('');setJoinOpen(true);}}/>}
+    <Modal open={hostOpen} onClose={()=>setHostOpen(false)} title={screenHelp?(ar?'مشاركة شاشة ويندوز':'Share Windows screen'):(ar?'غرفة جديدة':'New room')} dialogClassName="barq-room-dialog">
+      {screenHelp&&<p className="mb-3 text-sm text-secondary">{ar?'اختار نوع الاتصال وابعت كود الدعوة. من المشغّل اضغط مشاركة الشاشة، وحدد الشاشة أو النافذة، وفعّل مشاركة صوت النظام لو الخيار ظهر.':'Choose a connection and send the invite code. In the player select Share screen, choose a display or window, and enable system audio if offered.'}</p>}
       <div className="barq-room-choices">
         <button type="button" disabled={busy} onClick={()=>{setHostOpen(false);start(false)}}><Globe2 size={21}/><span>{ar?'عبر الإنترنت':'Online'}</span></button>
         <button type="button" disabled={busy} onClick={()=>{setHostOpen(false);start(true)}}><Radio size={21}/><span>{ar?'الشبكة المحلية':'Local network'}</span></button>
@@ -268,7 +272,14 @@ export function WatchTogether({mode = 'video',track,onTrack,requestedProvider,on
         {!sharedSelection.current&&<button type="button" onClick={sendTrack}>{ar?'شارك الاختيار':'Share selection'}</button>}
         <span role="status">{trackStatus}</span>
       </div>}
-      <iframe ref={frame} style={frameHeight?{height:frameHeight}:undefined} title={ar ? 'مشغّل الغرفة' : 'Room player'} src={guest || current?.host_url} allow="autoplay; encrypted-media; fullscreen; picture-in-picture; display-capture" allowFullScreen referrerPolicy="no-referrer"/>
+      {!music&&current&&!guest&&<div className="barq-screen-help">
+        <span>{ar?'من المشغّل اختار مشاركة الشاشة والصوت.':'Choose screen and audio sharing in the player.'}</span>
+        <a href={current.host_url} target="_blank" rel="noopener noreferrer" onClick={()=>setBrowserPlayer(true)}>
+          <ExternalLink size={15}/>{ar?'افتح المشغّل في المتصفح':'Open player in browser'}
+        </a>
+        {browserPlayer&&<button type="button" onClick={()=>setBrowserPlayer(false)}>{ar?'ارجع للمشغّل داخل برق':'Return to the in-app player'}</button>}
+      </div>}
+      {!browserPlayer&&<iframe ref={frame} style={frameHeight?{height:frameHeight}:undefined} title={ar ? 'مشغّل الغرفة' : 'Room player'} src={guest || current?.host_url} allow="autoplay; encrypted-media; fullscreen; picture-in-picture; display-capture" allowFullScreen referrerPolicy="no-referrer"/>}
     </section>}
   </div>;
 }

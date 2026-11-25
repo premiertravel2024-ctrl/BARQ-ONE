@@ -1,5 +1,5 @@
 import {useCallback,useEffect,useState} from 'react';
-import {Bookmark,Clapperboard,Heart,KeyRound,Play,Search,Star,UsersRound} from 'lucide-react';
+import {Bookmark,Clapperboard,Heart,KeyRound,Play,MonitorUp,Search,Star,UsersRound} from 'lucide-react';
 import {useAppView} from '../lib/appContext';
 import {requestJSON} from '../lib/backend';
 import {Modal} from '../components/ui/Modal';
@@ -40,7 +40,7 @@ function WhereToWatch({title,ar}:{title:Title;ar:boolean}){
     </>}
  </section>;
 }
-export function CinemaDiscovery({ar,onRoom,onJoin,roomActive}:{ar:boolean;onRoom:()=>void;onJoin:()=>void;roomActive:boolean}){
+export function CinemaDiscovery({ar,onRoom,onJoin,onScreenShare,roomActive}:{ar:boolean;onScreenShare?:()=>void;onRoom:()=>void;onJoin:()=>void;roomActive:boolean}){
  const [tab,setTab]=useState('home'),[kind,setKind]=useState<'movie'|'tv'>('movie'),[collection,setCollection]=useState('popular');
  const [query,setQuery]=useState(''),[search,setSearch]=useState(''),[genre,setGenre]=useState(''),[year,setYear]=useState(''),[rating,setRating]=useState('0');
  const [genres,setGenres]=useState<{id:number;name:string}[]>([]),[page,setPage]=useState(1),[result,setResult]=useState<Page>(),[rails,setRails]=useState<Rail[]>([]);
@@ -93,6 +93,7 @@ export function CinemaDiscovery({ar,onRoom,onJoin,roomActive}:{ar:boolean;onRoom
    <div><h1>{ar?'سينما برق':'BARQ Cinema'}</h1></div>
    <div className="bc-room-actions">
     <button className="bc-primary" onClick={onRoom}><UsersRound size={17}/>{roomActive?(ar?'غرفتك':'Your room'):(ar?'افتح غرفة مشاهدة':'Host a watch room')}</button>
+    {onScreenShare&&<button className="bc-join" type="button" onClick={onScreenShare}><MonitorUp size={17}/>{ar?'شارك شاشة ويندوز':'Share Windows screen'}</button>}
     <button className="bc-join" type="button" onClick={onJoin}><KeyRound size={17}/>{ar?'ادخل بكود':'Join with code'}</button>
    </div>
   </header>

@@ -77,3 +77,14 @@
 
 .barq-room-actions [role="menuitem"] { width:100%; border-radius:8px; padding:8px 10px; background:transparent; border:0; color:var(--text-primary); }
 .barq-room-actions [role="menuitem"]:hover { background:var(--bg-elevated); }
+
+.barq-screen-help {
+ display:flex; flex-wrap:wrap; align-items:center; gap:8px 14px;
+ padding:9px 12px; font-size:.78rem; color:var(--text-secondary);
+}
+.barq-screen-help a,.barq-screen-help button {
+ display:inline-flex; align-items:center; gap:6px;
+ min-height:32px; padding:4px 8px; border-radius:8px;
+ color:var(--accent-2);
+}
+.barq-screen-help :is(a,button):hover { background:var(--bg-elevated); }

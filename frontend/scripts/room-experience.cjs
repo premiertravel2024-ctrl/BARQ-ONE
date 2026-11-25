@@ -11,6 +11,19 @@ const fs=require('node:fs'),path=require('node:path'),assert=require('node:asser
   await page.addInitScript(()=>{
    class Socket {static OPEN=1;readyState=0;constructor(){setTimeout(()=>{this.readyState=1;this.onopen?.();this.onmessage?.({data:JSON.stringify({type:'ready',ice_servers:[]})});},10);}send(){}close(){this.readyState=3;}}
    window.WebSocket=Socket;
+   if(location.pathname.startsWith('/room-fixture/'))Object.defineProperty(navigator.mediaDevices,'getDisplayMedia',{
+    configurable:true,value:async options=>{
+     window.captureOptions=options;
+     const canvas=document.createElement('canvas');canvas.width=640;canvas.height=360;
+     const context=canvas.getContext('2d');context.fillRect(0,0,640,360);
+     const stream=canvas.captureStream(5);
+     const audioContext=new AudioContext();
+     const audio=audioContext.createMediaStreamDestination();
+     for(const track of audio.stream.getAudioTracks())stream.addTrack(track);
+     window.testScreenStream=stream;
+     return stream;
+    },
+   });
   });
   await page.route('**/room-fixture/**',route=>route.fulfill({contentType:'text/html',path:path.resolve('../cloudflare/room.html')}));
   await page.route('**/v1/**',route=>{
@@ -33,8 +46,9 @@ const fs=require('node:fs'),path=require('node:path'),assert=require('node:asser
    await page.goto('http://127.0.0.1:5173/tests/rebuild/index.html?'+(mode==='music'?'music':'rooms'));
    if(mode==='music')await page.getByRole('button',{name:'غرفة الموسيقى',exact:true}).click();
    assert.equal(await page.getByRole('button',{name:'الشبكة المحلية',exact:true}).count(),0);
-   await page.getByRole('button',{name:mode==='music'?'افتح غرفة':'افتح غرفة مشاهدة',exact:true}).click();
-   const dialog=page.getByRole('dialog',{name:'غرفة جديدة'});
+   const screen=mode==='video'&&!local;
+   await page.getByRole('button',{name:screen?'شارك شاشة ويندوز':mode==='music'?'افتح غرفة':'افتح غرفة مشاهدة',exact:true}).click();
+   const dialog=page.getByRole('dialog',{name:screen?'مشاركة شاشة ويندوز':'غرفة جديدة'});
    await dialog.getByRole('button',{name:local?'الشبكة المحلية':'عبر الإنترنت',exact:true}).click();
    const frame=page.frameLocator('iframe[title="مشغّل الغرفة"]');
    await frame.locator('#uploadMedia').waitFor();
@@ -51,6 +65,17 @@ const fs=require('node:fs'),path=require('node:path'),assert=require('node:asser
    assert.ok(Math.abs(after.y-before.y)<1,'source controls must not push the player down: '+JSON.stringify({before,after}));
    await frame.locator('#linkMedia').press('Escape');
    assert.equal(await frame.locator('#sources').getAttribute('open'),null);
+   if(screen){
+    await frame.locator('#screenShare').click();
+    await frame.locator('#stopScreenShare').waitFor();
+    assert.deepEqual(await frame.locator('video').evaluate(video=>({
+     audio:video.srcObject.getAudioTracks().length,video:video.srcObject.getVideoTracks().length,
+     muted:video.muted,systemAudio:window.captureOptions.systemAudio,overlay:document.getElementById('waitingOverlay').hidden,
+    })),{audio:1,video:1,muted:true,systemAudio:'include',overlay:true});
+    await frame.locator('#stopScreenShare').click();
+    assert.ok(await frame.locator('body').evaluate(()=>window.testScreenStream.getTracks().every(track=>track.readyState==='ended')));
+    await frame.locator('#screenShare').waitFor();
+   }
    if(mode==='music'){
     const art=await frame.locator('.music-now-art').boundingBox(),title=await frame.locator('#musicNowTitle').boundingBox();
     assert.ok(art.y+art.height<=title.y,'music artwork and title overlap');
