@@ -593,14 +593,18 @@ if(music){
 // Host-only, user-initiated desktop capture. Never share on room join.
 var screenShareButton=document.getElementById('screenShare');
 var stopScreenShareButton=document.getElementById('stopScreenShare');
+var screenStream=null,screenPreviewWasMuted=false,pageUnloading=false;
 if(host&&!music)screenShareButton.hidden=false;
 function endScreenShare(){
- var active=localStream;
- if(!active||!video.srcObject||video.srcObject!==active)return;
+ var active=screenStream;
+ if(!active||localStream!==active)return;
+ screenStream=null;
  closePeer();
  localStream=null;
  active.getTracks().forEach(function(track){track.stop();});
- video.pause();video.srcObject=null;
+ video.pause();video.srcObject=null;video.muted=screenPreviewWasMuted;
+ send('sync',{screenStopped:true});
+ showWaiting(true,'مشاركة الشاشة متوقفة','اختار شاشة أو نافذة للمشاركة');
  stopScreenShareButton.hidden=true;screenShareButton.hidden=false;
  note('تم إيقاف مشاركة الشاشة. اختر ملفًا أو ابدأ المشاركة مرة أخرى.');
 }
@@ -611,29 +615,34 @@ screenShareButton.onclick=async function(){
   note('متصفح الغرفة لا يدعم مشاركة الشاشة. افتح الغرفة في Edge أو Chrome حديث.');return;
  }
  screenShareButton.disabled=true;
+ var requestedAt=loadVersion;
  try{
   // The browser itself asks which screen/window to share and whether audio is included.
-  var stream=await navigator.mediaDevices.getDisplayMedia({video:{frameRate:30},audio:true});
+  var stream=await navigator.mediaDevices.getDisplayMedia({video:{frameRate:{ideal:30,max:30}},audio:true,systemAudio:'include'});
+  if(pageUnloading||requestedAt!==loadVersion){stream.getTracks().forEach(function(t){t.stop();});return;}
   if(!stream.getVideoTracks().length){stream.getTracks().forEach(function(t){t.stop();});throw Error('No video track');}
   ++loadVersion;
   if(officialTrack){officialTrack=null;showTrack(null);send('track',null);}
   closePeer();
   if(localStream)localStream.getTracks().forEach(function(t){t.stop();});
   if(blobUrl){URL.revokeObjectURL(blobUrl);blobUrl=null;}
-  localStream=stream;
+  localStream=screenStream=stream;
+  screenPreviewWasMuted=video.muted;
   video.pause();video.removeAttribute('src');video.srcObject=stream;
   video.muted=true;video.playsInline=true;
+  stream.getVideoTracks()[0].addEventListener('ended',endScreenShare,{once:true});
   await video.play().catch(function(){});
+  if(screenStream!==stream)return;
+  showWaiting(false);
   screenShareButton.hidden=true;stopScreenShareButton.hidden=false;
   document.getElementById('sources').open=false;
   note(stream.getAudioTracks().length
    ?'الشاشة والصوت قيد المشاركة. الضيف يحتاج تفعيل الصوت عنده.'
    :'الشاشة قيد المشاركة بدون صوت نظام. فعّل مشاركة الصوت من نافذة الاختيار إن كانت متاحة.');
-  stream.getVideoTracks()[0].addEventListener('ended',endScreenShare,{once:true});
   queueRTC(makeOffer);
  }catch(error){
   if(error&&error.name==='NotAllowedError')note('تم إلغاء اختيار الشاشة.');
-  else note('تعذّر بدء مشاركة الشاشة على هذا الجهاز أو المتصفح.');
+  else note('تعذّر بدء المشاركة هنا. افتح نفس الغرفة من زر فتح المشغّل في المتصفح وجرّب تاني.');
  }finally{screenShareButton.disabled=false;}
 };
 var sources=document.getElementById('sources');
@@ -838,6 +847,7 @@ function connect(code){
    note(streaming?'البث شغّال · بنرجّع اتصال الغرفة…':'الاتصال اتقطع؛ بنحاول نرجع الغرفة…');
    reconnectTimer=setTimeout(function(){connect(lastCode);},delay);
   }else{
+   if(host&&screenStream)endScreenShare();
    note('اتصال الغرفة اتقطع');
    if(!host&&!paired&&!leaving)document.getElementById('joinPanel').hidden=false;
   }
@@ -869,8 +879,9 @@ function connect(code){
   }
   if(packet.type==='answer'&&host)queueRTC(async function(){if(peer&&peer.signalingState==='have-local-offer'){var pc=peer;await pc.setRemoteDescription(packet.value);await drainIce(pc);}});
   if(packet.type==='ice')queueRTC(async function(){if(peer&&peer.remoteDescription){try{await peer.addIceCandidate(packet.value);}catch(e){}}else if(pendingIce.length<100)pendingIce.push(packet.value);});
-  if(packet.type==='request-pause'&&host){if(document.getElementById('guestControls').checked){video.paused?video.play():video.pause();}else addMessage('تنبيه','الضيف طلب إيقاف أو تشغيل الفيديو.');}
-  if(packet.type==='request-seek'&&host){if(document.getElementById('guestControls').checked){video.currentTime=Math.max(0,video.currentTime+30);}else addMessage('تنبيه','الضيف طلب تقديم الفيديو.');}
+  if(packet.type==='sync'&&!host&&packet.value?.screenStopped===true)queueRTC(function(){closePeer();showWaiting(true,'مشاركة الشاشة انتهت','في انتظار صاحب الغرفة');note('صاحب الغرفة وقف مشاركة الشاشة');});
+  if(packet.type==='request-pause'&&host&&!screenStream){if(document.getElementById('guestControls').checked){video.paused?video.play():video.pause();}else addMessage('تنبيه','الضيف طلب إيقاف أو تشغيل الفيديو.');}
+  if(packet.type==='request-seek'&&host&&!screenStream){if(document.getElementById('guestControls').checked){video.currentTime=Math.max(0,video.currentTime+30);}else addMessage('تنبيه','الضيف طلب تقديم الفيديو.');}
   if(packet.type==='sync'&&!host&&remoteStream&&video.readyState>=2){note('المشاهدة متصلة · '+(packet.value&&packet.value.playing?'تشغيل':'متوقف'));}
   if(packet.type==='subtitle'&&!host){captionEl.textContent=String(packet.value||'').slice(0,400);}
  };
@@ -1106,6 +1117,7 @@ if(host){
  video.addEventListener('timeupdate',updateSubtitle);
  video.addEventListener('seeked',updateSubtitle);
  async function loadMedia(source,external){
+  if(screenStream)endScreenShare();
   var version=++loadVersion;
   if(officialTrack){officialTrack=null;showTrack(null);send('track',null);}
   closePeer();
@@ -1160,7 +1172,7 @@ if(host){
    void loadMedia(url.href,true);
   }catch(error){note('اكتب رابط HTTPS مباشر لملف الوسائط.');}
  };
- window.addEventListener('pagehide',function(){if(blobUrl)URL.revokeObjectURL(blobUrl);if(localStream)localStream.getTracks().forEach(function(track){track.stop();});});
+ window.addEventListener('pagehide',function(){pageUnloading=true;if(screenStream)endScreenShare();if(blobUrl)URL.revokeObjectURL(blobUrl);if(localStream)localStream.getTracks().forEach(function(track){track.stop();});});
  ['play','pause','seeked'].forEach(function(type){video.addEventListener(type,function(){send('sync',{playing:!video.paused,position:video.currentTime});if(music)document.getElementById('musicNow').classList.toggle('is-playing',!video.paused);});});
 }else{
  document.getElementById('join').onclick=function(){var code=document.getElementById('code').value.trim();if(!/^[0-9]{6}$/.test(code)){note('الكود لازم يكون 6 أرقام');return;}document.getElementById('joinPanel').hidden=true;connect(code);};

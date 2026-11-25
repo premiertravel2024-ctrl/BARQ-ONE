@@ -17,6 +17,7 @@ const fs=require('node:fs'),path=require('node:path'),assert=require('node:asser
      const canvas=document.createElement('canvas');canvas.width=640;canvas.height=360;
      const context=canvas.getContext('2d');context.fillRect(0,0,640,360);
      const stream=canvas.captureStream(5);
+     requestAnimationFrame(()=>context.fillRect(0,0,640,360));
      const audioContext=new AudioContext();
      const audio=audioContext.createMediaStreamDestination();
      for(const track of audio.stream.getAudioTracks())stream.addTrack(track);
