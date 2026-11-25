@@ -531,7 +531,7 @@ body .room-viewer-actions button:not(:disabled):hover svg { transform:translateY
 <div id="joinPanel" class="panel" hidden><p>ادخل كود الغرفة اللي بعتهولك صاحبها</p><div class="row"><input id="code" maxlength="6" inputmode="numeric" placeholder="كود الغرفة" aria-label="كود الغرفة" autocomplete="one-time-code"><button id="join">دخول</button></div></div>
 <div class="grid">
 <section class="panel room-media-panel">
- <div class="room-viewer-actions"><div id="localWrap" hidden><button type="button" id="screenShare" title="مشاركة شاشة ويندوز مع الضيف" aria-label="ابدأ مشاركة الشاشة والصوت" hidden>مشاركة الشاشة</button><button type="button" id="stopScreenShare" title="إيقاف مشاركة الشاشة" aria-label="أوقف مشاركة الشاشة" hidden>إيقاف المشاركة</button><button type="button" id="uploadMedia" title="اختيار ملف" aria-label="اختيار ملف"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 16V4m-4 4 4-4 4 4M4 16v4h16v-4"/></svg></button><button type="button" id="openMediaLink" title="تشغيل من رابط" aria-label="تشغيل من رابط"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 13a5 5 0 0 0 7 0l3-3a5 5 0 0 0-7-7l-2 2M14 11a5 5 0 0 0-7 0l-3 3a5 5 0 0 0 7 7l2-2"/></svg></button>
+ <div class="room-viewer-actions"><div id="localWrap" hidden><button type="button" id="screenShare" title="مشاركة شاشة ويندوز مع الضيف" aria-label="ابدأ مشاركة الشاشة والصوت" hidden><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 4h16a1 1 0 0 1 1 1v11H3V5a1 1 0 0 1 1-1Zm4 16h8m-4-4v4m0-7V7m-3 3 3-3 3 3"/></svg></button><button type="button" id="stopScreenShare" title="إيقاف مشاركة الشاشة" aria-label="أوقف مشاركة الشاشة" hidden><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 4h16a1 1 0 0 1 1 1v11H3V5a1 1 0 0 1 1-1Zm4 16h8m-4-4v4M9 7h6v6H9z"/></svg></button><button type="button" id="uploadMedia" title="اختيار ملف" aria-label="اختيار ملف"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 16V4m-4 4 4-4 4 4M4 16v4h16v-4"/></svg></button><button type="button" id="openMediaLink" title="تشغيل من رابط" aria-label="تشغيل من رابط"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 13a5 5 0 0 0 7 0l3-3a5 5 0 0 0-7-7l-2 2M14 11a5 5 0 0 0-7 0l-3 3a5 5 0 0 0 7 7l2-2"/></svg></button>
   <details id="sources" data-view="settings"><summary title="إعدادات الوسائط" aria-label="إعدادات الوسائط"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h9m4 0h3M4 17h3m4 0h9M13 4v6M7 14v6"/></svg><span id="sourceTitle" class="sr-only">إعدادات الوسائط</span></summary><div class="source-panel">
 
   <div class="source-options">
@@ -617,6 +617,7 @@ screenShareButton.onclick=async function(){
  screenShareButton.disabled=true;
  var requestedAt=loadVersion;
  try{
+  note('اضغط على معاينة الشاشة نفسها، وفعّل صوت النظام، وبعدها اضغط Share with Audio.');
   // The browser itself asks which screen/window to share and whether audio is included.
   var stream=await navigator.mediaDevices.getDisplayMedia({video:{frameRate:{ideal:30,max:30}},audio:true,systemAudio:'include'});
   if(pageUnloading||requestedAt!==loadVersion){stream.getTracks().forEach(function(t){t.stop();});return;}
@@ -637,7 +638,7 @@ screenShareButton.onclick=async function(){
   document.getElementById('sources').open=false;
   note(stream.getAudioTracks().length
    ?'الشاشة والصوت قيد المشاركة. الضيف يحتاج تفعيل الصوت عنده.'
-   :'الشاشة قيد المشاركة بدون صوت نظام. فعّل مشاركة الصوت من نافذة الاختيار إن كانت متاحة.');
+   :'الشاشة بتتشارك من غير صوت. اوقف المشاركة، اختار معاينة الشاشة، وفعّل صوت النظام قبل التأكيد. لو الصوت ما وصلش جرّب Edge أو Chrome.');
   queueRTC(makeOffer);
  }catch(error){
   if(error&&error.name==='NotAllowedError')note('تم إلغاء اختيار الشاشة.');
