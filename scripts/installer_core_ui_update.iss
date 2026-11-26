@@ -1,5 +1,5 @@
-; BARQ ONE v2.41.30 incrementally updates PyInstaller EXE and compiled React only.
-#define AppVersion "2.41.30"
+; BARQ ONE v2.41.31 incrementally updates PyInstaller EXE and compiled React only.
+#define AppVersion "2.41.31"
 #define ExePath AddBackslash(SourcePath) + "..\dist\BARQ\BARQ.exe"
 #define WebDir AddBackslash(SourcePath) + "..\web\react"
 #if !FileExists(ExePath)
@@ -16,14 +16,14 @@
 AppId={{9BB70D04-1EC5-4BC6-B811-64B08F5C8977}
 AppName=BARQ ONE
 AppVersion={#AppVersion}
-AppVerName=BARQ ONE v2.41.30 Core and UI Update
+AppVerName=BARQ ONE v2.41.31 Core and UI Update
 AppPublisher=BARQ ONE
 DefaultDirName={localappdata}\Programs\AI Router Agent
 UsePreviousAppDir=yes
 DisableDirPage=no
 DefaultGroupName=BARQ ONE
 OutputDir=..\release
-OutputBaseFilename=BARQ_Core_UI_Update_2.41.30
+OutputBaseFilename=BARQ_Core_UI_Update_2.41.31
 Compression=lzma2
 SolidCompression=yes
 WizardStyle=modern

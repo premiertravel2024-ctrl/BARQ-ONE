@@ -166,6 +166,16 @@ const sidebar=page.locator('#barq-sidebar');
 const menu=page.getByRole('button',{name:'القائمة',exact:true});
 const topNav=page.locator('.ops-top-navigation');
 const chatNav=topNav.getByRole('button',{name:'المحادثة',exact:true});
+await page.setViewportSize({width:1440,height:900});
+const mediaPages=page.locator('.ops-stage > .ops-media-page');
+for(const section of ['watch','music','watch','music']){
+ const tab=sidebar.locator(`button[data-section="${section}"]`);
+ await tab.click();
+ assert.equal(await tab.getAttribute('aria-current'),'page');
+ assert.equal(await mediaPages.count(),1,`Only one media page should be mounted after opening ${section}`);
+ assert.equal(await mediaPages.isVisible(),true);
+}
+await page.setViewportSize({width:390,height:844});
 assert.ok(await page.getByRole('button',{name:'البحث',exact:true}).isVisible(),'quick search should stay visible in narrow windows');
 await menu.click();
 await sidebar.getByRole('button',{name:'إغلاق',exact:true}).waitFor();

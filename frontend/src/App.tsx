@@ -159,8 +159,8 @@ export default function App(){
   <div className={playground?'hidden':'ops-body'} data-chat={onePage==='chat'} dir="ltr">
    {onePage!=='chat'&&<OperationsRail page={onePage} navigate={navigateOne}/>}
    <main data-focus-region tabIndex={-1} className={onePage==='chat'?'ops-stage ops-chat-stage':'ops-stage'} dir={language==='ar'?'rtl':'ltr'} aria-label={language==='ar'?'مساحة التطبيق':'Application workspace'}>
-    {media&&<div hidden={onePage!==media} className="ops-media-page" key={media}><SectionBoundary ar={language==='ar'}>{renderSection(media)}</SectionBoundary></div>}
-    <SectionBoundary key={onePage} ar={language==='ar'}>
+    {media&&<div hidden={onePage!==media} className="ops-media-page" key={`media-${media}`}><SectionBoundary ar={language==='ar'}>{renderSection(media)}</SectionBoundary></div>}
+    <SectionBoundary key={`section-${onePage}`} ar={language==='ar'}>
     {onePage==='settings'?<SettingsModal embedded open initialTab={settingsTab} onWorkspace={()=>navigateOne('chat')} onClose={()=>navigateOne('center')}/>
     :onePage!=='chat'?<>
       {onePage!=='watch'&&onePage!=='music'&&renderSection(onePage)}
